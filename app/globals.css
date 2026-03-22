@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface text-on-surface font-body selection:bg-primary/30;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: rgba(53, 53, 52, 0.6);
+    backdrop-filter: blur(20px);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #a4e6ff 0%, #d8b9ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .grid-pattern {
+    background-image: linear-gradient(to right, rgba(133, 147, 153, 0.05) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(133, 147, 153, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Carousel Animation */
+  @keyframes slideInFromRight {
+    0% {
+      opacity: 0;
+      transform: translateX(120px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideOutToLeft {
+    0% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(-120px);
+    }
+  }
+
+  .carousel-slide {
+    animation: slideInFromRight 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Staggered entry for each card in sequence */
+  .carousel-slide:nth-child(1) {
+    animation-delay: 0s;
+  }
+
+  .carousel-slide:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .carousel-slide:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  /* Pipeline Stage Opacity Classes */
+  .stage--active {
+    opacity: 1;
+    transition: opacity 0.4s ease;
+  }
+
+  .stage--dimmed {
+    opacity: 0.3;
+    transition: opacity 0.4s ease;
+  }
+
+  /* Character-by-character Typing Animation */
+  @keyframes charAppear {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .console-char {
+    display: inline;
+    animation: charAppear 0.05s forwards;
+  }
+}
