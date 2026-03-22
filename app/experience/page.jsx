@@ -2,41 +2,29 @@
 
 import Navigation from '@/components/Navigation';
 import { SOCIAL_LINKS } from '@/lib/constants';
+import { useEffect, useState } from 'react';
 
 export default function Experience() {
-  const experiences = [
-    {
-      id: 1,
-      period: 'AUGUST 2025 — PRESENT',
-      title: 'Developer – Software Branch',
-      description:
-        'Building IoT and embedded systems at Faculty of IT. Architecting real-time data processing pipelines and sensor integration frameworks for research applications.',
-      tags: ['IOT', 'EMBEDDED', 'PYTHON'],
-      color: 'primary',
-      align: 'left',
-    },
-    {
-      id: 2,
-      period: 'SEPTEMBER 2025 — PRESENT',
-      title: 'Co-Director – IT Avenue',
-      description:
-        'Led the club\'s IT initiatives by managing digital infrastructure, maintaining online platforms, and supporting technical operations across projects and events. Rotaract Club of University of Moratuwa.',
-      tags: ['LEADERSHIP', 'IT OPERATIONS'],
-      color: 'secondary',
-      align: 'right',
-    },
-    {
-      id: 3,
-      period: 'JULY 2025 — SEPTEMBER 2025',
-      title: 'IT Team Leader',
-      description:
-        'Led the IT team responsible for maintaining digital infrastructure and supporting technical operations for club projects. Rotaract Club of University of Moratuwa.',
-      tags: ['TEAM MANAGEMENT', 'INFRASTRUCTURE'],
-      color: 'tertiary',
-      align: 'left',
-    },
-  ];
+  const [experiences, setExperiences] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    async function fetchExperiences() {
+      try {
+        const response = await fetch('/api/experience');
+        const data = await response.json();
+        setExperiences(data);
+      } catch (error) {
+        console.error('Error fetching experiences:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchExperiences();
+  }, []);
+
+  // Leadership data remains static for now
   const leadership = [
     {
       icon: 'admin_panel_settings',
@@ -111,49 +99,55 @@ export default function Experience() {
             <div className="absolute left-0 md:left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary via-secondary to-tertiary opacity-20 hidden md:block transform -translate-x-1/2"></div>
 
             {/* Experience Items */}
-            {experiences.map((exp, index) => {
-              const isLeft = index % 2 === 0;
-              const colorClass =
-                exp.color === 'primary'
-                  ? 'border-primary text-primary bg-primary/10'
-                  : exp.color === 'secondary'
-                    ? 'border-secondary text-secondary bg-secondary/10'
-                    : 'border-tertiary text-tertiary bg-tertiary/10';
-              const dotColorClass =
-                exp.color === 'primary'
-                  ? 'bg-primary shadow-[0_0_15px_rgba(164,230,255,0.6)]'
-                  : exp.color === 'secondary'
-                    ? 'bg-secondary shadow-[0_0_15px_rgba(216,185,255,0.6)]'
-                    : 'bg-tertiary shadow-[0_0_15px_rgba(0,249,190,0.6)]';
+            {loading ? (
+              <div className="text-center py-12 text-on-surface-variant">Loading experiences...</div>
+            ) : experiences.length === 0 ? (
+              <div className="text-center py-12 text-on-surface-variant">No experiences found</div>
+            ) : (
+              experiences.map((exp, index) => {
+                const isLeft = index % 2 === 0;
+                const colorClass =
+                  exp.color === 'primary'
+                    ? 'border-primary text-primary bg-primary/10'
+                    : exp.color === 'secondary'
+                      ? 'border-secondary text-secondary bg-secondary/10'
+                      : 'border-tertiary text-tertiary bg-tertiary/10';
+                const dotColorClass =
+                  exp.color === 'primary'
+                    ? 'bg-primary shadow-[0_0_15px_rgba(164,230,255,0.6)]'
+                    : exp.color === 'secondary'
+                      ? 'bg-secondary shadow-[0_0_15px_rgba(216,185,255,0.6)]'
+                      : 'bg-tertiary shadow-[0_0_15px_rgba(0,249,190,0.6)]';
 
-              return (
-                <div key={exp.id} className="relative mb-24 md:flex items-center justify-between">
-                  <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-2'} mb-8 md:mb-0`}>
-                    <div
-                      className={`surface-container-low p-8 rounded-lg ${isLeft ? 'border-l-4' : 'border-r-4'} ${colorClass.split(' ')[0]} hover:bg-surface-container transition-colors ${
-                        isLeft ? '' : 'text-right'
-                      }`}
-                    >
-                      <span className={`font-label text-[10px] ${colorClass.split(' ')[1]} mb-2 block tracking-widest`}>
-                        {exp.period}
-                      </span>
-                      <h3 className="font-headline text-2xl font-bold mb-2 text-on-surface">{exp.title}</h3>
-                      <p className="text-on-surface-variant text-sm leading-relaxed mb-4">{exp.description}</p>
-                      <div className={`flex flex-wrap gap-2 ${isLeft ? '' : 'justify-end'}`}>
-                        {exp.tags.map((tag) => (
-                          <span key={tag} className="bg-surface-container-high px-3 py-1 text-[10px] font-label text-on-surface flex items-center gap-1">
-                            <span className="w-1 h-1 rounded-full bg-tertiary"></span>
-                            {tag}
-                          </span>
-                        ))}
+                return (
+                  <div key={exp.id} className="relative mb-24 md:flex items-center justify-between">
+                    <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-2'} mb-8 md:mb-0`}>
+                      <div
+                        className={`surface-container-low p-8 rounded-lg ${isLeft ? 'border-l-4' : 'border-r-4'} ${colorClass.split(' ')[0]} hover:bg-surface-container transition-colors ${
+                          isLeft ? '' : 'text-right'
+                        }`}
+                      >
+                        <span className={`font-label text-[10px] ${colorClass.split(' ')[1]} mb-2 block tracking-widest`}>
+                          {exp.period}
+                        </span>
+                        <h3 className="font-headline text-2xl font-bold mb-2 text-on-surface">{`${exp.company} – ${exp.role}`}</h3>
+                        <p className="text-on-surface-variant text-sm leading-relaxed mb-4">{exp.description}</p>
+                        <div className={`flex flex-wrap gap-2 ${isLeft ? '' : 'justify-end'}`}>
+                          {exp.tags.map((tag) => (
+                            <span key={tag} className="bg-surface-container-high px-3 py-1 text-[10px] font-label text-on-surface flex items-center gap-1">
+                              <span className="w-1 h-1 rounded-full bg-tertiary"></span>
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
+                    <div className={`absolute left-0 md:left-1/2 w-4 h-4 ${dotColorClass} rounded-full transform -translate-x-1/2 hidden md:block`}></div>
+                    <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-1'}`}></div>
                   </div>
-                  <div className={`absolute left-0 md:left-1/2 w-4 h-4 ${dotColorClass} rounded-full transform -translate-x-1/2 hidden md:block`}></div>
-                  <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-1'}`}></div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </section>
 

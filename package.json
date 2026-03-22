@@ -8,7 +8,13 @@
     "type": "git",
     "url": "https://github.com/yourusername/portfolio-devops"
   },
-  "keywords": ["DevOps", "Cloud Architecture", "Portfolio", "Next.js", "React"],
+  "keywords": [
+    "DevOps",
+    "Cloud Architecture",
+    "Portfolio",
+    "Next.js",
+    "React"
+  ],
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,6 +23,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@notionhq/client": "^2.2.15",
     "dotenv": "^16.4.0",
     "framer-motion": "^11.0.0",
     "mongodb": "^7.1.0",
