@@ -244,19 +244,31 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              onClick={() => setShowEmailWarning(false)}
               className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
                 className="bg-surface-container-low rounded-2xl p-6 max-w-sm border border-outline-variant/20"
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="material-symbols-outlined text-warning text-2xl">
-                    warning
-                  </span>
-                  <h3 className="font-headline text-lg font-bold">Possible Email Typo</h3>
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-warning text-2xl">
+                      warning
+                    </span>
+                    <h3 className="font-headline text-lg font-bold">Possible Email Typo</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailWarning(false)}
+                    className="text-on-surface-variant hover:text-on-surface transition-colors flex-shrink-0"
+                    aria-label="Close"
+                  >
+                    <span className="material-symbols-outlined text-2xl">close</span>
+                  </button>
                 </div>
 
                 <p className="text-on-surface-variant text-sm mb-4">
@@ -265,12 +277,14 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
 
                 <div className="flex gap-3">
                   <button
+                    type="button"
                     onClick={handleCorrectEmail}
                     className="flex-1 bg-primary text-surface font-label font-bold py-2 rounded-lg hover:bg-primary/80 transition-colors"
                   >
                     Correct Email
                   </button>
                   <button
+                    type="button"
                     onClick={handleConfirmTypo}
                     className="flex-1 bg-surface-container-high text-on-surface font-label font-bold py-2 rounded-lg border border-outline-variant/20 hover:bg-surface-container-highest transition-colors"
                   >
