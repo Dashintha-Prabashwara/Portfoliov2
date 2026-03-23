@@ -479,7 +479,7 @@ function Footer() {
     <footer className="bg-zinc-950 w-full py-12 border-t border-zinc-900 mt-32">
       <div className="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto gap-6">
         <div className="text-zinc-500 font-['Inter'] text-xs tracking-widest uppercase">
-          © 2024 Digital Architect. Built for the Cloud.
+          © 2026 Dashintha Jayawardana. Built for the Cloud | All Rights Reserved
         </div>
         <div className="flex gap-8">
           <a className="text-zinc-500 hover:text-purple-400 transition-colors font-['Inter'] text-xs tracking-widest uppercase opacity-80 hover:opacity-100 duration-200" href={SOCIAL_LINKS.github} rel="noopener noreferrer" target="_blank">
