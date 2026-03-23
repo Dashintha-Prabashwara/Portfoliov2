@@ -14,7 +14,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: 'DevOps Architect | Portfolio',
+  title: 'Portfolio | Dashintha',
   description: 'Full-stack DevOps engineer specializing in cloud infrastructure and automation',
   keywords: 'DevOps, Cloud, AWS, Kubernetes, Docker, CI/CD',
 };

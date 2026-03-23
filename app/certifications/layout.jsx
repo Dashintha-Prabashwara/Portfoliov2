@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Certifications | DevOps Architect',
+  title: 'Certifications | Dashintha',
   description: 'Technical competencies and verified certifications in cloud architecture, DevOps, and infrastructure design.',
 };
 

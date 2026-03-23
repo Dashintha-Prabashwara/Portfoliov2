@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Skills | DevOps Architect',
+  title: 'Skills | Dashintha',
   description: 'Explore my specialized expertise in DevOps, cloud architecture, automation, and scalable infrastructure design.',
 };
 
