@@ -1,15 +1,78 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+
+// Common email domain typos
+const COMMON_EMAIL_TYPOS = {
+  'gail.com': 'gmail.com',
+  'gmial.com': 'gmail.com',
+  'gmai.com': 'gmail.com',
+  'gmil.com': 'gmail.com',
+  'outlok.com': 'outlook.com',
+  'outloo.com': 'outlook.com',
+  'yahho.com': 'yahoo.com',
+  'yaho.com': 'yahoo.com',
+  'hotmial.com': 'hotmail.com',
+  'protonmial.com': 'protonmail.com',
+};
+
+// Function to detect email typos
+function detectEmailTypo(email) {
+  const domain = email.split('@')[1]?.toLowerCase();
+  if (!domain) return null;
+
+  const suggestion = COMMON_EMAIL_TYPOS[domain];
+  return suggestion ? { typo: domain, suggestion } : null;
+}
 
 export default function ContactForm({ formData, status, onFormChange, onFormSubmit }) {
+  const [showEmailWarning, setShowEmailWarning] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState(null);
+
   const handleChange = (e) => {
     onFormChange(e);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check for email typos
+    const typoDetails = detectEmailTypo(formData.email);
+    if (typoDetails) {
+      setShowEmailWarning(true);
+      setPendingFormData(formData);
+      return;
+    }
+
+    // No typo detected, proceed with submission
     onFormSubmit(formData);
+  };
+
+  const handleConfirmTypo = () => {
+    // User confirmed they want to send with the typo email
+    setShowEmailWarning(false);
+    onFormSubmit(pendingFormData);
+  };
+
+  const handleCorrectEmail = () => {
+    // User wants to correct the email
+    const typoDetails = detectEmailTypo(formData.email);
+    const correctEmail = formData.email.replace(
+      typoDetails.typo,
+      typoDetails.suggestion
+    );
+
+    // Simulate change event
+    onFormChange({
+      target: {
+        name: 'email',
+        value: correctEmail
+      }
+    });
+
+    setShowEmailWarning(false);
+    setPendingFormData(null);
   };
 
   return (
@@ -170,6 +233,51 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
                   ))}
                 </div>
               )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Email Typo Warning Modal */}
+        <AnimatePresence>
+          {showEmailWarning && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-surface-container-low rounded-2xl p-6 max-w-sm border border-outline-variant/20"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="material-symbols-outlined text-warning text-2xl">
+                    warning
+                  </span>
+                  <h3 className="font-headline text-lg font-bold">Possible Email Typo</h3>
+                </div>
+
+                <p className="text-on-surface-variant text-sm mb-4">
+                  Did you mean <span className="font-bold text-primary">{detectEmailTypo(formData.email)?.suggestion}</span> instead of <span className="font-bold text-error">{formData.email.split('@')[1]}</span>?
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCorrectEmail}
+                    className="flex-1 bg-primary text-surface font-label font-bold py-2 rounded-lg hover:bg-primary/80 transition-colors"
+                  >
+                    Correct Email
+                  </button>
+                  <button
+                    onClick={handleConfirmTypo}
+                    className="flex-1 bg-surface-container-high text-on-surface font-label font-bold py-2 rounded-lg border border-outline-variant/20 hover:bg-surface-container-highest transition-colors"
+                  >
+                    Send Anyway
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
