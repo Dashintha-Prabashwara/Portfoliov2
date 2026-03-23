@@ -125,13 +125,27 @@ function ProjectCard({ project }) {
 
         {/* Action Buttons */}
         <div className="mt-auto flex items-center gap-4">
-          <button className="bg-gradient-to-r from-primary to-secondary text-on-primary text-xs font-bold px-6 py-3 rounded-md uppercase tracking-widest hover:shadow-[0px_0px_20px_rgba(164,230,255,0.3)] transition-all active:scale-95">
-            View Project
-          </button>
-          <button className="text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4">
-            <span className="material-symbols-outlined text-lg">code</span>
-            GitHub
-          </button>
+          {project.liveUrl && (
+            <a
+              href={project.liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-gradient-to-r from-primary to-secondary text-on-primary text-xs font-bold px-6 py-3 rounded-md uppercase tracking-widest hover:shadow-[0px_0px_20px_rgba(164,230,255,0.3)] transition-all active:scale-95"
+            >
+              View Project
+            </a>
+          )}
+          {project.githubUrl && (
+            <a
+              href={project.githubUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4"
+            >
+              <span className="material-symbols-outlined text-lg">code</span>
+              GitHub
+            </a>
+          )}
         </div>
       </div>
     </div>

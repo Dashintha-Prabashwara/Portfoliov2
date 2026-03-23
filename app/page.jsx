@@ -12,7 +12,21 @@ const techStackData = [
   { icon: 'hub', label: 'Angular' },
 ];
 
-export default function Home() {
+export default async function Home() {
+  // Pre-fetch Notion data to cache it for experience and projects pages
+  try {
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000';
+
+    await Promise.all([
+      fetch(`${baseUrl}/api/experience`, { next: { revalidate: 60 } }),
+      fetch(`${baseUrl}/api/projects`, { next: { revalidate: 60 } }),
+    ]);
+  } catch (error) {
+    console.error('Error pre-fetching Notion data:', error);
+  }
+
   return (
     <>
       <Navigation />
