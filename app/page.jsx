@@ -190,7 +190,7 @@ function SkillsSection() {
 
           {/* Years Experience */}
           <div className="bg-surface-container rounded-xl p-10 border border-outline-variant/10 flex flex-col justify-center items-center text-center">
-            <div className="text-5xl font-headline font-bold text-primary mb-2">5+</div>
+            <div className="text-5xl font-headline font-bold text-primary mb-2">0.8+</div>
             <div className="text-xs uppercase font-label tracking-widest text-on-surface-variant">
               Years Experience
             </div>
@@ -293,10 +293,6 @@ function Footer() {
           >
             Email
           </a>
-        </div>
-        <div className="flex items-center gap-2 text-zinc-500 font-['Inter'] text-xs tracking-widest uppercase">
-          <span className="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
-          Status: Deployment Active
         </div>
       </div>
     </footer>
