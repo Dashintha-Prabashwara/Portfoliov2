@@ -73,9 +73,7 @@ function HeroSection() {
 
           {/* Description */}
           <p className="font-body text-on-surface-variant text-lg md:text-xl max-w-xl leading-relaxed">
-            Architecting high-performance, cloud-native infrastructures. I bridge the gap between
-            complex code and scalable deployment, ensuring your digital assets are resilient and
-            ready for the future.
+            I enjoy building and learning about cloud infrastructure, automation, and deployment pipelines. I'm driven by making systems reliable and helping teams ship faster.
           </p>
 
           {/* CTA Buttons */}
@@ -138,12 +136,11 @@ function SkillsSection() {
               Architecture Focus
             </span>
             <h3 className="font-headline text-4xl md:text-5xl font-bold mt-4 tracking-tight">
-              Full-Stack Thinking, <br /> DevOps Execution.
+              Full-Stack Learning, <br /> DevOps Building.
             </h3>
           </div>
           <p className="font-body text-on-surface-variant max-w-md pb-2">
-            My approach focuses on creating automated, self-healing systems that allow developers to
-            focus on features while I handle the invisible strength of the infrastructure.
+            I focus on building reliable automation and systems that make developers' lives easier. Still learning new approaches and improving continuously.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -154,11 +151,9 @@ function SkillsSection() {
               <span className="material-symbols-outlined text-4xl text-primary">
                 developer_mode
               </span>
-              <h4 className="font-headline text-2xl font-bold">Automation First Strategy</h4>
+              <h4 className="font-headline text-2xl font-bold">Building Strong CI/CD Pipelines</h4>
               <p className="text-on-surface-variant leading-relaxed max-w-lg">
-                Specialist in CI/CD pipelines that do more than just build. I integrate security
-                scanning, performance auditing, and automated rollback strategies into every
-                deployment cycle.
+                I'm learning to build pipelines that handle testing, building, and deployment smoothly. I'm working on understanding how to incorporate better security scanning and automated testing into the process.
               </p>
             </div>
             <div className="mt-8 flex gap-3 flex-wrap">
@@ -177,10 +172,9 @@ function SkillsSection() {
           {/* Cloud Native */}
           <div className="bg-surface-container rounded-xl p-10 border border-outline-variant/10 relative overflow-hidden flex flex-col justify-between group">
             <div className="space-y-4">
-              <h4 className="font-headline text-2xl font-bold">Cloud Native</h4>
+              <h4 className="font-headline text-2xl font-bold">Cloud Infrastructure</h4>
               <p className="text-on-surface-variant text-sm">
-                Designing systems that leverage the full potential of distributed cloud
-                environments.
+                Exploring different cloud environments and learning how to build systems that work well at scale.
               </p>
             </div>
             <div className="pt-8">
@@ -203,10 +197,9 @@ function SkillsSection() {
           {/* Scalable Architecture */}
           <div className="md:col-span-2 bg-gradient-to-br from-surface-container to-surface-container-highest rounded-xl p-10 border border-outline-variant/10 flex flex-col md:flex-row gap-8 items-center">
             <div className="flex-1 space-y-4">
-              <h4 className="font-headline text-2xl font-bold">Scalable Architecture</h4>
+              <h4 className="font-headline text-2xl font-bold">Working with Infrastructure Changes</h4>
               <p className="text-on-surface-variant">
-                From monolithic migration to microservices, I ensure zero-downtime transitions and
-                cost-effective resource allocation.
+                I'm learning about how to migrate between different architecture patterns and working on keeping deployments smooth and efficient.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -249,8 +242,7 @@ function TechStackHeader() {
         Built for the <br /> <span className="text-secondary italic">Modern Web.</span>
       </h2>
       <p className="text-on-surface-variant max-w-xl font-body leading-relaxed">
-        My stack is selected for speed, reliability, and developer experience. Every tool serves a
-        purpose in the delivery pipeline.
+        My toolkit focuses on reliability and getting things done. These are the technologies I use regularly and continue to learn more about.
       </p>
     </div>
   );

@@ -11,7 +11,7 @@ export default function Experience() {
   useEffect(() => {
     async function fetchExperiences() {
       try {
-        const response = await fetch('/api/experience');
+        const response = await fetch('/api/experience', { cache: 'no-store' });
         const data = await response.json();
         setExperiences(data);
       } catch (error) {
@@ -71,11 +71,10 @@ export default function Experience() {
         {/* Hero Narrative */}
         <section className="mb-32">
           <h1 className="font-headline text-5xl md:text-7xl font-bold tracking-tighter mb-8 max-w-4xl leading-[0.9] text-on-surface">
-            Engineering <span className="text-primary italic">Resilient</span> Infrastructures.
+            Building <span className="text-primary italic">Infrastructure</span> and Learning Along the Way.
           </h1>
           <p className="font-body text-on-surface-variant text-lg md:text-xl max-w-2xl leading-relaxed">
-            From the silicon edge of IoT research to the helm of tech leadership, my journey is defined by the
-            orchestration of complexity. I build the pipelines that bridge vision and deployment.
+            My background spans IoT research, full-stack development, and working on various technical initiatives. I'm continuously learning about deployment, automation, and how to build better systems.
           </p>
         </section>
 
@@ -86,10 +85,9 @@ export default function Experience() {
               <span className="font-label text-primary text-xs tracking-[0.2em] uppercase block mb-4">
                 The Evolution
               </span>
-              <h2 className="font-headline text-4xl font-bold mb-6">Core Career Architecture</h2>
+              <h2 className="font-headline text-4xl font-bold mb-6">Career Journey</h2>
               <p className="text-on-surface-variant text-sm leading-loose">
-                Navigating through research and production environments, focusing on scalability, security, and the
-                developer experience.
+                Working on real-world projects in research and production environments. Learning about systems design, developing better practices, and building skills in deployment and infrastructure.
               </p>
             </div>
           </div>
@@ -157,12 +155,12 @@ export default function Experience() {
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
             <div className="max-w-xl">
               <span className="font-label text-primary text-xs tracking-[0.2em] uppercase block mb-4">
-                Impact &amp; Influence
+                Community &amp; Learning
               </span>
-              <h2 className="font-headline text-4xl md:text-5xl font-bold tracking-tight">Leadership Ecosystem</h2>
+              <h2 className="font-headline text-4xl md:text-5xl font-bold tracking-tight">Teaching &amp; Mentoring</h2>
             </div>
             <div className="font-body text-on-surface-variant text-sm italic border-l border-outline-variant/30 pl-6">
-              Building communities as robustly as clusters.
+              I've been fortunate to help others learn and grow through various initiatives.
             </div>
           </div>
 
@@ -232,13 +230,12 @@ export default function Experience() {
                 format_quote
               </span>
               <h3 className="font-headline text-3xl md:text-5xl font-bold italic mb-8 max-w-3xl">
-                &ldquo;Leadership isn&rsquo;t about being in charge. It&rsquo;s about taking care of those in your charge while
-                building systems that outlast the architect.&rdquo;
+                &ldquo;Good mentors help you learn from their experience so you don&rsquo;t have to make all the same mistakes. I want to be that person for others.&rdquo;
               </h3>
               <div className="flex items-center gap-4">
                 <div className="h-[1px] w-12 bg-primary"></div>
                 <span className="font-label text-sm uppercase tracking-widest text-on-surface-variant">
-                  Strategic Philosophy
+                  Personal Philosophy
                 </span>
               </div>
             </div>

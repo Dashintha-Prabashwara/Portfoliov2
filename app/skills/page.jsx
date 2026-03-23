@@ -25,12 +25,12 @@ function SkillsHero() {
       <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-secondary/10 rounded-full blur-[120px] pointer-events-none"></div>
       <h1 className="font-headline text-5xl md:text-7xl font-bold tracking-tighter mb-4 opacity-90 leading-tight">
-        Operational <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Excellence</span>
+        Building Things <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Reliably</span>
         <br />
-        Defined.
+        and Learning Always.
       </h1>
       <p className="font-body text-on-surface-variant max-w-xl text-lg md:text-xl">
-        Bridging the gap between creative frontend interfaces and robust cloud infrastructure through automated pipelines and scalable architectures.
+        Working across full-stack development and cloud infrastructure. Still learning, always improving, and enjoying the process.
       </p>
     </section>
   );
@@ -48,7 +48,7 @@ function SkillsBentoGrid() {
             <span className="material-symbols-outlined text-primary text-3xl">terminal</span>
             <h2 className="font-headline text-2xl font-semibold tracking-tight uppercase">Web & Frontend</h2>
           </div>
-          <p className="text-on-surface-variant mb-12 max-w-lg">Building responsive, interactive interfaces with modern frameworks and deep JavaScript/TypeScript expertise.</p>
+          <p className="text-on-surface-variant mb-12 max-w-lg">Learning to build responsive, interactive interfaces with modern frameworks. Comfortable with JavaScript/TypeScript and always improving my skills.</p>
           <div className="flex flex-wrap gap-4 mt-auto">
             {['Angular', 'React', 'Next.js', 'TypeScript', 'JavaScript', 'CSS/HTML', 'Tailwind CSS'].map((tech) => (
               <div key={tech} className="bg-surface-container-high px-4 py-3 rounded-md flex items-center gap-3 hover:bg-surface-container-highest transition-all duration-300 border border-outline-variant/10">
@@ -114,7 +114,7 @@ function SkillsBentoGrid() {
             <span className="material-symbols-outlined text-secondary text-3xl">storage</span>
             <h2 className="font-headline text-2xl font-semibold tracking-tight uppercase">Development & Tools</h2>
           </div>
-          <p className="text-on-surface-variant mb-8">Experience with desktop development, real-time systems, and complete development lifecycle tools.</p>
+          <p className="text-on-surface-variant mb-8">Working with desktop development, real-time systems, and exploring different tools across the development lifecycle.</p>
         </div>
         <div className="flex items-center gap-12 overflow-x-auto pb-4">
           {[

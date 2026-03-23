@@ -26,7 +26,7 @@ export default function Navigation() {
     <nav className="fixed top-0 w-full z-50 bg-zinc-900/60 backdrop-blur-xl border-b border-zinc-800/50 shadow-2xl shadow-cyan-900/20">
       <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto w-full">
         <Link href="/" className="text-xl font-bold tracking-tighter text-zinc-100 font-headline hover:text-cyan-400 transition-colors">
-          DevOps Architect
+          Dashintha
         </Link>
 
         <div className="hidden md:flex items-center gap-8">

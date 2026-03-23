@@ -382,9 +382,9 @@ function PipelinePanel({ stages, pipelineState, consoleOutput, onRetry }) {
 function ContactInfo() {
   return (
     <div>
-      <h2 className="font-headline text-5xl font-bold mb-6">Initialize Connection.</h2>
+      <h2 className="font-headline text-5xl font-bold mb-6">Get In Touch.</h2>
       <p className="text-on-surface-variant text-lg max-w-md mb-12">
-        Whether you&rsquo;re looking for an infrastructure overhaul or a technical partner for your next launch, the system is ready for your input.
+        Looking to work together or just want to chat about tech? I'm always interested in hearing about what people are building and learning.
       </p>
       <div className="space-y-8">
         <div className="flex items-center gap-6 group">
@@ -462,12 +462,12 @@ function ContactHero() {
   return (
     <div className="mb-20">
       <h1 className="font-headline text-6xl md:text-8xl font-bold tracking-tighter leading-none mb-4">
-        <span className="block">BUILD.</span>
-        <span className="block text-gradient ml-12 md:ml-24">DEPLOY.</span>
-        <span className="block">OPTIMIZE.</span>
+        <span className="block">Let&rsquo;s</span>
+        <span className="block text-gradient ml-12 md:ml-24">Build</span>
+        <span className="block">Something.</span>
       </h1>
       <p className="font-body text-on-surface-variant max-w-xl text-lg mt-8 ml-auto">
-        Bridging the gap between monolithic legacies and cloud-native futures. I architect systems that don&rsquo;t just run&mdash;they evolve.
+        I'm looking for opportunities to grow, learn, and contribute to interesting projects. Let's talk about what you're working on.
       </p>
     </div>
   );

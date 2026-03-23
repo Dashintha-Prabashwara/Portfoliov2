@@ -3,6 +3,7 @@ import { SOCIAL_LINKS } from '@/lib/constants';
 import { getEducation, getCertifications } from '@/lib/notion';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function CertificationsPage() {
   let education = [];
@@ -40,7 +41,7 @@ function HeroSection() {
         <span className="text-gradient italic">Validation.</span>
       </h1>
       <p className="font-body text-on-surface-variant max-w-xl text-lg md:text-xl leading-relaxed">
-        Technical competencies and verified architectural mastery mapping Dashintha Jayawardana's path through high-availability infrastructure.
+        Education and certifications I've pursued to build my skills. Continuous learning is important to me as I grow as a developer and engineer.
       </p>
     </header>
   );
@@ -61,7 +62,7 @@ function EducationSection({ education }) {
           </span>
           <h2 className="font-headline text-4xl font-bold mb-6">Academic Foundation</h2>
           <p className="text-on-surface-variant text-sm leading-loose">
-            Verifying the theoretical core behind the architecture. Continuous learning in the fields of systems management and infrastructure design.
+            My educational background and learning journey. Working on building a strong foundation in systems design and cloud technologies.
           </p>
         </div>
       </div>

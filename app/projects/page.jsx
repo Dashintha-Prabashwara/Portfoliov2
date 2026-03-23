@@ -5,6 +5,7 @@ import { SOCIAL_LINKS } from '@/lib/constants';
 import { getProjects } from '@/lib/notion';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function ProjectsPage() {
   let projects = [];
@@ -35,14 +36,14 @@ function HeroSection() {
       <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-[120px]"></div>
       <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-[100px]"></div>
       <h1 className="font-headline text-5xl md:text-7xl font-bold tracking-tighter mb-6 leading-none">
-        <span className="text-on-surface">Architecting</span>
+        <span className="text-on-surface">Building</span>
         <br />
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-tertiary">
-          Scalable Solutions
+          Real Projects
         </span>
       </h1>
       <p className="max-w-2xl text-on-surface-variant text-lg md:text-xl font-light leading-relaxed">
-        A selection of high-performance cloud infrastructures, automated pipelines, and full-stack ecosystems designed for the modern web.
+        A collection of projects I've worked on - from e-commerce platforms to IoT systems. Each one taught me something new about building and deploying software.
       </p>
     </div>
   );
