@@ -69,26 +69,26 @@ export default function Experience() {
   return (
     <>
       <Navigation />
-      <main className="pt-32 pb-24 px-6 max-w-7xl mx-auto">
+      <main className="pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-20 md:pb-24 px-4 sm:px-6 max-w-7xl mx-auto">
         {/* Hero Narrative */}
-        <section className="mb-32">
-          <h1 className="font-headline text-5xl md:text-7xl font-bold tracking-tighter mb-8 max-w-4xl leading-[0.9] text-on-surface">
+        <section className="mb-20 sm:mb-24 md:mb-32">
+          <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter mb-6 sm:mb-8 max-w-4xl leading-[0.9] text-on-surface">
             Building <span className="text-primary italic">Infrastructure</span> and Learning Along the Way.
           </h1>
-          <p className="font-body text-on-surface-variant text-lg md:text-xl max-w-2xl leading-relaxed">
+          <p className="font-body text-on-surface-variant text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl leading-relaxed">
             My background spans IoT research, full-stack development, and working on various technical initiatives. I'm continuously learning about deployment, automation, and how to build better systems.
           </p>
         </section>
 
         {/* Experience Timeline Section */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-40 relative">
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 mb-32 sm:mb-40 relative">
           <div className="lg:col-span-4">
-            <div className="sticky top-40">
+            <div className="sticky top-32 sm:top-40">
               <span className="font-label text-primary text-xs tracking-[0.2em] uppercase block mb-4">
                 The Evolution
               </span>
-              <h2 className="font-headline text-4xl font-bold mb-6">Career Journey</h2>
-              <p className="text-on-surface-variant text-sm leading-loose">
+              <h2 className="font-headline text-3xl sm:text-4xl font-bold mb-6">Career Journey</h2>
+              <p className="text-on-surface-variant text-xs sm:text-sm leading-loose">
                 Working on real-world projects in research and production environments. Learning about systems design, developing better practices, and building skills in deployment and infrastructure.
               </p>
             </div>
@@ -120,22 +120,22 @@ export default function Experience() {
                       : 'bg-tertiary shadow-[0_0_15px_rgba(0,249,190,0.6)]';
 
                 return (
-                  <div key={exp.id} className="relative mb-24 md:flex items-center justify-between">
-                    <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-2'} mb-8 md:mb-0`}>
+                  <div key={exp.id} className="relative mb-16 sm:mb-20 md:mb-24 md:flex items-center justify-between">
+                    <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-2'} mb-6 sm:mb-8 md:mb-0`}>
                       <div
-                        className={`surface-container-low p-8 rounded-lg ${isLeft ? 'border-l-4' : 'border-r-4'} ${colorClass.split(' ')[0]} hover:bg-surface-container transition-colors ${
+                        className={`surface-container-low p-4 sm:p-6 md:p-8 rounded-lg text-sm sm:text-base ${isLeft ? 'border-l-4' : 'border-r-4'} ${colorClass.split(' ')[0]} hover:bg-surface-container transition-colors ${
                           isLeft ? '' : 'text-right'
                         }`}
                       >
                         <span className={`font-label text-[10px] ${colorClass.split(' ')[1]} mb-3 block tracking-widest`}>
                           {exp.period}
                         </span>
-                        <h3 className="font-headline text-xl font-bold mb-1 text-on-surface">{exp.role}</h3>
-                        <p className="text-on-surface-variant text-sm font-medium mb-4">{exp.company}</p>
-                        <p className="text-on-surface-variant text-sm leading-relaxed mb-4">{exp.description}</p>
+                        <h3 className="font-headline text-lg sm:text-xl font-bold mb-1 text-on-surface">{exp.role}</h3>
+                        <p className="text-on-surface-variant text-xs sm:text-sm font-medium mb-4">{exp.company}</p>
+                        <p className="text-on-surface-variant text-xs sm:text-sm leading-relaxed mb-4">{exp.description}</p>
                         <div className={`flex flex-wrap gap-2 ${isLeft ? '' : 'justify-end'}`}>
                           {exp.tags.map((tag) => (
-                            <span key={tag} className="bg-surface-container-high px-3 py-1 text-[10px] font-label text-on-surface flex items-center gap-1">
+                            <span key={tag} className="bg-surface-container-high px-2 sm:px-3 py-1 text-[10px] font-label text-on-surface flex items-center gap-1">
                               <span className="w-1 h-1 rounded-full bg-tertiary"></span>
                               {tag}
                             </span>
@@ -153,21 +153,21 @@ export default function Experience() {
         </section>
 
         {/* Leadership Ecosystem Section */}
-        <section className="mb-32">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+        <section className="mb-20 sm:mb-24 md:mb-32">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 sm:mb-12 gap-6">
             <div className="max-w-xl">
               <span className="font-label text-primary text-xs tracking-[0.2em] uppercase block mb-4">
                 Community &amp; Learning
               </span>
-              <h2 className="font-headline text-4xl md:text-5xl font-bold tracking-tight">Teaching &amp; Mentoring</h2>
+              <h2 className="font-headline text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">Teaching &amp; Mentoring</h2>
             </div>
-            <div className="font-body text-on-surface-variant text-sm italic border-l border-outline-variant/30 pl-6">
+            <div className="font-body text-on-surface-variant text-xs sm:text-sm italic border-l border-outline-variant/30 pl-4">
               I've been fortunate to help others learn and grow through various initiatives.
             </div>
           </div>
 
           {/* Leadership Grid - Dynamic Cards with Left-to-Right Animation */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {leadership.map((item, index) => {
               const colorClass =
                 item.color === 'primary'
@@ -185,7 +185,7 @@ export default function Experience() {
               return (
                 <div
                   key={item.title}
-                  className="surface-container-high p-8 group relative overflow-hidden transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between min-h-[320px] animate-in slide-in-from-left fade-in-0"
+                  className="surface-container-high p-6 sm:p-8 group relative overflow-hidden transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between min-h-[300px] sm:min-h-[320px] animate-in slide-in-from-left fade-in-0"
                   style={{
                     animationDelay: `${index * 100}ms`,
                     animationDuration: '600ms',
@@ -205,8 +205,8 @@ export default function Experience() {
                         {item.period}
                       </span>
                     )}
-                    <h4 className="font-headline text-lg font-bold mb-4">{item.title}</h4>
-                    <p className="text-on-surface-variant text-sm leading-loose">{item.description}</p>
+                    <h4 className="font-headline text-sm sm:text-lg font-bold mb-4">{item.title}</h4>
+                    <p className="text-on-surface-variant text-xs sm:text-sm leading-loose">{item.description}</p>
                   </div>
 
                   {/* Footer */}
@@ -221,22 +221,22 @@ export default function Experience() {
         </section>
 
         {/* Quote Section */}
-        <section className="mb-12">
-          <div className="bg-surface-container-low rounded-xl p-12 md:p-20 relative overflow-hidden">
-            <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/10 blur-[100px] rounded-full"></div>
+        <section className="mb-8 sm:mb-12">
+          <div className="bg-surface-container-low rounded-xl p-8 sm:p-12 md:p-20 relative overflow-hidden">
+            <div className="absolute -right-20 -bottom-20 w-64 sm:w-80 h-64 sm:h-80 bg-primary/10 blur-[100px] rounded-full"></div>
             <div className="relative z-10">
               <span
-                className="material-symbols-outlined text-6xl text-outline-variant/20 absolute -top-10 -left-6"
+                className="material-symbols-outlined text-5xl sm:text-6xl text-outline-variant/20 absolute -top-10 -left-6"
                 aria-hidden="true"
               >
                 format_quote
               </span>
-              <h3 className="font-headline text-3xl md:text-5xl font-bold italic mb-8 max-w-3xl">
+              <h3 className="font-headline text-2xl sm:text-3xl md:text-5xl font-bold italic mb-6 sm:mb-8 max-w-3xl">
                 &ldquo;Good mentors help you learn from their experience so you don&rsquo;t have to make all the same mistakes. I want to be that person for others.&rdquo;
               </h3>
               <div className="flex items-center gap-4">
                 <div className="h-[1px] w-12 bg-primary"></div>
-                <span className="font-label text-sm uppercase tracking-widest text-on-surface-variant">
+                <span className="font-label text-xs sm:text-sm uppercase tracking-widest text-on-surface-variant">
                   Personal Philosophy
                 </span>
               </div>
@@ -246,12 +246,12 @@ export default function Experience() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-zinc-950 w-full py-12 border-t border-zinc-900">
-        <div className="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto gap-6">
-          <div className="text-zinc-500 font-['Inter'] text-xs tracking-widest uppercase">
+      <footer className="bg-zinc-950 w-full py-8 sm:py-12 border-t border-zinc-900">
+        <div className="flex flex-col gap-6 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 max-w-7xl mx-auto">
+          <div className="text-zinc-500 font-['Inter'] text-xs tracking-widest uppercase text-center sm:text-left">
             © 2026 Dashintha Jayawardana. Built for the Cloud | All Rights Reserved
           </div>
-          <div className="flex gap-8">
+          <div className="flex gap-6 sm:gap-8 justify-center sm:justify-end">
             <a
               className="text-zinc-500 hover:text-purple-400 transition-colors font-['Inter'] text-xs tracking-widest uppercase opacity-80 hover:opacity-100 duration-200"
               href={SOCIAL_LINKS.github}

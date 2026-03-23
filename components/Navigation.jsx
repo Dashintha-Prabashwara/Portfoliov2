@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import CVDownloadButton from './CVDownloadButton';
 
 const NAV_LINKS = [
@@ -15,6 +16,7 @@ const NAV_LINKS = [
 
 export default function Navigation() {
   const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (href) => {
     if (href === '/') return pathname === '/';
@@ -22,21 +24,23 @@ export default function Navigation() {
     return pathname.startsWith(href);
   };
 
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
   return (
     <nav className="fixed top-0 w-full z-50 bg-zinc-900/60 backdrop-blur-xl border-b border-zinc-800/50 shadow-2xl shadow-cyan-900/20">
-      <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto w-full">
-        <Link href="/" className="text-xl font-bold tracking-tighter text-zinc-100 font-headline hover:text-cyan-400 transition-colors">
+      <div className="flex justify-between items-center px-4 sm:px-6 py-3 sm:py-4 max-w-7xl mx-auto w-full">
+        <Link href="/" className="text-lg sm:text-xl font-bold tracking-tighter text-zinc-100 font-headline hover:text-cyan-400 transition-colors">
           Dashintha
         </Link>
 
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6 lg:gap-8">
           {NAV_LINKS.map((link) => {
             const active = isActive(link.href);
             return (
               <a
                 key={link.id}
                 href={link.href}
-                className={`font-headline tracking-tight text-sm uppercase transition-colors ${
+                className={`font-headline tracking-tight text-xs sm:text-sm uppercase transition-colors ${
                   active
                     ? 'text-cyan-400 font-bold border-b-2 border-cyan-400 pb-1'
                     : 'text-zinc-400 hover:text-zinc-100'
@@ -49,10 +53,44 @@ export default function Navigation() {
           <CVDownloadButton />
         </div>
 
-        <button className="md:hidden text-on-surface">
-          <span className="material-symbols-outlined">menu</span>
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="md:hidden text-on-surface hover:text-primary transition-colors"
+          aria-label="Toggle mobile menu"
+        >
+          <span className="material-symbols-outlined text-xl sm:text-2xl">
+            {mobileMenuOpen ? 'close' : 'menu'}
+          </span>
         </button>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-zinc-900/95 border-t border-zinc-800/50 px-4 sm:px-6 py-4">
+          <div className="flex flex-col gap-4">
+            {NAV_LINKS.map((link) => {
+              const active = isActive(link.href);
+              return (
+                <a
+                  key={link.id}
+                  href={link.href}
+                  onClick={closeMobileMenu}
+                  className={`font-headline tracking-tight text-sm uppercase transition-colors ${
+                    active
+                      ? 'text-cyan-400 font-bold'
+                      : 'text-zinc-400 hover:text-zinc-100'
+                  }`}
+                >
+                  {link.label}
+                </a>
+              );
+            })}
+            <div className="pt-4 border-t border-zinc-800/50">
+              <CVDownloadButton />
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

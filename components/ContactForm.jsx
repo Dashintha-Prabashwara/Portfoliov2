@@ -76,11 +76,11 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
   };
 
   return (
-    <div className="bg-surface-container-low p-8 md:p-12 rounded-2xl relative">
+    <div className="bg-surface-container-low p-6 sm:p-8 md:p-12 rounded-2xl relative">
       {/* Abstract Glow */}
-      <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/5 blur-[100px] rounded-full"></div>
+      <div className="absolute -top-20 -right-20 w-48 sm:w-64 h-48 sm:h-64 bg-primary/5 blur-[100px] rounded-full"></div>
 
-      <form onSubmit={handleSubmit} className="relative z-10 space-y-8">
+      <form onSubmit={handleSubmit} className="relative z-10 space-y-6 sm:space-y-8">
         {/* Name Field */}
         <div className="relative">
           <label
@@ -97,7 +97,7 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
             onChange={handleChange}
             required
             disabled={status.loading}
-            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body disabled:opacity-50"
+            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-3 sm:py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body disabled:opacity-50 text-sm sm:text-base"
             placeholder="Commander Shepherd"
           />
           {status.fieldErrors?.name && (
@@ -121,7 +121,7 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
             onChange={handleChange}
             required
             disabled={status.loading}
-            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body disabled:opacity-50"
+            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-3 sm:py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body disabled:opacity-50 text-sm sm:text-base"
             placeholder="shepherd@normandy.com"
           />
           {status.fieldErrors?.email && (
@@ -145,7 +145,7 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
             required
             disabled={status.loading}
             rows="4"
-            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body resize-none disabled:opacity-50"
+            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-3 sm:py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body resize-none disabled:opacity-50 text-sm sm:text-base"
             placeholder="Brief about your system requirements..."
           />
           {status.fieldErrors?.message && (
@@ -166,11 +166,11 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
         />
 
         {/* Submit Button */}
-        <div className="pt-4">
+        <div className="pt-2 sm:pt-4">
           <button
             type="submit"
             disabled={status.loading}
-            className="w-full bg-gradient-to-r from-primary to-secondary text-on-primary font-headline font-bold uppercase tracking-[0.2em] py-5 rounded-md hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-primary/10 flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-primary to-secondary text-on-primary font-headline font-bold uppercase tracking-[0.2em] py-4 sm:py-5 rounded-md hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-primary/10 flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           >
             {status.loading ? (
               <>
@@ -202,9 +202,9 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-3 p-4 bg-tertiary/10 rounded-lg border border-tertiary/20"
+              className="flex items-center gap-3 p-3 sm:p-4 bg-tertiary/10 rounded-lg border border-tertiary/20"
             >
-              <span className="material-symbols-outlined text-tertiary">
+              <span className="material-symbols-outlined text-tertiary flex-shrink-0">
                 check_circle
               </span>
               <p className="text-xs font-label font-bold text-tertiary uppercase">
@@ -218,7 +218,7 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex flex-col gap-2 p-4 bg-error/10 rounded-lg border border-error/20"
+              className="flex flex-col gap-2 p-3 sm:p-4 bg-error/10 rounded-lg border border-error/20"
             >
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-error flex-shrink-0">error</span>
@@ -252,14 +252,14 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-surface-container-low rounded-2xl p-6 max-w-sm border border-outline-variant/20"
+                className="bg-surface-container-low rounded-2xl p-4 sm:p-6 max-w-sm w-full border border-outline-variant/20"
               >
                 <div className="flex items-center justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-warning text-2xl">
+                    <span className="material-symbols-outlined text-warning text-2xl flex-shrink-0">
                       warning
                     </span>
-                    <h3 className="font-headline text-lg font-bold">Possible Email Typo</h3>
+                    <h3 className="font-headline text-base sm:text-lg font-bold">Possible Email Typo</h3>
                   </div>
                   <button
                     type="button"
@@ -271,22 +271,22 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
                   </button>
                 </div>
 
-                <p className="text-on-surface-variant text-sm mb-4">
+                <p className="text-on-surface-variant text-xs sm:text-sm mb-4">
                   Did you mean <span className="font-bold text-primary">{detectEmailTypo(formData.email)?.suggestion}</span> instead of <span className="font-bold text-error">{formData.email.split('@')[1]}</span>?
                 </p>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     type="button"
                     onClick={handleCorrectEmail}
-                    className="flex-1 bg-primary text-surface font-label font-bold py-2 rounded-lg hover:bg-primary/80 transition-colors"
+                    className="flex-1 bg-primary text-surface font-label font-bold py-2 rounded-lg hover:bg-primary/80 transition-colors text-xs sm:text-sm"
                   >
                     Correct Email
                   </button>
                   <button
                     type="button"
                     onClick={handleConfirmTypo}
-                    className="flex-1 bg-surface-container-high text-on-surface font-label font-bold py-2 rounded-lg border border-outline-variant/20 hover:bg-surface-container-highest transition-colors"
+                    className="flex-1 bg-surface-container-high text-on-surface font-label font-bold py-2 rounded-lg border border-outline-variant/20 hover:bg-surface-container-highest transition-colors text-xs sm:text-sm"
                   >
                     Send Anyway
                   </button>

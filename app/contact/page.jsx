@@ -223,18 +223,18 @@ export default function Contact() {
   return (
     <>
       <Navigation />
-      <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto overflow-hidden relative">
+      <main className="pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto overflow-hidden relative">
         <ContactHero />
 
-       
+
         {/* Live Infrastructure Section Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-6 sm:mb-8">
           <div className="h-px flex-1 bg-outline-variant/30"></div>
-          <h2 className="font-headline text-sm uppercase tracking-[0.2em] text-primary">Live Infrastructure</h2>
+          <h2 className="font-headline text-xs sm:text-sm uppercase tracking-[0.2em] text-primary whitespace-nowrap">Live Infrastructure</h2>
         </div>
 
         {/* FRAME 1: Pipeline Viz (LEFT) + Contact Form (RIGHT) */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-start mb-32">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 md:gap-20 items-start mb-24 sm:mb-32">
           {/* LEFT - Pipeline Visualization */}
           <PipelinePanel
             stages={pipelineStages}
@@ -253,7 +253,7 @@ export default function Contact() {
         </section>
 
         {/* FRAME 2: Contact Info (LEFT) + Info Cards (RIGHT) */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 md:gap-20 items-start">
           {/* LEFT - Contact Info */}
           <ContactInfo />
 
@@ -310,16 +310,16 @@ function PipelinePanel({ stages, pipelineState, consoleOutput, onRetry }) {
   const isError = pipelineState.status === 'error';
 
   return (
-    <div className="bg-surface-container-low rounded-xl p-8 border-l-2 border-primary">
+    <div className="bg-surface-container-low rounded-xl p-4 sm:p-6 md:p-8 border-l-2 border-primary">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div>
-          <h3 className="font-headline text-2xl font-bold">{headerText.name}</h3>
-          <p className={`text-sm font-label uppercase tracking-widest mt-1 ${isError ? 'text-error' : 'text-on-surface-variant'}`}>
+          <h3 className="font-headline text-lg sm:text-xl md:text-2xl font-bold">{headerText.name}</h3>
+          <p className={`text-xs sm:text-sm font-label uppercase tracking-widest mt-1 ${isError ? 'text-error' : 'text-on-surface-variant'}`}>
             {headerText.status}
           </p>
         </div>
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${isError ? 'bg-error/10 border-error/20' : 'bg-tertiary/10 border-tertiary/20'}`}>
+        <div className={`flex items-center gap-2 px-3 py-1 rounded-full border whitespace-nowrap ${isError ? 'bg-error/10 border-error/20' : 'bg-tertiary/10 border-tertiary/20'}`}>
           <span className={`w-2 h-2 rounded-full ${isError ? 'bg-error' : 'bg-tertiary'} ${pipelineState.stage !== 'idle' ? 'animate-pulse' : ''}`}></span>
           <span className={`text-[10px] font-bold uppercase ${isError ? 'text-error' : 'text-tertiary'}`}>
             {isError ? 'OFFLINE' : pipelineState.stage === 'idle' ? 'Idle' : 'Active'}
@@ -328,7 +328,7 @@ function PipelinePanel({ stages, pipelineState, consoleOutput, onRetry }) {
       </div>
 
       {/* Pipeline Stages */}
-      <div className="relative flex flex-row justify-between items-center gap-8 py-4 mb-8">
+      <div className="relative flex flex-row justify-between items-center gap-2 sm:gap-4 md:gap-8 py-3 sm:py-4 mb-6 sm:mb-8 overflow-x-auto">
         <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-outline-variant/20 -translate-y-1/2 z-0"></div>
         {stages.map((stage) => {
           const stageKey = ['source', 'build', 'deploy', 'monitor'][stage.id - 1];
@@ -339,7 +339,7 @@ function PipelinePanel({ stages, pipelineState, consoleOutput, onRetry }) {
           return (
             <div
               key={stage.id}
-              className={`z-10 p-4 rounded-lg border shadow-xl text-center transition-all w-full md:w-auto ${opacityClass} ${
+              className={`z-10 p-2 sm:p-3 md:p-4 rounded-lg border shadow-xl text-center transition-all flex-1 md:flex-initial w-20 sm:w-24 md:w-auto ${opacityClass} ${
                 isFailed
                   ? 'bg-surface-container-high border-error/40 ring-2 ring-error/10'
                   : isActive
@@ -350,7 +350,7 @@ function PipelinePanel({ stages, pipelineState, consoleOutput, onRetry }) {
               }`}
             >
               <span
-                className={`material-symbols-outlined mb-2 block ${
+                className={`material-symbols-outlined mb-1 sm:mb-2 block text-xl sm:text-2xl ${
                   isFailed ? 'text-error' : stage.id === 3 && isActive ? 'text-secondary' : 'text-primary'
                 }`}
               >
@@ -359,14 +359,14 @@ function PipelinePanel({ stages, pipelineState, consoleOutput, onRetry }) {
               <p className={`text-xs font-label font-bold uppercase mb-1 ${isFailed ? 'text-error' : 'text-on-surface'}`}>
                 {stage.name}
               </p>
-              <p className="text-[10px] text-on-surface-variant">{stage.description}</p>
+              <p className="text-[10px] text-on-surface-variant hidden sm:block">{stage.description}</p>
             </div>
           );
         })}
       </div>
 
       {/* Console Output */}
-      <div className="p-4 bg-surface-container-lowest rounded-lg font-mono text-xs text-on-surface-variant border border-outline-variant/10 min-h-[120px] max-h-[200px] overflow-y-auto space-y-1">
+      <div className="p-3 sm:p-4 bg-surface-container-lowest rounded-lg font-mono text-xs text-on-surface-variant border border-outline-variant/10 min-h-[100px] sm:min-h-[120px] max-h-[200px] overflow-y-auto space-y-1">
         {consoleOutput.length === 0 ? (
           <div className="text-on-surface-variant/50">Awaiting input...</div>
         ) : (
@@ -380,7 +380,7 @@ function PipelinePanel({ stages, pipelineState, consoleOutput, onRetry }) {
       {isError && (
         <button
           onClick={onRetry}
-          className="mt-6 w-full px-6 py-3 bg-primary text-surface rounded-lg font-label font-bold text-sm uppercase tracking-wider hover:bg-primary/80 transition-colors"
+          className="mt-4 sm:mt-6 w-full px-4 sm:px-6 py-2 sm:py-3 bg-primary text-surface rounded-lg font-label font-bold text-xs sm:text-sm uppercase tracking-wider hover:bg-primary/80 transition-colors"
         >
           Retry Pipeline
         </button>
@@ -394,32 +394,32 @@ function PipelinePanel({ stages, pipelineState, consoleOutput, onRetry }) {
 function ContactInfo() {
   return (
     <div>
-      <h2 className="font-headline text-5xl font-bold mb-6">Get In Touch.</h2>
-      <p className="text-on-surface-variant text-lg max-w-md mb-12">
+      <h2 className="font-headline text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">Get In Touch.</h2>
+      <p className="text-on-surface-variant text-sm sm:text-base md:text-lg max-w-md mb-8 sm:mb-12">
         Looking to work together or just want to chat about tech? I'm always interested in hearing about what people are building and learning.
       </p>
-      <div className="space-y-8">
-        <div className="flex items-center gap-6 group">
-          <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center border border-outline-variant/10 group-hover:border-primary/50 transition-colors">
-            <span className="material-symbols-outlined text-primary">alternate_email</span>
+      <div className="space-y-6 sm:space-y-8">
+        <div className="flex items-center gap-4 sm:gap-6 group">
+          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-surface-container-high flex items-center justify-center border border-outline-variant/10 group-hover:border-primary/50 transition-colors flex-shrink-0">
+            <span className="material-symbols-outlined text-primary text-lg sm:text-xl">alternate_email</span>
           </div>
           <div>
             <p className="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Email</p>
-            <a href={`mailto:${SOCIAL_LINKS.email}`} className="font-headline font-bold text-lg hover:text-primary transition-colors">
+            <a href={`mailto:${SOCIAL_LINKS.email}`} className="font-headline font-bold text-sm sm:text-base md:text-lg hover:text-primary transition-colors">
               {SOCIAL_LINKS.email}
             </a>
           </div>
         </div>
-        <div className="flex items-center gap-6 group">
-          <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center border border-outline-variant/10 group-hover:border-secondary/50 transition-colors">
-            <span className="material-symbols-outlined text-secondary">share</span>
+        <div className="flex items-center gap-4 sm:gap-6 group">
+          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-surface-container-high flex items-center justify-center border border-outline-variant/10 group-hover:border-secondary/50 transition-colors flex-shrink-0">
+            <span className="material-symbols-outlined text-secondary text-lg sm:text-xl">share</span>
           </div>
-          <div className="flex gap-4">
-            <a className="text-on-surface-variant hover:text-on-surface transition-colors font-headline font-bold text-lg" href={SOCIAL_LINKS.github} rel="noopener noreferrer" target="_blank">
+          <div className="flex gap-2 sm:gap-4 flex-wrap">
+            <a className="text-on-surface-variant hover:text-on-surface transition-colors font-headline font-bold text-sm sm:text-base md:text-lg" href={SOCIAL_LINKS.github} rel="noopener noreferrer" target="_blank">
               GitHub
             </a>
             <span className="text-outline-variant/30">/</span>
-            <a className="text-on-surface-variant hover:text-on-surface transition-colors font-headline font-bold text-lg" href={SOCIAL_LINKS.linkedin} rel="noopener noreferrer" target="_blank">
+            <a className="text-on-surface-variant hover:text-on-surface transition-colors font-headline font-bold text-sm sm:text-base md:text-lg" href={SOCIAL_LINKS.linkedin} rel="noopener noreferrer" target="_blank">
               LinkedIn
             </a>
           </div>
@@ -432,12 +432,12 @@ function ContactInfo() {
 // ========== INFO CARDS SECTION ==========
 function InfoCards() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       {/* Persistence Layer Card */}
-      <div className="bg-surface-container-high rounded-xl p-6 border-t-2 border-secondary flex-1">
-        <span className="material-symbols-outlined text-secondary text-3xl mb-4 block">database</span>
-        <h4 className="font-headline text-lg font-bold">Persistence Layer</h4>
-        <p className="text-on-surface-variant text-sm mt-2 mb-4 leading-relaxed">
+      <div className="bg-surface-container-high rounded-xl p-4 sm:p-6 border-t-2 border-secondary flex-1">
+        <span className="material-symbols-outlined text-secondary text-2xl sm:text-3xl mb-3 sm:mb-4 block">database</span>
+        <h4 className="font-headline text-base sm:text-lg font-bold">Persistence Layer</h4>
+        <p className="text-on-surface-variant text-xs sm:text-sm mt-2 mb-3 sm:mb-4 leading-relaxed">
           Currently migrating heavy JSON schemas to MongoDB optimized patterns to reduce latency by 40%.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -454,10 +454,10 @@ function InfoCards() {
       </div>
 
       {/* API Mesh Card */}
-      <div className="bg-surface-container-high rounded-xl p-6 border-t-2 border-primary flex-1">
-        <span className="material-symbols-outlined text-primary text-3xl mb-4 block">hub</span>
-        <h4 className="font-headline text-lg font-bold">API Mesh</h4>
-        <p className="text-on-surface-variant text-sm mt-2 mb-4">
+      <div className="bg-surface-container-high rounded-xl p-4 sm:p-6 border-t-2 border-primary flex-1">
+        <span className="material-symbols-outlined text-primary text-2xl sm:text-3xl mb-3 sm:mb-4 block">hub</span>
+        <h4 className="font-headline text-base sm:text-lg font-bold">API Mesh</h4>
+        <p className="text-on-surface-variant text-xs sm:text-sm mt-2 mb-3 sm:mb-4">
           Implementing Istio service mesh for enhanced observability across 15+ microservices.
         </p>
         <div className="w-full bg-outline-variant/20 h-1 rounded-full overflow-hidden">
@@ -472,13 +472,13 @@ function InfoCards() {
 // ========== HERO SECTION ==========
 function ContactHero() {
   return (
-    <div className="mb-20">
-      <h1 className="font-headline text-6xl md:text-8xl font-bold tracking-tighter leading-none mb-4">
+    <div className="mb-16 sm:mb-20">
+      <h1 className="font-headline text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 sm:mb-6">
         <span className="block">Let&rsquo;s</span>
-        <span className="block text-gradient ml-12 md:ml-24">Build</span>
+        <span className="block text-gradient ml-6 sm:ml-12 md:ml-24">Build</span>
         <span className="block">Something.</span>
       </h1>
-      <p className="font-body text-on-surface-variant max-w-xl text-lg mt-8 ml-auto">
+      <p className="font-body text-on-surface-variant max-w-xl text-sm sm:text-base md:text-lg mt-6 sm:mt-8">
         I'm looking for opportunities to grow, learn, and contribute to interesting projects. Let's talk about what you're working on.
       </p>
     </div>
@@ -488,12 +488,12 @@ function ContactHero() {
 // ========== FOOTER SECTION ==========
 function Footer() {
   return (
-    <footer className="bg-zinc-950 w-full py-12 border-t border-zinc-900 mt-32">
-      <div className="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto gap-6">
-        <div className="text-zinc-500 font-['Inter'] text-xs tracking-widest uppercase">
+    <footer className="bg-zinc-950 w-full py-8 sm:py-12 border-t border-zinc-900 mt-24 sm:mt-32">
+      <div className="flex flex-col gap-6 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 max-w-7xl mx-auto">
+        <div className="text-zinc-500 font-['Inter'] text-xs tracking-widest uppercase text-center sm:text-left">
           © 2026 Dashintha Jayawardana. Built for the Cloud | All Rights Reserved
         </div>
-        <div className="flex gap-8">
+        <div className="flex gap-6 sm:gap-8 justify-center sm:justify-end">
           <a className="text-zinc-500 hover:text-purple-400 transition-colors font-['Inter'] text-xs tracking-widest uppercase opacity-80 hover:opacity-100 duration-200" href={SOCIAL_LINKS.github} rel="noopener noreferrer" target="_blank">
             GitHub
           </a>

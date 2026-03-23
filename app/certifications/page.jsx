@@ -23,7 +23,7 @@ export default async function CertificationsPage() {
   return (
     <>
       <Navigation />
-      <main className="relative pt-32 pb-24 px-6 max-w-7xl mx-auto">
+      <main className="relative pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-20 md:pb-24 px-4 sm:px-6 max-w-7xl mx-auto">
         <HeroSection />
         <EducationSection education={education} />
         <CertificationsSection certifications={certifications} />
@@ -36,13 +36,13 @@ export default async function CertificationsPage() {
 // ========== HERO SECTION ==========
 function HeroSection() {
   return (
-    <header className="mb-24 relative">
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <h1 className="font-headline text-5xl md:text-7xl font-bold tracking-tighter mb-6 leading-tight">
+    <header className="mb-16 sm:mb-20 md:mb-24 relative">
+      <div className="absolute -top-24 -left-24 w-64 sm:w-96 h-64 sm:h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter mb-4 sm:mb-6 leading-tight">
         System <br />
         <span className="text-gradient italic">Validation.</span>
       </h1>
-      <p className="font-body text-on-surface-variant max-w-xl text-lg md:text-xl leading-relaxed">
+      <p className="font-body text-on-surface-variant max-w-xl text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed">
         Education and certifications I've pursued to build my skills. Continuous learning is important to me as I grow as a developer and engineer.
       </p>
     </header>
@@ -56,14 +56,14 @@ function EducationSection({ education }) {
   }
 
   return (
-    <section className="mb-40 grid grid-cols-1 lg:grid-cols-12 gap-12 relative">
+    <section className="mb-32 sm:mb-40 grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 relative">
       <div className="lg:col-span-4">
-        <div className="sticky top-40">
+        <div className="sticky top-32 sm:top-40">
           <span className="font-label text-primary text-xs tracking-[0.2em] uppercase block mb-4">
             The Initialization
           </span>
-          <h2 className="font-headline text-4xl font-bold mb-6">Academic Foundation</h2>
-          <p className="text-on-surface-variant text-sm leading-loose">
+          <h2 className="font-headline text-3xl sm:text-4xl font-bold mb-6">Academic Foundation</h2>
+          <p className="text-on-surface-variant text-xs sm:text-sm leading-loose">
             My educational background and learning journey. Working on building a strong foundation in systems design and cloud technologies.
           </p>
         </div>
@@ -78,10 +78,10 @@ function EducationSection({ education }) {
           const isLeft = index % 2 === 0;
 
           return (
-            <div key={edu.id} className="relative mb-24 md:flex items-center justify-between">
-              <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-2'} mb-8 md:mb-0`}>
+            <div key={edu.id} className="relative mb-16 sm:mb-20 md:mb-24 md:flex items-center justify-between">
+              <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-2'} mb-6 sm:mb-8 md:mb-0`}>
                 <div
-                  className={`bg-surface-container-low relative p-8 rounded-lg border-l-4 border-primary overflow-hidden hover:bg-surface-container transition-all duration-500 hover:translate-y-[-4px] group ${
+                  className={`bg-surface-container-low relative p-4 sm:p-6 md:p-8 rounded-lg text-sm sm:text-base border-l-4 border-primary overflow-hidden hover:bg-surface-container transition-all duration-500 hover:translate-y-[-4px] group ${
                     isLeft ? '' : 'text-right'
                   }`}
                 >
@@ -95,14 +95,14 @@ function EducationSection({ education }) {
                   <span className="font-label text-[10px] text-on-surface-variant mb-2 block tracking-widest">
                     {edu.period}
                   </span>
-                  <h3 className="font-headline text-2xl font-bold mb-2 text-on-surface">{edu.title}</h3>
-                  <p className="text-on-surface-variant text-sm mb-4">{edu.institution}</p>
-                  <p className="text-on-surface-variant text-sm leading-relaxed mb-4">{edu.description}</p>
+                  <h3 className="font-headline text-lg sm:text-xl md:text-2xl font-bold mb-2 text-on-surface">{edu.title}</h3>
+                  <p className="text-on-surface-variant text-xs sm:text-sm mb-4">{edu.institution}</p>
+                  <p className="text-on-surface-variant text-xs sm:text-sm leading-relaxed mb-4">{edu.description}</p>
                   <div className={`flex flex-wrap gap-2 ${isLeft ? '' : 'justify-end'}`}>
                     {edu.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="bg-surface-container-high px-3 py-1 text-[10px] font-label text-on-surface flex items-center gap-1"
+                        className="bg-surface-container-high px-2 sm:px-3 py-1 text-[10px] font-label text-on-surface flex items-center gap-1"
                       >
                         <span className="w-1 h-1 rounded-full bg-tertiary"></span>
                         {tag}
@@ -128,12 +128,12 @@ function CertificationsSection({ certifications }) {
 
   return (
     <section>
-      <div className="flex items-center gap-4 mb-16">
-        <div className="w-12 h-[2px] bg-secondary"></div>
-        <h2 className="font-label text-sm uppercase tracking-[0.3em] text-secondary">Verified Credentials</h2>
+      <div className="flex items-center gap-4 mb-12 sm:mb-16">
+        <div className="w-8 sm:w-12 h-[2px] bg-secondary"></div>
+        <h2 className="font-label text-xs sm:text-sm uppercase tracking-[0.3em] text-secondary">Verified Credentials</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Verified Certifications */}
         {verified.map((cert) => (
           <CertificationCard key={cert.id} cert={cert} />
@@ -141,11 +141,11 @@ function CertificationsSection({ certifications }) {
 
         {/* Validation Queue Card (if any) */}
         {queue.length > 0 && (
-          <div className="p-8 rounded-xl border border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center group hover:bg-surface-container-low transition-colors duration-300">
+          <div className="p-6 sm:p-8 rounded-xl border border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center group hover:bg-surface-container-low transition-colors duration-300">
             <div className="w-12 h-12 rounded-full border border-outline-variant/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined text-on-surface-variant/50">add</span>
             </div>
-            <h3 className="font-headline text-sm font-bold uppercase tracking-widest opacity-40">Validation Queue</h3>
+            <h3 className="font-headline text-xs sm:text-sm font-bold uppercase tracking-widest opacity-40">Validation Queue</h3>
             <div className="text-[10px] font-label text-on-surface-variant mt-2 tracking-tighter space-y-1">
               {queue.map((cert) => (
                 <p key={cert.id}>{cert.title} (Exam Scheduled)</p>
@@ -172,7 +172,7 @@ function CertificationCard({ cert }) {
   const defaultIcon = 'verified';
 
   return (
-    <div className="glass-card p-8 rounded-xl border border-outline-variant/10 relative overflow-hidden group hover:translate-y-[-4px] transition-all duration-500">
+    <div className="glass-card p-4 sm:p-6 md:p-8 rounded-xl border border-outline-variant/10 relative overflow-hidden group hover:translate-y-[-4px] transition-all duration-500">
       {/* Top accent bar */}
       <div
         className="absolute top-0 left-0 h-[2px] w-8 group-hover:w-16 transition-all duration-500"
@@ -180,16 +180,16 @@ function CertificationCard({ cert }) {
       ></div>
 
       {/* Icon and Credential ID */}
-      <div className="flex justify-between items-start mb-6">
-        <div className="w-12 h-12 bg-surface-container-lowest rounded flex items-center justify-center border border-outline-variant/10">
+      <div className="flex justify-between items-start mb-4 sm:mb-6 gap-2">
+        <div className="w-10 sm:w-12 h-10 sm:h-12 bg-surface-container-lowest rounded flex items-center justify-center border border-outline-variant/10 flex-shrink-0">
           <span
-            className="material-symbols-outlined"
+            className="material-symbols-outlined text-lg sm:text-xl"
             style={{ color: accentColor }}
           >
             {cert.icon || defaultIcon}
           </span>
         </div>
-        <span className="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">
+        <span className="font-label text-[10px] text-on-surface-variant uppercase tracking-widest text-right">
           {cert.credentialId}
         </span>
       </div>
@@ -211,17 +211,17 @@ function CertificationCard({ cert }) {
       )}
 
       {/* Title */}
-      <h3 className="font-headline text-xl font-bold text-on-surface mb-2 tracking-tight">
+      <h3 className="font-headline text-base sm:text-lg md:text-xl font-bold text-on-surface mb-2 tracking-tight">
         {cert.title}
       </h3>
 
       {/* Organization */}
-      <p className="text-on-surface-variant text-sm mb-6 font-light">
+      <p className="text-on-surface-variant text-xs sm:text-sm mb-4 sm:mb-6 font-light">
         {cert.organization}
       </p>
 
       {/* Dates Section */}
-      <div className="space-y-2 mb-6 pb-6 border-b border-outline-variant/10">
+      <div className="space-y-2 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-outline-variant/10">
         {cert.issueDate && (
           <div className="flex justify-between text-[10px]">
             <span className="text-on-surface-variant uppercase tracking-widest">ISSUED</span>
@@ -243,7 +243,7 @@ function CertificationCard({ cert }) {
             href={cert.verificationUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm transition-colors cursor-pointer hover:opacity-80 flex items-center gap-2"
+            className="text-xs sm:text-sm transition-colors cursor-pointer hover:opacity-80 flex items-center gap-2"
             style={{ color: accentColor }}
           >
             Verify
@@ -258,12 +258,12 @@ function CertificationCard({ cert }) {
 // ========== FOOTER SECTION ==========
 function Footer() {
   return (
-    <footer className="bg-zinc-950 w-full py-12 border-t border-zinc-900 mt-32">
-      <div className="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto gap-6">
-        <div className="font-['Inter'] text-xs tracking-widest uppercase text-zinc-500">
+    <footer className="bg-zinc-950 w-full py-8 sm:py-12 border-t border-zinc-900 mt-24 sm:mt-32">
+      <div className="flex flex-col gap-6 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 max-w-7xl mx-auto">
+        <div className="font-['Inter'] text-xs tracking-widest uppercase text-zinc-500 text-center sm:text-left">
           © 2026 Dashintha Jayawardana. Built for the Cloud | All Rights Reserved
         </div>
-        <div className="flex gap-8">
+        <div className="flex gap-6 sm:gap-8 justify-center sm:justify-end">
           <a
             className="text-zinc-500 hover:text-purple-400 transition-colors opacity-80 hover:opacity-100 duration-200 font-['Inter'] text-xs tracking-widest uppercase"
             href={SOCIAL_LINKS.github}
