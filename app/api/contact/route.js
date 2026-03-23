@@ -56,10 +56,12 @@ export async function POST(request) {
       const fieldErrors = validation.error.flatten().fieldErrors;
       const formattedErrors = formatValidationErrors(fieldErrors);
 
-      console.log("Validation failed:", {
-        rawErrors: fieldErrors,
-        formattedErrors: formattedErrors,
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Validation failed:", {
+          rawErrors: fieldErrors,
+          formattedErrors: formattedErrors,
+        });
+      }
 
       return NextResponse.json({
         success: false,
@@ -98,15 +100,21 @@ export async function POST(request) {
             </div>
           `,
         });
-        console.log(`✅ Contact email sent to ${process.env.ADMIN_EMAIL}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ Contact email sent to ${process.env.ADMIN_EMAIL}`);
+        }
       } catch (emailError) {
-        console.warn("⚠️ Email notification failed:", emailError);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn("⚠️ Email notification failed:", emailError);
+        }
       }
     }
 
     return NextResponse.json({success: true, message: "Message sent successfully! I will get back to you soon.", data: {timestamp: new Date().toISOString()}}, {status: 200});
   } catch (error) {
-    console.error("Contact API Error:", error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error("Contact API Error:", error);
+    }
     return NextResponse.json({success: false, error: "An error occurred while processing your request. Please try again later."}, {status: 500});
   }
 }

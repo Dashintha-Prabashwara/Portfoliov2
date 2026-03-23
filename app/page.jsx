@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import CVDownloadButton from '@/components/CVDownloadButton';
+import Image from 'next/image';
 import Navigation from '@/components/Navigation';
 import { SOCIAL_LINKS } from '@/lib/constants';
 
@@ -96,10 +96,12 @@ function HeroSection() {
         <div className="hidden md:block relative">
           <div className="aspect-square w-full max-w-md mx-auto relative">
             <div className="absolute inset-0 bg-surface-container-low rounded-xl border border-outline-variant/10 overflow-hidden">
-              <img
+              <Image
                 className="w-full h-full object-cover mix-blend-overlay opacity-100"
                 alt="Dashintha's profile"
                 src="/images/profile.png"
+                width={400}
+                height={400}
               />
             </div>
             <div className="absolute -top-4 -right-4 p-6 bg-surface-container-high border border-outline-variant/20 rounded-xl shadow-2xl">

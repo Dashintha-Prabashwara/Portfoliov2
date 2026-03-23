@@ -1,6 +1,6 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import Navigation from '@/components/Navigation';
-import CVDownloadButton from '@/components/CVDownloadButton';
 import { SOCIAL_LINKS } from '@/lib/constants';
 import { getProjects } from '@/lib/notion';
 
@@ -13,7 +13,9 @@ export default async function ProjectsPage() {
   try {
     projects = await getProjects();
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching projects:', error);
+    }
   }
 
   return (
@@ -76,10 +78,12 @@ function ProjectCard({ project }) {
     <div className="group relative flex flex-col bg-surface-container-low rounded-xl overflow-hidden transition-all duration-500 hover:translate-y-[-4px]">
       {/* Image Section */}
       <div className="h-64 overflow-hidden relative">
-        <img
+        <Image
           alt={project.title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80"
           src={project.image}
+          width={500}
+          height={256}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-surface-container-low via-transparent to-transparent"></div>
 

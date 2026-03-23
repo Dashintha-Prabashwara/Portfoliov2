@@ -14,7 +14,9 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Error in /api/certifications:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in /api/certifications:', error);
+    }
     return Response.json({ error: 'Failed to fetch certifications' }, { status: 500 });
   }
 }

@@ -14,7 +14,9 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Error in /api/education:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in /api/education:', error);
+    }
     return Response.json({ error: 'Failed to fetch education' }, { status: 500 });
   }
 }

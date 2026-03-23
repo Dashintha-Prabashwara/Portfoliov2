@@ -15,7 +15,9 @@ export default async function CertificationsPage() {
       getCertifications(),
     ]);
   } catch (error) {
-    console.error('Error fetching certifications data:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching certifications data:', error);
+    }
   }
 
   return (

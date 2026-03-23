@@ -15,7 +15,9 @@ export default function Experience() {
         const data = await response.json();
         setExperiences(data);
       } catch (error) {
-        console.error('Error fetching experiences:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error fetching experiences:', error);
+        }
       } finally {
         setLoading(false);
       }
