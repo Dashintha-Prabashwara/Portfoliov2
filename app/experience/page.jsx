@@ -127,10 +127,11 @@ export default function Experience() {
                           isLeft ? '' : 'text-right'
                         }`}
                       >
-                        <span className={`font-label text-[10px] ${colorClass.split(' ')[1]} mb-2 block tracking-widest`}>
+                        <span className={`font-label text-[10px] ${colorClass.split(' ')[1]} mb-3 block tracking-widest`}>
                           {exp.period}
                         </span>
-                        <h3 className="font-headline text-2xl font-bold mb-2 text-on-surface">{`${exp.company} – ${exp.role}`}</h3>
+                        <h3 className="font-headline text-xl font-bold mb-1 text-on-surface">{exp.role}</h3>
+                        <p className="text-on-surface-variant text-sm font-medium mb-4">{exp.company}</p>
                         <p className="text-on-surface-variant text-sm leading-relaxed mb-4">{exp.description}</p>
                         <div className={`flex flex-wrap gap-2 ${isLeft ? '' : 'justify-end'}`}>
                           {exp.tags.map((tag) => (

@@ -112,7 +112,7 @@ function HeroSection() {
                 </div>
               </div>
               <div className="h-1 w-32 bg-surface-container-lowest rounded-full overflow-hidden">
-                <div className="h-full bg-primary w-4/5"></div>
+                <div className="h-full bg-primary w-5/5"></div>
               </div>
             </div>
           </div>
