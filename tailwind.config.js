@@ -55,7 +55,8 @@ module.exports = {
         "on-surface": "#e5e2e1",
         "on-error": "#690005",
         "tertiary": "#00f9be",
-        "outline-variant": "#3c494e"
+        "outline-variant": "#3c494e",
+        "warning": "#ffc107"
       },
       fontFamily: {
         headline: ["Space Grotesk", "sans-serif"],

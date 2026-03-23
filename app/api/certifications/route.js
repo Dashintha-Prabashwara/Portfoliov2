@@ -1,0 +1,20 @@
+import { getCertifications } from '@/lib/notion';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export async function GET() {
+  try {
+    const certifications = await getCertifications();
+    return Response.json(certifications, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
+  } catch (error) {
+    console.error('Error in /api/certifications:', error);
+    return Response.json({ error: 'Failed to fetch certifications' }, { status: 500 });
+  }
+}

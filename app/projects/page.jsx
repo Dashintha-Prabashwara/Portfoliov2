@@ -1,21 +1,15 @@
 import Navigation from '@/components/Navigation';
 import CVDownloadButton from '@/components/CVDownloadButton';
 import { SOCIAL_LINKS } from '@/lib/constants';
+import { getProjects } from '@/lib/notion';
+
+export const dynamic = 'force-dynamic';
 
 export default async function ProjectsPage() {
   let projects = [];
 
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000';
-
-    const response = await fetch(`${baseUrl}/api/projects`, {
-      next: { revalidate: 60 },
-    });
-    if (response.ok) {
-      projects = await response.json();
-    }
+    projects = await getProjects();
   } catch (error) {
     console.error('Error fetching projects:', error);
   }

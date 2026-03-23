@@ -1,12 +1,12 @@
-import { getExperience } from '@/lib/notion';
+import { getEducation } from '@/lib/notion';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
   try {
-    const experiences = await getExperience();
-    return Response.json(experiences, {
+    const education = await getEducation();
+    return Response.json(education, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
@@ -14,7 +14,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Error in /api/experience:', error);
-    return Response.json({ error: 'Failed to fetch experiences' }, { status: 500 });
+    console.error('Error in /api/education:', error);
+    return Response.json({ error: 'Failed to fetch education' }, { status: 500 });
   }
 }
