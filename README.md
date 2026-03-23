@@ -3,7 +3,7 @@
 A modern, full-stack portfolio website built with Next.js 15, Notion API, and Tailwind CSS. Features dynamic content from Notion databases, contact form with email service, and responsive design with smooth animations.
 
 **👨‍💻 Built by:** Dashintha Jayawardana
-**🔗 Live:** [https://dashintha.me](https://dashintha.me)
+**🔗 Live:** [https://dashijayawardana.vercel.app/](https://dashijayawardana.vercel.app/)
 
 ## 🚀 Features
 
