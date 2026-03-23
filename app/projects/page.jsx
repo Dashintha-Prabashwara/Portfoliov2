@@ -1,60 +1,31 @@
-'use client';
-
 import Navigation from '@/components/Navigation';
 import CVDownloadButton from '@/components/CVDownloadButton';
 import { SOCIAL_LINKS } from '@/lib/constants';
 
-// ========== DATA SECTION ==========
-const projectsData = [
-  {
-    id: 'airlux',
-    title: 'AirLux',
-    status: 'Production',
-    statusColor: 'tertiary',
-    barColor: 'from-primary to-primary',
-    description: 'E-commerce and service management platform for air conditioning products. Features AC sales, installation, service scheduling, warranty tracking, and role-based access control.',
-    technologies: ['Angular', 'Node.js', 'MongoDB'],
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA9QlbtkrnTzTc0IbBSOJ6NRTwiQ05RDxXM8KIY9842oOE4aFWvIauPqMSmQhzIQTV3iPe16wxZVqFVzJHVHKOpkpfUaaIdp8U0jbbpIGeEwQ7jfkcOd6Osmzvx6_6jA-hNzVQbcJnW4-YVmgSimZ92xjaiWgbg3osiCf6eLT1D0pK6gVoKpPWIv4OaWoWYa_vYzBBdf2TZuqF__7eM6Mi8iqdPqHgdYU5GLVDGYZoljPysNrI0fqxWH7qOdL1ALZI-eS2l9M3I3voN',
-  },
-  {
-    id: 'player-dashboard',
-    title: 'Player Dashboard – IoT Cricket Training System',
-    status: 'Active',
-    statusColor: 'primary',
-    barColor: 'from-secondary to-secondary',
-    description: 'Web platform integrated with ESP32 sensors for cricket training analytics. Features real-time player performance tracking, automated player ID generation, and interactive analytics dashboard.',
-    technologies: ['React', 'Node.js', 'ESP32'],
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAi1XGWX4TA6GQ8eTZ8Yi1XH_lL0FNwBp0SQUlaQYBeW5-EqVGD7H278W0j_Yx-X9BSYk_qr5BTFg8H4E6bIscWIo0g_v5eDgfWvSiiMxSjuub9cl_Ps3pph9LV5h_VrCSzukqTh0rN45Rnd5kHlO0tvcQ6wiiQx4FNz9o-ltakcCEcZfGamhHSA9E25gaxwxzPe9jEn8ekxNA40t_KJxwrVp6Mx7sSN6KsEBgdggJyYdGpY9hd4DLL1kmNQs4prh8F3VADy6hCyD1k',
-  },
-  {
-    id: 'lms',
-    title: 'Learning Management System',
-    status: null,
-    statusColor: null,
-    barColor: 'from-tertiary to-tertiary',
-    description: 'Desktop application built with Java Swing and MySQL. Features authentication, email activation, comprehensive logging with Log4j, and XML data handling for educational management.',
-    technologies: ['Java', 'MySQL', 'Log4j'],
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCMrzt_sf4-Qqj1Anc8XF9RBcGYkhFvn2daxhVdTp8P5SkkH96IAJNI5QoVuikELwLLLMbod3_ICgT1jYVwRERwh9pqZSuVXq9q0OXkWsiJHijUgnnmo3OtsXHrrWI48efTney7N2S2sPQoAMExgOjWsw5R_uRaqVWjao2YhM0DMaa_gQ0oBNTwxwO3PB6XQSFb-hdnQ8CIls_ydE6Plcp6XoUFhZW2-SY8C6WT2HyIC3QQF79lcR0WMX4qP598db_j3sogaQd46DIz',
-  },
-  {
-    id: 'portfolio',
-    title: 'Personal Portfolio Website',
-    status: null,
-    statusColor: null,
-    barColor: 'from-primary to-primary',
-    description: 'Modern portfolio website showcasing DevOps expertise, cloud architecture, and full-stack development. Built with Next.js 15, Tailwind CSS, and deployed on Vercel with automated CI/CD.',
-    technologies: ['Next.js', 'Tailwind CSS', 'Vercel'],
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBB1rkafEkndSyDtgv_AFxfzNqtFzWeq6lTPcQlQSf9f7THMdIZfkh4mgc3FKRH4cqFUEt1FYW4lqp9uPM47nhMuJ_ur_8dihu1FSGIN1UPqRE8Futdj_-nkRisCB4zBMyKQLaWaKrv01rbbfxRhfzbsm_ZghAZYpQIwyzy6jSkbKGsFC9sDnV9Jb93ijta6wHSbzJOY0sZd1yWG7jWNufL6tBs0dPOWjz0c2JcrgqZiR8lWkBF_5eVjbmYJHtT2jUIrSYHtqBZKRfm',
-  },
-];
+export default async function ProjectsPage() {
+  let projects = [];
 
-export default function ProjectsPage() {
+  try {
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000';
+
+    const response = await fetch(`${baseUrl}/api/projects`, {
+      next: { revalidate: 60 },
+    });
+    if (response.ok) {
+      projects = await response.json();
+    }
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+  }
+
   return (
     <>
       <Navigation />
       <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
         <HeroSection />
-        <ProjectsGrid projects={projectsData} />
+        <ProjectsGrid projects={projects} />
         <ContactCTASection />
       </main>
       <Footer />
