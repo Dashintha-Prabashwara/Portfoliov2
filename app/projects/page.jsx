@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import CVDownloadButton from '@/components/CVDownloadButton';
 import { SOCIAL_LINKS } from '@/lib/constants';
@@ -171,12 +172,14 @@ function ContactCTASection() {
           <p className="text-on-surface-variant font-light mb-8">
             Let's discuss how we can build resilient systems and beautiful user experiences for your next project.
           </p>
-          <button className="group relative px-8 py-4 bg-on-surface text-surface rounded-md font-bold text-sm uppercase tracking-widest transition-all hover:pr-12">
-            Get In Touch
-            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">
-              arrow_forward
-            </span>
-          </button>
+          <Link href="/contact">
+            <button className="group relative px-8 py-4 bg-on-surface text-surface rounded-md font-bold text-sm uppercase tracking-widest transition-all hover:pr-12">
+              Get In Touch
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">
+                arrow_forward
+              </span>
+            </button>
+          </Link>
         </div>
         <div className="relative w-64 h-64 md:w-80 md:h-80 shrink-0">
           <div className="absolute inset-0 bg-primary/20 rounded-full blur-[60px] animate-pulse"></div>

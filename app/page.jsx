@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import CVDownloadButton from '@/components/CVDownloadButton';
 import Navigation from '@/components/Navigation';
 import { SOCIAL_LINKS } from '@/lib/constants';
@@ -79,13 +80,17 @@ function HeroSection() {
 
           {/* CTA Buttons */}
           <div className="flex flex-wrap gap-4 pt-4">
-            <button className="bg-gradient-to-br from-primary to-secondary text-on-primary px-8 py-4 rounded-md font-bold tracking-tight hover:shadow-[0_0_20px_rgba(164,230,255,0.3)] transition-all flex items-center gap-2">
-              View Projects
-              <span className="material-symbols-outlined text-sm">arrow_outward</span>
-            </button>
-            <button className="bg-transparent border border-outline-variant/30 hover:bg-surface-container-highest px-8 py-4 rounded-md font-bold tracking-tight transition-all text-on-surface">
-              About My Stack
-            </button>
+            <Link href="/projects">
+              <button className="bg-gradient-to-br from-primary to-secondary text-on-primary px-8 py-4 rounded-md font-bold tracking-tight hover:shadow-[0_0_20px_rgba(164,230,255,0.3)] transition-all flex items-center gap-2">
+                View Projects
+                <span className="material-symbols-outlined text-sm">arrow_outward</span>
+              </button>
+            </Link>
+            <Link href="/skills">
+              <button className="bg-transparent border border-outline-variant/30 hover:bg-surface-container-highest px-8 py-4 rounded-md font-bold tracking-tight transition-all text-on-surface">
+                About My Stack
+              </button>
+            </Link>
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { SOCIAL_LINKS } from '@/lib/constants';
 
@@ -151,12 +152,16 @@ function SystemStatusBar() {
         </div>
       </div>
       <div className="flex gap-4">
-        <button className="bg-surface-container-high hover:bg-surface-container-highest px-6 py-2 rounded-md font-label text-xs uppercase tracking-widest transition-all">
-          View Architecture
-        </button>
-        <button className="bg-gradient-to-r from-primary to-secondary text-on-primary px-6 py-2 rounded-md font-label text-xs uppercase tracking-widest font-bold hover:scale-105 active:scale-95 transition-transform">
-          Hire for Project
-        </button>
+        <Link href="/experience">
+          <button className="bg-surface-container-high hover:bg-surface-container-highest px-6 py-2 rounded-md font-label text-xs uppercase tracking-widest transition-all">
+            View Architecture
+          </button>
+        </Link>
+        <Link href="/contact">
+          <button className="bg-gradient-to-r from-primary to-secondary text-on-primary px-6 py-2 rounded-md font-label text-xs uppercase tracking-widest font-bold hover:scale-105 active:scale-95 transition-transform">
+            Hire for Project
+          </button>
+        </Link>
       </div>
     </section>
   );
