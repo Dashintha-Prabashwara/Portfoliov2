@@ -21,7 +21,6 @@ export default async function CertificationsPage() {
     <>
       <Navigation />
       <main className="relative pt-32 pb-24 px-6 max-w-7xl mx-auto">
-        <div className="absolute inset-0 grid-pattern -z-10"></div>
         <HeroSection />
         <EducationSection education={education} />
         <CertificationsSection certifications={certifications} />
@@ -79,10 +78,13 @@ function EducationSection({ education }) {
             <div key={edu.id} className="relative mb-24 md:flex items-center justify-between">
               <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-2'} mb-8 md:mb-0`}>
                 <div
-                  className={`bg-surface-container-low relative p-8 rounded-lg border-l-4 border-primary overflow-hidden hover:bg-surface-container transition-colors group ${
+                  className={`bg-surface-container-low relative p-8 rounded-lg border-l-4 border-primary overflow-hidden hover:bg-surface-container transition-all duration-500 hover:translate-y-[-4px] group ${
                     isLeft ? '' : 'text-right'
                   }`}
                 >
+                  {/* Top accent bar animation */}
+                  <div className="absolute top-0 left-0 h-[2px] w-6 group-hover:w-12 bg-primary transition-all duration-500"></div>
+
                   <div className={`flex items-center gap-2 mb-2 ${isLeft ? '' : 'justify-end'}`}>
                     <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
                     <span className="font-label text-[10px] text-tertiary tracking-widest uppercase">Active Status</span>
