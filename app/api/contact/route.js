@@ -6,11 +6,36 @@ import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const contactSchema = z.object({
-  name: z.string().min(2).max(100),
-  email: z.string().email(),
-  message: z.string().min(10).max(2000),
+  name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be no more than 100 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  message: z.string().min(10, "Message must be at least 10 characters").max(2000, "Message must be no more than 2000 characters"),
   honeypot: z.string().optional().default(""),
 });
+
+// Helper function to format validation errors
+function formatValidationErrors(fieldErrors) {
+  const errors = {};
+
+  if (!fieldErrors || typeof fieldErrors !== 'object') {
+    return { general: "Validation failed" };
+  }
+
+  for (const [field, messages] of Object.entries(fieldErrors)) {
+    if (Array.isArray(messages) && messages.length > 0) {
+      // Handle both string messages and error objects
+      const firstError = messages[0];
+      if (typeof firstError === 'string') {
+        errors[field] = firstError;
+      } else if (firstError && typeof firstError === 'object' && firstError.message) {
+        errors[field] = firstError.message;
+      } else {
+        errors[field] = "Invalid input";
+      }
+    }
+  }
+
+  return Object.keys(errors).length > 0 ? errors : { general: "Validation failed" };
+}
 
 export async function POST(request) {
   try {
@@ -28,13 +53,51 @@ export async function POST(request) {
 
     const validation = contactSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json({success: false, error: "Validation failed", errors: validation.error.flatten().fieldErrors}, {status: 400});
+      const fieldErrors = validation.error.flatten().fieldErrors;
+      const formattedErrors = formatValidationErrors(fieldErrors);
+
+      console.log("Validation failed:", {
+        rawErrors: fieldErrors,
+        formattedErrors: formattedErrors,
+      });
+
+      return NextResponse.json({
+        success: false,
+        error: "Please fix the following issues:",
+        errors: formattedErrors,
+      }, {status: 400});
     }
 
     const { name, email, message } = validation.data;
     if (process.env.RESEND_API_KEY && process.env.ADMIN_EMAIL) {
       try {
-        await resend.emails.send({from: "noreply@dashintha.me", to: process.env.ADMIN_EMAIL, subject: `New Contact Form Submission from ${name}`, html: `<h2>New Contact Form Submission</h2><p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Message:</strong></p><p>${message.replace(/\n/g, "<br>")}</p>`});
+        // Use onboarding@resend.dev until custom domain is verified
+        // To use your own domain: verify dashintha.me in Resend dashboard, then update to "noreply@dashintha.me"
+        const formattedDate = new Date().toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'numeric',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        });
+
+        await resend.emails.send({
+          from: "Contact Form <onboarding@resend.dev>",
+          to: process.env.ADMIN_EMAIL,
+          replyTo: email,
+          subject: `New Message: ${name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; color: #333;">
+              <p><strong>Name:</strong> ${name}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Date:</strong> ${formattedDate}</p>
+              <p><strong>Message:</strong></p>
+              <p>${message.replace(/\n/g, '<br>')}</p>
+            </div>
+          `,
+        });
         console.log(`✅ Contact email sent to ${process.env.ADMIN_EMAIL}`);
       } catch (emailError) {
         console.warn("⚠️ Email notification failed:", emailError);

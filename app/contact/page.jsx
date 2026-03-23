@@ -83,12 +83,24 @@ export default function Contact() {
     loading: false,
     success: false,
     error: null,
+    fieldErrors: {},
   });
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     const updatedData = { ...formData, [name]: value };
     setFormData(updatedData);
+
+    // Clear field error when user starts typing
+    if (formStatus.fieldErrors?.[name]) {
+      setFormStatus(prev => ({
+        ...prev,
+        fieldErrors: {
+          ...prev.fieldErrors,
+          [name]: null
+        }
+      }));
+    }
 
     // Check if all fields are empty
     const isEmpty = !updatedData.name.trim() && !updatedData.email.trim() && !updatedData.message.trim();
@@ -97,6 +109,7 @@ export default function Contact() {
       // Reset to idle if all fields are cleared
       setPipelineState({ stage: 'idle', status: 'ok' });
       setConsoleOutput(consoleLinesByStage.idle);
+      setFormStatus({ loading: false, success: false, error: null, fieldErrors: {} });
     } else if (pipelineState.stage === 'idle') {
       // Transition from idle to source on first input
       setPipelineState({ stage: 'source', status: 'ok' });
@@ -111,7 +124,7 @@ export default function Contact() {
       setTimeout(() => {
         // Check if message contains "error" keyword to simulate failure
         if (submittedData.message.toLowerCase().includes('error')) {
-          reject(new Error('Simulated API error: Invalid request'));
+          reject({ message: 'Simulated API error: Invalid request', fieldErrors: {} });
         } else {
           // Try real API first, fall back to simulation if it fails
           fetch('/api/contact', {
@@ -122,21 +135,19 @@ export default function Contact() {
             body: JSON.stringify(submittedData),
           })
             .then((response) => {
-              if (response.ok) {
-                return response.json().then((data) => {
-                  if (data.success) {
-                    resolve(data);
-                  } else {
-                    reject(new Error(data.error || 'Submission failed'));
-                  }
-                });
-              } else {
-                return response.json().then((data) => {
-                  reject(new Error(data.error || 'Server error'));
-                });
-              }
+              return response.json().then((data) => {
+                if (response.ok && data.success) {
+                  resolve(data);
+                } else {
+                  // Pass full error response with fieldErrors
+                  reject({
+                    message: data.error || 'Submission failed',
+                    fieldErrors: data.errors || {}
+                  });
+                }
+              });
             })
-            .catch(() => {
+            .catch((fetchError) => {
               // If real API fails, resolve with simulation
               resolve({ id: `sim_${Date.now()}`, success: true });
             });
@@ -174,7 +185,7 @@ export default function Contact() {
       // Reset form after 5 seconds
       setTimeout(() => {
         setFormData({ name: '', email: '', message: '', website: '' });
-        setFormStatus({ loading: false, success: false, error: null });
+        setFormStatus({ loading: false, success: false, error: null, fieldErrors: {} });
       }, 5000);
 
       // Reset pipeline after 8 seconds
@@ -186,12 +197,13 @@ export default function Contact() {
       if (process.env.NODE_ENV === 'development') {
         console.error('Contact form error:', error);
       }
-      const errorMsg = error.message || 'Network error. Please check your connection and try again.';
+      const errorMsg = error.message || error || 'Network error. Please check your connection and try again.';
       setPipelineState({ stage: 'build', status: 'error' });
       setFormStatus({
         loading: false,
         success: false,
         error: errorMsg,
+        fieldErrors: error.fieldErrors || {},
       });
 
       // Show error console lines

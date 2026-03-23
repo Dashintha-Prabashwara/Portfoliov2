@@ -37,6 +37,9 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
             className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body disabled:opacity-50"
             placeholder="Commander Shepherd"
           />
+          {status.fieldErrors?.name && (
+            <p className="text-xs text-error mt-1">{status.fieldErrors.name}</p>
+          )}
         </div>
 
         {/* Email Field */}
@@ -58,6 +61,9 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
             className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body disabled:opacity-50"
             placeholder="shepherd@normandy.com"
           />
+          {status.fieldErrors?.email && (
+            <p className="text-xs text-error mt-1">{status.fieldErrors.email}</p>
+          )}
         </div>
 
         {/* Message Field */}
@@ -79,6 +85,9 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
             className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body resize-none disabled:opacity-50"
             placeholder="Brief about your system requirements..."
           />
+          {status.fieldErrors?.message && (
+            <p className="text-xs text-error mt-1">{status.fieldErrors.message}</p>
+          )}
         </div>
 
         {/* Honeypot Field (hidden from users) */}
@@ -146,10 +155,21 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-3 p-4 bg-error/10 rounded-lg border border-error/20"
+              className="flex flex-col gap-2 p-4 bg-error/10 rounded-lg border border-error/20"
             >
-              <span className="material-symbols-outlined text-error">error</span>
-              <p className="text-xs font-label text-error">{status.error}</p>
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-error flex-shrink-0">error</span>
+                <p className="text-xs font-label text-error font-bold">{status.error}</p>
+              </div>
+              {Object.keys(status.fieldErrors || {}).length > 0 && (
+                <div className="ml-7 space-y-1">
+                  {Object.entries(status.fieldErrors).map(([field, message]) => (
+                    <p key={field} className="text-xs text-error/80">
+                      • {message}
+                    </p>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
