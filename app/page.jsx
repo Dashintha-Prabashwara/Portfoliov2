@@ -30,7 +30,7 @@ export default async function Home() {
 // ========== HERO SECTION ==========
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center px-4 sm:px-6 md:px-12 py-12 sm:py-20 overflow-hidden">
+    <section className="relative flex items-center px-4 sm:px-6 md:px-12 py-16 sm:py-24 md:min-h-[calc(100vh-80px)] md:py-0 overflow-hidden">
       {/* Background Grid Pattern */}
       <div
         className="absolute inset-0 bg-gradient-to-br opacity-5 -z-10"
@@ -77,7 +77,7 @@ function HeroSection() {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-4 sm:pt-6">
             <Link href="/projects">
               <button className="w-full sm:w-auto bg-gradient-to-br from-primary to-secondary text-on-primary px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-sm sm:text-base tracking-tight hover:shadow-[0_0_20px_rgba(164,230,255,0.3)] transition-all flex items-center justify-center sm:justify-start gap-2">
                 View Projects
