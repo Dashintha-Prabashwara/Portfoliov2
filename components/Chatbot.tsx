@@ -160,35 +160,98 @@ export default function Chatbot() {
   const formatBoldItalic = (text: string): JSX.Element | string => {
     // Handle **bold**, __bold__
     const boldRegex = /\*\*(.+?)\*\*|__(.+?)__/g;
+    // Handle URLs - http://, https://, www., /path
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=]+)/g;
 
     const result: (string | JSX.Element)[] = [];
     let lastIdx = 0;
     let boldIdx = 0;
+    let linkIdx = 0;
 
+    // First pass: handle bold
+    let tempText = text;
+    const boldReplacements: { [key: string]: JSX.Element } = {};
     let match;
 
-    // First handle bold
     boldRegex.lastIndex = 0;
     while ((match = boldRegex.exec(text)) !== null) {
-      if (match.index > lastIdx) {
-        result.push(text.substring(lastIdx, match.index));
-      }
+      const placeholder = `__BOLD_${boldIdx}__`;
       const boldContent = match[1] || match[2];
-      result.push(
-        <strong key={`bold-${boldIdx++}`} className="font-semibold text-cyan-400">
+      boldReplacements[placeholder] = (
+        <strong key={`bold-${boldIdx}`} className="font-semibold text-cyan-400">
           {boldContent}
         </strong>
       );
-      lastIdx = boldRegex.lastIndex;
+      tempText = tempText.replace(match[0], placeholder);
+      boldIdx++;
     }
 
-    if (lastIdx < text.length) {
-      result.push(text.substring(lastIdx));
+    // Second pass: handle URLs and normal text
+    const urlReplacements: { [key: string]: JSX.Element } = {};
+    const urlMatches = [];
+    let urlMatch;
+
+    urlRegex.lastIndex = 0;
+    while ((urlMatch = urlRegex.exec(tempText)) !== null) {
+      urlMatches.push(urlMatch);
     }
 
-    return result.length > 0 ? (
+    if (urlMatches.length > 0) {
+      let textIdx = 0;
+      for (const urlMatch of urlMatches) {
+        if (urlMatch.index > textIdx) {
+          result.push(tempText.substring(textIdx, urlMatch.index));
+        }
+
+        const url = urlMatch[0];
+        const href = url.startsWith('/')
+          ? url
+          : url.startsWith('www.')
+          ? `https://${url}`
+          : url;
+
+        result.push(
+          <a
+            key={`link-${linkIdx++}`}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-cyan-400 hover:text-cyan-300 underline break-all"
+          >
+            {url}
+          </a>
+        );
+
+        textIdx = urlMatch.index + urlMatch[0].length;
+      }
+
+      if (textIdx < tempText.length) {
+        result.push(tempText.substring(textIdx));
+      }
+    } else {
+      result.push(tempText);
+    }
+
+    // Replace bold placeholders with actual bold elements
+    const finalResult: (string | JSX.Element)[] = [];
+    for (const item of result) {
+      if (typeof item === 'string') {
+        const parts = item.split(/(__BOLD_\d+__)/);
+        for (const part of parts) {
+          if (part in boldReplacements) {
+            finalResult.push(boldReplacements[part]);
+          } else if (part) {
+            finalResult.push(part);
+          }
+        }
+      } else {
+        finalResult.push(item);
+      }
+    }
+
+    return finalResult.length > 0 ? (
       <span>
-        {result.map((item, i) => (
+        {finalResult.map((item, i) => (
           <span key={i}>{item}</span>
         ))}
       </span>

@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className={`${spaceGrotesk.variable} ${inter.variable} antialiased`}>
         {children}
-        <Chatbot />
+        <Chatbot/>
       </body>
     </html>
   );
