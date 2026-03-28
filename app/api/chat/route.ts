@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPortfolioContext, cleanMarkdown, searchWeb, needsWebSearch, formatCode } from '@/lib/chatbot';
+import { getPortfolioContext, searchWeb, needsWebSearch } from '@/lib/chatbot';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';

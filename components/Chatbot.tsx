@@ -115,7 +115,6 @@ export default function Chatbot() {
   const formatTextWithMarkdown = (text: string): (string | JSX.Element)[] => {
     const lines = text.split('\n');
     const parts: (string | JSX.Element)[] = [];
-    let listIndex = 0;
     let inList = false;
 
     lines.forEach((line, idx) => {
@@ -125,7 +124,6 @@ export default function Chatbot() {
       if (trimmed.match(/^[\*\-]\s+/)) {
         if (!inList) {
           inList = true;
-          listIndex = 0;
         }
         const content = trimmed.replace(/^[\*\-]\s+/, '');
         parts.push(
@@ -160,22 +158,20 @@ export default function Chatbot() {
   };
 
   const formatBoldItalic = (text: string): JSX.Element | string => {
-    // Handle **bold**, __bold__, *italic*, _italic_
+    // Handle **bold**, __bold__
     const boldRegex = /\*\*(.+?)\*\*|__(.+?)__/g;
-    const italicRegex = /\*(.+?)\*|_(.+?)_/g;
 
-    let result: (string | JSX.Element)[] = [];
+    const result: (string | JSX.Element)[] = [];
     let lastIdx = 0;
     let boldIdx = 0;
 
     let match;
-    const tempText = text;
 
     // First handle bold
     boldRegex.lastIndex = 0;
-    while ((match = boldRegex.exec(tempText)) !== null) {
+    while ((match = boldRegex.exec(text)) !== null) {
       if (match.index > lastIdx) {
-        result.push(tempText.substring(lastIdx, match.index));
+        result.push(text.substring(lastIdx, match.index));
       }
       const boldContent = match[1] || match[2];
       result.push(
@@ -186,8 +182,8 @@ export default function Chatbot() {
       lastIdx = boldRegex.lastIndex;
     }
 
-    if (lastIdx < tempText.length) {
-      result.push(tempText.substring(lastIdx));
+    if (lastIdx < text.length) {
+      result.push(text.substring(lastIdx));
     }
 
     return result.length > 0 ? (
