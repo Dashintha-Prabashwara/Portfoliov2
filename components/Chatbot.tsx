@@ -681,7 +681,7 @@ export default function Chatbot() {
               </div>
               <div className="header-info">
                 <div className="header-name">Dashintha's Assistant</div>
-                <div className="header-sub">// online - ready</div>
+                <div className="header-sub">{'// online - ready'}</div>
               </div>
             </div>
             <div className="header-badge">AI</div>
