@@ -663,11 +663,11 @@ export default function Chatbot() {
         }
 
         .chat-container {
-          width: calc(100vw - 24px);
-          height: calc(100dvh - 120px);
-          bottom: 60px;
-          right: 12px;
-          left: 12px;
+          width: calc(100vw - 40px);
+          height: calc(100dvh - 160px);
+          bottom: 70px;
+          right: 20px;
+          left: 20px;
           max-width: none;
           border-radius: 16px;
         }
@@ -799,11 +799,11 @@ export default function Chatbot() {
         }
 
         .chat-container {
-          width: calc(100vw - 16px);
-          height: calc(100dvh - 100px);
-          bottom: 50px;
-          right: 8px;
-          left: 8px;
+          width: calc(100vw - 24px);
+          height: calc(100dvh - 130px);
+          bottom: 60px;
+          right: 12px;
+          left: 12px;
           border-radius: 14px;
         }
 
@@ -889,11 +889,11 @@ export default function Chatbot() {
 
       @media (max-width: 360px) {
         .chat-container {
-          width: calc(100vw - 12px);
-          height: calc(100dvh - 80px);
-          bottom: 40px;
-          right: 6px;
-          left: 6px;
+          width: calc(100vw - 20px);
+          height: calc(100dvh - 110px);
+          bottom: 55px;
+          right: 10px;
+          left: 10px;
           border-radius: 12px;
         }
 
