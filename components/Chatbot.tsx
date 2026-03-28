@@ -87,7 +87,8 @@ export default function Chatbot() {
     let match;
     while ((match = codeBlockRegex.exec(text)) !== null) {
       if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
+        const textBefore = text.substring(lastIndex, match.index);
+        parts.push(...formatTextWithMarkdown(textBefore));
       }
 
       const lang = match[1] || 'text';
@@ -104,10 +105,100 @@ export default function Chatbot() {
     }
 
     if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
+      const remaining = text.substring(lastIndex);
+      parts.push(...formatTextWithMarkdown(remaining));
     }
 
     return parts.length > 0 ? parts : [text];
+  };
+
+  const formatTextWithMarkdown = (text: string): (string | JSX.Element)[] => {
+    const lines = text.split('\n');
+    const parts: (string | JSX.Element)[] = [];
+    let listIndex = 0;
+    let inList = false;
+
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim();
+
+      // Handle bullet points and list items
+      if (trimmed.match(/^[\*\-]\s+/)) {
+        if (!inList) {
+          inList = true;
+          listIndex = 0;
+        }
+        const content = trimmed.replace(/^[\*\-]\s+/, '');
+        parts.push(
+          <div key={`bullet-${idx}`} className="ml-4 mb-1 flex gap-2">
+            <span className="text-cyan-400 flex-shrink-0">•</span>
+            <span className="flex-1">{formatBoldItalic(content)}</span>
+          </div>
+        );
+      } else if (trimmed.length === 0) {
+        // Empty line - add spacing
+        if (inList) {
+          inList = false;
+        }
+        if (parts.length > 0) {
+          parts.push(<div key={`space-${idx}`} className="h-2" />);
+        }
+      } else {
+        // Regular text with potential bold/italic
+        if (inList) {
+          inList = false;
+        }
+        const formatted = formatBoldItalic(trimmed);
+        parts.push(
+          <div key={`text-${idx}`} className="mb-1">
+            {formatted}
+          </div>
+        );
+      }
+    });
+
+    return parts;
+  };
+
+  const formatBoldItalic = (text: string): JSX.Element | string => {
+    // Handle **bold**, __bold__, *italic*, _italic_
+    const boldRegex = /\*\*(.+?)\*\*|__(.+?)__/g;
+    const italicRegex = /\*(.+?)\*|_(.+?)_/g;
+
+    let result: (string | JSX.Element)[] = [];
+    let lastIdx = 0;
+    let boldIdx = 0;
+
+    let match;
+    const tempText = text;
+
+    // First handle bold
+    boldRegex.lastIndex = 0;
+    while ((match = boldRegex.exec(tempText)) !== null) {
+      if (match.index > lastIdx) {
+        result.push(tempText.substring(lastIdx, match.index));
+      }
+      const boldContent = match[1] || match[2];
+      result.push(
+        <strong key={`bold-${boldIdx++}`} className="font-semibold text-cyan-400">
+          {boldContent}
+        </strong>
+      );
+      lastIdx = boldRegex.lastIndex;
+    }
+
+    if (lastIdx < tempText.length) {
+      result.push(tempText.substring(lastIdx));
+    }
+
+    return result.length > 0 ? (
+      <span>
+        {result.map((item, i) => (
+          <span key={i}>{item}</span>
+        ))}
+      </span>
+    ) : (
+      text
+    );
   };
 
   const sendMessage = async (text: string) => {
