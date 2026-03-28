@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import ContactForm from '@/components/ContactForm';
 import { SOCIAL_LINKS } from '@/lib/constants';
@@ -85,6 +85,14 @@ export default function Contact() {
     error: null,
     fieldErrors: {},
   });
+  const timeoutsRef = useRef([]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
+    };
+  }, []);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -117,43 +125,36 @@ export default function Contact() {
     }
   };
 
-  // Simulate or call API
+  // Submit form to API
   const submitToAPI = async (submittedData) => {
-    // Simulate API call with 2000ms delay
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Check if message contains "error" keyword to simulate failure
-        if (submittedData.message.toLowerCase().includes('error')) {
-          reject({ message: 'Simulated API error: Invalid request', fieldErrors: {} });
-        } else {
-          // Try real API first, fall back to simulation if it fails
-          fetch('/api/contact', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(submittedData),
-          })
-            .then((response) => {
-              return response.json().then((data) => {
-                if (response.ok && data.success) {
-                  resolve(data);
-                } else {
-                  // Pass full error response with fieldErrors
-                  reject({
-                    message: data.error || 'Submission failed',
-                    fieldErrors: data.errors || {}
-                  });
-                }
-              });
-            })
-            .catch((fetchError) => {
-              // If real API fails, resolve with simulation
-              resolve({ id: `sim_${Date.now()}`, success: true });
-            });
+    // Call API directly
+    return fetch('/api/contact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(submittedData),
+    })
+      .then((response) => {
+        return response.json().then((data) => {
+          if (response.ok && data.success) {
+            return data;
+          } else {
+            // Pass full error response with fieldErrors
+            throw {
+              message: data.error || 'Submission failed',
+              fieldErrors: data.errors || {}
+            };
+          }
+        });
+      })
+      .catch((error) => {
+        // Re-throw to preserve error handling
+        if (error instanceof TypeError) {
+          throw { message: 'Network error. Please check your connection and try again.', fieldErrors: {} };
         }
-      }, 2000);
-    });
+        throw error;
+      });
   };
 
   const handleFormSubmit = async (submittedData) => {
@@ -161,20 +162,29 @@ export default function Contact() {
     setFormStatus({ loading: true, success: false, error: null });
     setConsoleOutput(consoleLinesByStage.build);
 
+    // Clear any existing timeouts
+    timeoutsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
+    timeoutsRef.current = [];
+
     try {
+      // Add simulated delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       await submitToAPI(submittedData);
 
       // Transition to deploy after API succeeds
-      setTimeout(() => {
+      const deployTimeout = setTimeout(() => {
         setPipelineState({ stage: 'deploy', status: 'ok' });
         setConsoleOutput(consoleLinesByStage.deploy);
       }, 800);
+      timeoutsRef.current.push(deployTimeout);
 
       // Transition to monitor
-      setTimeout(() => {
+      const monitorTimeout = setTimeout(() => {
         setPipelineState({ stage: 'monitor', status: 'ok' });
         setConsoleOutput(consoleLinesByStage.monitor);
       }, 2300);
+      timeoutsRef.current.push(monitorTimeout);
 
       setFormStatus({
         loading: false,
@@ -183,16 +193,18 @@ export default function Contact() {
       });
 
       // Reset form after 5 seconds
-      setTimeout(() => {
+      const resetFormTimeout = setTimeout(() => {
         setFormData({ name: '', email: '', message: '', website: '' });
         setFormStatus({ loading: false, success: false, error: null, fieldErrors: {} });
       }, 5000);
+      timeoutsRef.current.push(resetFormTimeout);
 
       // Reset pipeline after 8 seconds
-      setTimeout(() => {
+      const resetPipelineTimeout = setTimeout(() => {
         setPipelineState({ stage: 'idle', status: 'ok' });
         setConsoleOutput(consoleLinesByStage.idle);
       }, 8000);
+      timeoutsRef.current.push(resetPipelineTimeout);
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Contact form error:', error);

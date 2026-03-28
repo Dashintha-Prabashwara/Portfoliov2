@@ -85,18 +85,30 @@ export async function POST(request) {
           hour12: true,
         });
 
+        // Helper function to escape HTML and prevent XSS
+        const escapeHtml = (text) => {
+          const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;',
+          };
+          return text.replace(/[&<>"']/g, (m) => map[m]);
+        };
+
         await resend.emails.send({
           from: "Contact Form <onboarding@resend.dev>",
           to: process.env.ADMIN_EMAIL,
           replyTo: email,
-          subject: `New Message: ${name}`,
+          subject: `New Message: ${escapeHtml(name)}`,
           html: `
             <div style="font-family: Arial, sans-serif; color: #333;">
-              <p><strong>Name:</strong> ${name}</p>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Date:</strong> ${formattedDate}</p>
+              <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+              <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+              <p><strong>Date:</strong> ${escapeHtml(formattedDate)}</p>
               <p><strong>Message:</strong></p>
-              <p>${message.replace(/\n/g, '<br>')}</p>
+              <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
             </div>
           `,
         });

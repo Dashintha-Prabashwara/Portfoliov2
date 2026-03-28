@@ -1,5 +1,6 @@
 import { Space_Grotesk, Inter } from 'next/font/google';
 import './globals.css';
+import Chatbot from '@/components/Chatbot';
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className={`${spaceGrotesk.variable} ${inter.variable} antialiased`}>
         {children}
+        <Chatbot />
       </body>
     </html>
   );

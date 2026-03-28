@@ -112,6 +112,7 @@ export default function Experience() {
                     : exp.color === 'secondary'
                       ? 'border-secondary text-secondary bg-secondary/10'
                       : 'border-tertiary text-tertiary bg-tertiary/10';
+                const [borderColor, textColor] = colorClass.split(' ').slice(0, 2);
                 const dotColorClass =
                   exp.color === 'primary'
                     ? 'bg-primary shadow-[0_0_15px_rgba(164,230,255,0.6)]'
@@ -123,11 +124,11 @@ export default function Experience() {
                   <div key={exp.id} className="relative mb-16 sm:mb-20 md:mb-24 md:flex items-center justify-between">
                     <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-2'} mb-6 sm:mb-8 md:mb-0`}>
                       <div
-                        className={`surface-container-low p-4 sm:p-6 md:p-8 rounded-lg text-sm sm:text-base ${isLeft ? 'border-l-4' : 'border-r-4'} ${colorClass.split(' ')[0]} hover:bg-surface-container transition-colors ${
+                        className={`surface-container-low p-4 sm:p-6 md:p-8 rounded-lg text-sm sm:text-base ${isLeft ? 'border-l-4' : 'border-r-4'} ${borderColor} hover:bg-surface-container transition-colors ${
                           isLeft ? '' : 'text-right'
                         }`}
                       >
-                        <span className={`font-label text-[10px] ${colorClass.split(' ')[1]} mb-3 block tracking-widest`}>
+                        <span className={`font-label text-[10px] ${textColor} mb-3 block tracking-widest`}>
                           {exp.period}
                         </span>
                         <h3 className="font-headline text-lg sm:text-xl font-bold mb-1 text-on-surface">{exp.role}</h3>
