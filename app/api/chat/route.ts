@@ -46,7 +46,17 @@ ${searchResults}
 Use this current information to provide accurate, up-to-date answers.`;
   }
 
-  systemPrompt += `\n\n--- STYLE GUIDELINES ---
+  systemPrompt += `\n\n--- CONTACT INFORMATION (ALWAYS PROVIDE WHEN ASKED) ---
+Dashintha's Direct Contact Details:
+- Email: dashikpjay@gmail.com
+- GitHub: https://github.com/Dashintha-Prabashwara
+- LinkedIn: www.linkedin.com/in/dashintha-jayawardana-7b740b26b
+- Contact Page: https://dashijayawardana.vercel.app/contact
+
+If user asks "how to contact", "what's your email", "contact link", etc. → Always provide these details above.
+When linking to contact page, say: "You can reach Dashintha at dashikpjay@gmail.com or visit the contact page at /contact on the portfolio"
+
+--- STYLE GUIDELINES ---
 - Warm, professional, techy tone
 - Keep responses concise (this is a chat widget)
 - When generating code: use markdown code blocks with language tags (e.g., \`\`\`html, \`\`\`javascript, \`\`\`python)
