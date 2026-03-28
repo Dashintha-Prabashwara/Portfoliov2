@@ -332,7 +332,7 @@ export default function Chatbot() {
         position: fixed;
         bottom: 28px;
         right: 28px;
-        z-index: 40;
+        z-index: 41;
         width: 370px;
         height: 560px;
         background: rgba(19, 22, 30, 0.95);
@@ -646,6 +646,282 @@ export default function Chatbot() {
       .send-btn svg {
         width: 16px;
         height: 16px;
+      }
+
+      /* Mobile Responsive */
+      @media (max-width: 768px) {
+        .chat-button {
+          bottom: 16px;
+          right: 16px;
+          width: 48px;
+          height: 48px;
+        }
+
+        .chat-button svg {
+          width: 20px;
+          height: 20px;
+        }
+
+        .chat-container {
+          width: calc(100vw - 24px);
+          height: calc(100dvh - 120px);
+          bottom: 60px;
+          right: 12px;
+          left: 12px;
+          max-width: none;
+          border-radius: 16px;
+        }
+
+        .chat-header {
+          padding: 12px 14px;
+          gap: 8px;
+        }
+
+        .avatar {
+          width: 28px;
+          height: 28px;
+        }
+
+        .avatar svg {
+          width: 14px;
+          height: 14px;
+        }
+
+        .status-dot {
+          width: 6px;
+          height: 6px;
+        }
+
+        .header-name {
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        .header-sub {
+          font-size: 10px;
+        }
+
+        .header-badge {
+          font-size: 9px;
+          padding: 2px 5px;
+        }
+
+        .close-btn {
+          padding: 2px;
+        }
+
+        .close-btn svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        .messages {
+          padding: 10px 10px;
+          gap: 8px;
+        }
+
+        .msg {
+          max-width: 90%;
+        }
+
+        .bubble {
+          font-size: 13px;
+          padding: 8px 12px;
+          line-height: 1.4;
+        }
+
+        .msg-time {
+          font-size: 10px;
+          margin-top: 2px;
+        }
+
+        .typing-indicator {
+          padding: 9px 12px;
+          border-radius: 12px;
+        }
+
+        .typing-dot {
+          width: 5px;
+          height: 5px;
+        }
+
+        .chips {
+          padding: 8px 10px 6px;
+          gap: 5px;
+          flex-wrap: wrap;
+        }
+
+        .chip {
+          font-size: 10px;
+          padding: 4px 8px;
+          border-radius: 5px;
+        }
+
+        .input-row {
+          padding: 8px 10px 12px;
+          gap: 6px;
+        }
+
+        .input-wrap {
+          padding: 0 10px;
+          border-radius: 10px;
+        }
+
+        textarea {
+          font-size: 13px;
+          padding: 8px 0;
+          line-height: 1.3;
+          max-height: 70px;
+        }
+
+        .send-btn {
+          width: 32px;
+          height: 32px;
+        }
+
+        .send-btn svg {
+          width: 15px;
+          height: 15px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .chat-button {
+          bottom: 12px;
+          right: 12px;
+          width: 44px;
+          height: 44px;
+        }
+
+        .chat-button svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        .chat-container {
+          width: calc(100vw - 16px);
+          height: calc(100dvh - 100px);
+          bottom: 50px;
+          right: 8px;
+          left: 8px;
+          border-radius: 14px;
+        }
+
+        .chat-header {
+          padding: 10px 12px;
+          gap: 6px;
+        }
+
+        .avatar {
+          width: 26px;
+          height: 26px;
+        }
+
+        .avatar svg {
+          width: 12px;
+          height: 12px;
+        }
+
+        .header-name {
+          font-size: 11px;
+        }
+
+        .header-sub {
+          font-size: 9px;
+        }
+
+        .header-badge {
+          font-size: 8px;
+          padding: 1px 4px;
+        }
+
+        .messages {
+          padding: 8px 8px;
+          gap: 6px;
+        }
+
+        .msg {
+          max-width: 88%;
+        }
+
+        .bubble {
+          font-size: 12px;
+          padding: 6px 10px;
+        }
+
+        .typing-indicator {
+          padding: 8px 10px;
+          border-radius: 11px;
+        }
+
+        .chip {
+          font-size: 9px;
+          padding: 3px 6px;
+          border-radius: 4px;
+        }
+
+        .chips {
+          padding: 6px 8px 4px;
+          gap: 4px;
+        }
+
+        .input-row {
+          padding: 6px 8px 10px;
+          gap: 5px;
+        }
+
+        textarea {
+          font-size: 12px;
+          padding: 7px 0;
+          max-height: 60px;
+        }
+
+        .send-btn {
+          width: 28px;
+          height: 28px;
+        }
+
+        .send-btn svg {
+          width: 12px;
+          height: 12px;
+        }
+      }
+
+      @media (max-width: 360px) {
+        .chat-container {
+          width: calc(100vw - 12px);
+          height: calc(100dvh - 80px);
+          bottom: 40px;
+          right: 6px;
+          left: 6px;
+          border-radius: 12px;
+        }
+
+        .chat-button {
+          bottom: 10px;
+          right: 10px;
+          width: 40px;
+          height: 40px;
+        }
+
+        .chat-button svg {
+          width: 16px;
+          height: 16px;
+        }
+
+        .header-name {
+          font-size: 10px;
+        }
+
+        .bubble {
+          font-size: 11px;
+          padding: 5px 8px;
+        }
+
+        .chip {
+          font-size: 8px;
+          padding: 2px 5px;
+        }
       }
     `}
     </style>
