@@ -45,8 +45,12 @@ portfoliov2/
 │   │   │   └── route.js                    # Projects data from Notion
 │   │   ├── education/
 │   │   │   └── route.js                    # Education data from Notion
-│   │   └── certifications/
-│   │       └── route.js                    # Certifications data from Notion
+│   │   ├── certifications/
+│   │   │   └── route.js                    # Certifications data from Notion
+│   │   ├── cv/
+│   │   │   └── route.js                    # CV file endpoint (static)
+│   │   └── chat/
+│   │       └── route.ts                    # Chatbot AI endpoint (Groq)
 │   ├── page.jsx                            # Home page
 │   ├── skills/
 │   │   ├── page.jsx                        # Skills showcase page
@@ -79,6 +83,8 @@ portfoliov2/
 │   ├── notion.js                           # Notion API integration
 │   ├── constants.js                        # App constants & social links
 │   ├── env.js                              # Environment variable validation
+│   ├── chatbot.ts                          # Chatbot context & web search
+│   ├── validation.js                       # Input validation & HTML escaping
 │   └── rateLimiter.js                      # Rate limiting logic
 ├── public/                                 # Static files
 ├── .env.local.example                      # Environment variables template
@@ -151,6 +157,10 @@ NOTION_EXPERIENCE_DB=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NOTION_PROJECTS_DB=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NOTION_EDUCATION_DB=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NOTION_CERTIFICATIONS_DB=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Chatbot
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TAVILY_API_KEY=tvly_xxxxxxxxxxxxxxxxxxxxxxxxxxxx (optional, for web search)
 
 # Email Service (Resend)
 # Get your API key from https://resend.com
@@ -271,7 +281,7 @@ Fetches certification records from Notion database.
 ]
 ```
 
-### Contact Form Endpoint
+**Contact Form Endpoint**
 
 **POST** `/api/contact`
 
@@ -322,6 +332,57 @@ Submits a contact form message (sent via Resend email service).
 
 ---
 
+### CV Endpoint
+
+**GET** `/api/cv`
+
+Retrieves CV file information (static file from `public/cv.pdf`).
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "title": "Dashintha Jayawardana - CV",
+    "fileUrl": "/cv.pdf",
+    "description": "Professional CV and Resume"
+  }
+}
+```
+
+---
+
+### Chatbot Endpoint
+
+**POST** `/api/chat`
+
+Sends a message to the AI chatbot powered by Groq.
+
+**Request Body:**
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Tell me about your projects"
+    }
+  ]
+}
+```
+
+**Success Response (200):**
+Streams text response from Groq AI
+
+**Error Response (500):**
+```json
+{
+  "success": false,
+  "error": "Failed to fetch chat response"
+}
+```
+
+---
+
 ### API Features
 
 - ✅ **Zero Caching** - All endpoints use `Cache-Control: no-cache, no-store`
@@ -357,13 +418,15 @@ npm i -g vercel
 1. Push your code to GitHub
 2. Go to [Vercel Dashboard](https://vercel.com/dashboard)
 3. Click "New Project"
-4. Import your repository
+4. Import your GitHub repository
 5. Add environment variables:
    - `NOTION_SECRET`
    - `NOTION_EXPERIENCE_DB`
    - `NOTION_PROJECTS_DB`
    - `NOTION_EDUCATION_DB`
    - `NOTION_CERTIFICATIONS_DB`
+   - `GROQ_API_KEY`
+   - `TAVILY_API_KEY` (optional)
    - `RESEND_API_KEY`
    - `ADMIN_EMAIL`
    - `RATE_LIMIT_WINDOW_MS` (optional)
@@ -813,10 +876,13 @@ Follow the interactive prompts and add environment variables when asked.
 - [ ] Notion databases created and populated
 - [ ] Notion API key added to environment
 - [ ] All database IDs correctly configured
+- [ ] Groq API key set up (https://console.groq.com)
 - [ ] Resend account set up with API key
 - [ ] Admin email verified in Resend
+- [ ] CV PDF file placed at `public/cv.pdf`
 - [ ] Social links updated in constants.js
 - [ ] Contact form tested end-to-end
+- [ ] Chatbot responding correctly
 - [ ] All pages display correctly
 - [ ] Mobile responsive design verified
 - [ ] Performance tested (Lighthouse)
@@ -831,7 +897,9 @@ Follow the interactive prompts and add environment variables when asked.
 - **Styling**: Tailwind CSS 3.4
 - **Animations**: Framer Motion 11.0
 - **Data Source**: Notion API (Dynamic CMS)
+- **Chatbot**: Groq AI (streaming responses)
 - **Email Service**: Resend (Contact form)
+- **Search**: Tavily API (Web search for chatbot)
 - **Validation**: Zod 3.23
 - **Icons**: Material Symbols
 - **Fonts**: Space Grotesk, Inter

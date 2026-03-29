@@ -39,16 +39,38 @@ function formatValidationErrors(fieldErrors) {
 
 export async function POST(request) {
   try {
-    const clientIp = getClientIp(request);
-    const rateLimitResult = checkRateLimit(clientIp);
-    
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json({success: false, error: "Too many requests. Please try again later.", retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)}, {status: 429});
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Failed to parse request JSON:", parseError.message);
+      }
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON in request body" },
+        { status: 400 }
+      );
     }
 
-    const body = await request.json();
+    const clientIp = getClientIp(request);
+    const rateLimitResult = checkRateLimit(clientIp);
+
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Too many requests. Please try again later.",
+          retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+        },
+        { status: 429 }
+      );
+    }
+
     if (body.honeypot && body.honeypot.trim() !== "") {
-      return NextResponse.json({success: false, error: "Spam detected"}, {status: 400});
+      return NextResponse.json(
+        { success: false, error: "Spam detected" },
+        { status: 400 }
+      );
     }
 
     const validation = contactSchema.safeParse(body);
@@ -63,18 +85,20 @@ export async function POST(request) {
         });
       }
 
-      return NextResponse.json({
-        success: false,
-        error: "Please fix the following issues:",
-        errors: formattedErrors,
-      }, {status: 400});
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Please fix the following issues:",
+          errors: formattedErrors,
+        },
+        { status: 400 }
+      );
     }
 
     const { name, email, message } = validation.data;
+
     if (process.env.RESEND_API_KEY && process.env.ADMIN_EMAIL) {
       try {
-        // Use onboarding@resend.dev until custom domain is verified
-        // To use your own domain: verify dashintha.me in Resend dashboard, then update to "noreply@dashintha.me"
         const formattedDate = new Date().toLocaleString('en-US', {
           year: 'numeric',
           month: 'numeric',
@@ -117,16 +141,44 @@ export async function POST(request) {
         }
       } catch (emailError) {
         if (process.env.NODE_ENV === 'development') {
-          console.warn("⚠️ Email notification failed:", emailError);
+          console.error("⚠️ Email notification failed:", {
+            error: emailError.message,
+            code: emailError.code,
+            name: emailError.name,
+          });
         }
+        // Don't fail the form submission if email fails - still return success
+        // but log it for debugging
+      }
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("⚠️ Email service not configured - RESEND_API_KEY or ADMIN_EMAIL missing");
       }
     }
 
-    return NextResponse.json({success: true, message: "Message sent successfully! I will get back to you soon.", data: {timestamp: new Date().toISOString()}}, {status: 200});
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Message sent successfully! I will get back to you soon.",
+        data: { timestamp: new Date().toISOString() }
+      },
+      { status: 200 }
+    );
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error("Contact API Error:", error);
+      console.error("Contact API Error:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
     }
-    return NextResponse.json({success: false, error: "An error occurred while processing your request. Please try again later."}, {status: 500});
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: "An error occurred while processing your request. Please try again later."
+      },
+      { status: 500 }
+    );
   }
 }

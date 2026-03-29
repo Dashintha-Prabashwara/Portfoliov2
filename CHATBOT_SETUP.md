@@ -1,72 +1,79 @@
 # Production-Grade Chatbot Backend – Setup Guide
 
-Your portfolio chatbot is now upgraded to production-grade with edge runtime, streaming responses, and intelligent token trimming.
+Your portfolio chatbot is now upgraded to production-grade with streaming responses, and intelligent context from your portfolio pages.
 
-## ✅ What's New
+## ✅ What's Included
 
-### 1. **Edge Runtime** ⚡
-- Both `/api/context` and `/api/chat` run on edge (Vercel Edge Functions)
-- Faster response times, globally distributed
-- No Node.js-only APIs (fully compatible)
+### 1. **Groq AI Integration** ⚡
+- Uses Groq API for fast, intelligent responses
+- Streaming responses in real-time like ChatGPT
+- Natural language understanding of your portfolio content
 
-### 2. **Smart Token Trimming** 📊
-- Context automatically capped at 12,000 tokens (~48KB)
-- Preserves most important portfolio sections
-- Prevents API rate limits and ensures fast responses
+### 2. **Smart Context System** 📊
+- Automatically scrapes portfolio content from your pages
+- Caches context for better performance
+- Updates periodically for fresh data
 
 ### 3. **Streaming Responses** 🔄
 - Responses stream in real-time like ChatGPT
 - Chunks arrive live to the UI
 - Better UX, lower perceived latency
 
-### 4. **Performance Optimizations** 🚀
-- Parallel page scraping (Promise.all)
-- 5s fetch timeout per page via AbortController
-- 15s total request timeout for API calls
-- 24-hour cache with automatic refresh
+### 4. **Web Search Integration** 🔍
+- Optional Tavily API for web search
+- Enables chatbot to answer questions about current events
+- Falls back to portfolio content when search not available
 
 ### 5. **Live Portfolio Data** 📝
 - Bot automatically scrapes `/skills`, `/experience`, `/projects`, `/certifications`
-- Updates every 24 hours automatically
+- Updates cache based on configuration
 - Single source of truth (no manual data maintenance)
 
 ---
 
 ## 🛠 Setup Instructions
 
-### Step 1: Get Gemini API Key
+### Step 1: Get Groq API Key
 
-1. Go to **[Google AI Studio](https://aistudio.google.com/app/apikey)**
-2. Click **"Create API key"**
-3. Copy your API key
+1. Go to **[Groq Console](https://console.groq.com/keys)**
+2. Sign up or log in
+3. Click **"Create API key"**
+4. Copy your API key
 
-### Step 2: Add to Environment
+### Step 2: (Optional) Get Tavily API Key for Web Search
 
-Open `.env.local` and fill in your key:
+1. Go to **[Tavily](https://tavily.com)**
+2. Sign up and get your API key
+3. This enables web search in your chatbot (optional feature)
+
+### Step 3: Add to Environment
+
+Open `.env.local` and fill in your keys:
 
 ```env
-GEMINI_API_KEY=your_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
+TAVILY_API_KEY=your_tavily_api_key_here (optional)
 ```
 
-### Step 3: Test Locally
+### Step 4: Test Locally
 
 ```bash
 npm run dev
 ```
 
-Then open http://localhost:3000/api/context to verify context scraping works.
+Then open http://localhost:3000 and use the chatbot widget in the corner.
 
-### Step 4: Deploy
+### Step 5: Deploy
 
 Push to Vercel as usual:
 
 ```bash
 git add .
-git commit -m "Add production chatbot backend"
+git commit -m "Update chatbot to production"
 git push
 ```
 
-Vercel automatically detects edge routes and deploys them.
+Vercel automatically deploys your changes.
 
 ---
 
@@ -75,116 +82,116 @@ Vercel automatically detects edge routes and deploys them.
 ```
 app/
 ├── api/
-│   ├── context/
-│   │   └── route.ts           # Fetches & caches portfolio context (edge)
 │   └── chat/
-│       └── route.ts           # Streams AI response (edge)
+│       └── route.ts           # Streams AI response (Groq)
 └── ...
 
-lib/
-└── chatbot.ts                 # Utilities: scraping, token trimming, summarization
+components/
+└── Chatbot.tsx                # Chat widget UI
 
-Downloads/
-└── dashintha-bot.html         # Updated HTML chatbot (uses /api/chat)
+lib/
+├── chatbot.ts                 # Context scraping, web search utilities
+├── validation.js              # Input validation
+└── constants.js               # App constants
+
+public/
+└── cv.pdf                      # Your CV file
 ```
 
 ---
 
 ## 🔌 API Endpoints
 
-### GET `/api/context`
-
-Returns cached portfolio context.
-
-**Response:**
-```json
-{
-  "context": "=== /skills ===\nAngular, React, Next.js...\n=== /experience ===\n..."
-}
-```
-
-**Caching:**
-- Cached for 24 hours
-- Scrapes all 4 portfolio pages in parallel
-- Auto-trims if >12K tokens
-
----
-
 ### POST `/api/chat`
 
-Streams AI response using portfolio context.
+Streams AI response using Groq with portfolio context.
 
 **Request:**
 ```json
 {
   "messages": [
-    { "role": "user", "parts": [{ "text": "Tell me about your projects" }] },
-    { "role": "model", "parts": [{ "text": "Your projects are..." }] }
+    {
+      "role": "user",
+      "content": "Tell me about your projects"
+    }
   ]
 }
 ```
 
 **Response:** `text/event-stream` (streaming chunks)
 
+**Features:**
+- Automatically includes your portfolio content as context
+- Web search enabled if Tavily API key configured
+- Streaming responses for real-time feedback
+
 ---
 
 ## 💡 How It Works
 
 1. **User asks a question** in the chat widget
-2. **Frontend calls `/api/chat`** with chat history
-3. **Backend fetches `/api/context`** (cached portfolio data)
-4. **System prompt combines** portfolio data + user query
-5. **Gemini generates response**, streamed back to frontend
-6. **Chunks render live** in the UI (like ChatGPT typing)
+2. **Frontend sends message** to `/api/chat` with chat history
+3. **Backend retrieves portfolio context** (cached from your pages)
+4. **System prompt combines** portfolio data + web search (optional) + user query
+5. **Groq AI generates response** based on context
+6. **Response streams** back to frontend in real-time
 7. **Chat history stored** locally for follow-up questions
 
 ---
 
-## 🎯 Optimization Notes
+## 🎯 Features & Settings
 
-### Context Scraping
-- **Parallel fetching**: All 4 pages fetched simultaneously
-- **Timeout protection**: 5s per page, 15s total
-- **Smart summarization**: If >12K tokens, keeps most important content
-- **Cache invalidation**: 24-hour TTL
+### Chatbot Behavior
+- **Temperature**: 0.7 (natural, conversational responses)
+- **Max Tokens**: 1024 (comprehensive answers)
+- **Timeout**: 15 seconds (dev), 10 seconds (production)
+- **Streaming**: Enabled for real-time responses
 
-### Token Trimming Strategy
-- Estimates tokens: `text.length / 4`
-- If trimming needed: Splits by sentences, keeps as much as fits
-- Preserves all section headers for clarity
+### Context Sources
+- Portfolio pages: `/skills`, `/experience`, `/projects`, `/certifications`
+- Web search results (if Tavily API key provided)
+- Chat history for multi-turn conversations
 
-### Streaming
-- **Chunk size**: 30 characters per chunk
-- **Connection**: `text/event-stream` with `keep-alive`
-- **Error handling**: Timeouts, API errors, malformed responses
+### Error Handling
+- Graceful fallbacks if API is slow
+- Readable error messages in UI
+- Rate limiting protection
 
 ---
 
 ## ⚠️ Important Notes
 
-1. **API Key Security**: Never commit your GEMINI_API_KEY to git. It's in `.env.local` which is gitignored.
+1. **API Key Security**: Never commit your GROQ_API_KEY to git. It's in `.env.local` which is gitignored.
 
-2. **Portfolio URLs**: The bot scrapes your live portfolio at `dashijayawardana.vercel.app`. Make sure your deployment is live!
+2. **Groq Free Tier**: Has rate limits. Monitor usage in [Groq Console](https://console.groq.com).
 
-3. **Rate Limits**: Gemini free tier has limits. Monitor usage in [Google AI Studio](https://aistudio.google.com/app/apikey).
+3. **Portfolio URLs**: The bot scrapes your live portfolio pages and Notion content. Make sure your deployment is live!
 
-4. **Edge Limitations**: Edge functions have a 10MB size limit. Current codebase is ~2MB.
+4. **Tavily API** (Optional): Only needed if you want web search functionality in the chatbot.
+
+5. **Development vs Production**:
+   - Dev: 15s timeout, http://localhost:3000
+   - Production: 10s timeout, https://yoursite.com
 
 ---
 
 ## 🧪 Testing
 
-### Test Context Scraping
-```bash
-curl http://localhost:3000/api/context
-```
-
 ### Test Chat Streaming
 ```bash
 curl -X POST http://localhost:3000/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"messages":[{"role":"user","parts":[{"text":"Who are you?"}]}]}'
+  -d '{"messages":[{"role":"user","content":"Who are you?"}]}'
 ```
+
+### Manual Testing
+1. Open your portfolio locally (`npm run dev`)
+2. Click the chatbot icon in the bottom-right corner
+3. Test questions:
+   - "What are your top skills?"
+   - "Tell me about your projects"
+   - "What's your experience?"
+   - "Can you help me with React?"
 
 ---
 
@@ -193,17 +200,56 @@ curl -X POST http://localhost:3000/api/chat \
 Check deployment health:
 
 1. **Vercel Dashboard**: https://vercel.com/dashboard
-2. **Function Logs**: Each edge function has logs in Vercel
-3. **Error Tracking**: Check toast notifications in the bot UI
+2. **Function Logs**: Check logs in Vercel for `/api/chat` endpoint
+3. **Browser Console**: Check for errors when chatting
+4. **Toast Notifications**: UI shows errors like "Failed to fetch chat response"
+
+---
+
+## 🐛 Troubleshooting
+
+### Bot says "API key not configured"
+- Add `GROQ_API_KEY` to `.env.local`
+- Restart dev server: `npm run dev`
+- Make sure key is valid from https://console.groq.com
+
+### Responses are slow or timing out
+- Check if Groq API is responding: Test in [Groq Console](https://console.groq.com)
+- Verify your portfolio pages are accessible
+- Try simpler questions first
+
+### Chatbot not appearing
+- Check browser console for errors
+- Clear cache and reload
+- Make sure Chatbot component is imported in layout
+
+### "Too many requests" error
+- Groq has rate limits on free tier
+- Wait a moment and try again
+- Consider upgrading Groq plan for higher limits
+
+### Web search not working (if Tavily enabled)
+- Verify `TAVILY_API_KEY` is set in `.env.local`
+- Check Tavily dashboard for quota
+- Bot will still work without it (uses portfolio content only)
+
+---
+
+## 📚 Resources
+
+- [Groq API Docs](https://console.groq.com/docs)
+- [Next.js Streaming API Routes](https://nextjs.org/docs/app/api-routes/route-handlers)
+- [Tavily Search API](https://tavily.com/docs)
+- [ReadableStream API](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream)
 
 ---
 
 ## 🚀 Performance Metrics (Expected)
 
-- **Context fetch**: ~800ms (all pages scraped in parallel)
-- **Chat response**: ~1.5s (TTFB for first chunk)
-- **Streaming**: ~2-3s total (chunks arrive live)
-- **Cache hit**: ~50ms (served from global cache)
+- **Chat response**: ~1-2s (TTFB for first chunk)
+- **Streaming**: ~2-4s total (chunks arrive live)
+- **Average response time**: ~3s for full answer
+- **Cache hit**: ~100ms if cache available
 
 ---
 
@@ -211,43 +257,15 @@ Check deployment health:
 
 1. "What are your top skills?"
 2. "Tell me about your projects"
-3. "What's your experience?"
+3. "What's your professional experience?"
 4. "What certifications do you have?"
-5. "Can you help me with React?" (tests GENERAL MODE)
-6. "What's the capital of France?" (tests GENERAL MODE)
-
----
-
-## 🐛 Troubleshooting
-
-### Bot says "API key not configured"
-- Add `GEMINI_API_KEY` to `.env.local`
-- Restart dev server: `npm run dev`
-
-### Responses are slow
-- Check if context scraping is timing out (see `/api/context`)
-- Verify your portfolio is deployed and live
-
-### Streaming doesn't work in some browsers
-- Ensure `ReadableStream` is supported (modern browsers only)
-- Test in Chrome/Firefox first
-
-### Context doesn't update
-- Cache TTL is 24 hours
-- Force refresh by restarting the app
-- Or modify TTL in `/lib/chatbot.ts`
-
----
-
-## 📚 Resources
-
-- [Gemini API Docs](https://ai.google.dev/)
-- [Next.js Edge Runtime](https://nextjs.org/docs/app/api-routes/edge-runtime)
-- [ReadableStream API](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream)
-- [Cheerio Scraping](https://cheerio.js.org/)
+5. "Can you help me with React?" (general knowledge)
+6. "What's the latest in AI?" (requires web search)
 
 ---
 
 **Status**: ✅ Production Ready
-**Last Updated**: 2026-03-28
-**Chatbot Lives At**: `http://localhost:3000/api/chat` (backend only)
+**Last Updated**: 2026-03-29
+**Chatbot Lives At**: `http://localhost:3000` (bottom-right corner)
+**Backend**: `/api/chat` (Groq streaming endpoint)
+

@@ -4,8 +4,8 @@ Place your CV PDF file here and name it `cv.pdf`.
 
 After adding your CV:
 
-1. Update the file path in `scripts/seedCV.js` if needed
-2. Run: `node scripts/seedCV.js`
-3. Your CV will be accessible via the API and download button
+1. The CV will be accessible via `/api/cv` endpoint
+2. Visit `https://yourportfolio.com/api/cv` to get the CV file URL
+3. The download button in your portfolio will link to `/cv.pdf`
 
-If you don't have a CV ready, you can create a placeholder for testing.
+**Note:** No database or seeding required - this is a simple static file.

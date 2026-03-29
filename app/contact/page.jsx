@@ -42,7 +42,7 @@ const consoleLinesByStage = {
     { type: 'success', text: 'Compiled successfully · bundle size 284kb' },
     { type: 'command', text: 'Running test suites...' },
     { type: 'success', text: 'Artifacts stored in S3: build_0422.zip' },
-    { type: 'pending', text: 'Connecting to MongoDB Atlas Cluster...' },
+    { type: 'pending', text: 'Validating API endpoints...' },
     { type: 'success', text: 'Unit Tests: 98% Pass · 142/145 passed' },
   ],
   deploy: [
@@ -51,7 +51,7 @@ const consoleLinesByStage = {
     { type: 'command', text: 'kubectl apply -f deployment.yaml' },
     { type: 'success', text: 'Pod running · replicas: 3/3' },
     { type: 'success', text: 'Deployed to production · env: staging' },
-    { type: 'success', text: 'Connected · MongoDB Atlas · latency 14ms' },
+    { type: 'success', text: 'Email service initialized · latency 14ms' },
   ],
   monitor: [
     { type: 'success', text: 'Health check passed · uptime 100%' },
@@ -135,25 +135,73 @@ export default function Contact() {
       },
       body: JSON.stringify(submittedData),
     })
-      .then((response) => {
-        return response.json().then((data) => {
-          if (response.ok && data.success) {
-            return data;
-          } else {
-            // Pass full error response with fieldErrors
-            throw {
-              message: data.error || 'Submission failed',
-              fieldErrors: data.errors || {}
-            };
+      .then(async (response) => {
+        let data;
+
+        // Try to parse JSON response
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Failed to parse JSON response:', parseError);
           }
-        });
+          // Response is not valid JSON (e.g., server error, HTML error page)
+          throw {
+            message: `Server error (Status ${response.status}): Unable to process response. Please try again.`,
+            fieldErrors: {},
+            statusCode: response.status,
+          };
+        }
+
+        // Check if response indicates success
+        if (response.ok && data.success) {
+          return data;
+        }
+
+        // API returned an error
+        if (process.env.NODE_ENV === 'development') {
+          console.error('API returned error:', {
+            status: response.status,
+            data: data,
+          });
+        }
+
+        throw {
+          message: data.error || 'Submission failed',
+          fieldErrors: data.errors || {},
+          statusCode: response.status,
+        };
       })
       .catch((error) => {
-        // Re-throw to preserve error handling
-        if (error instanceof TypeError) {
-          throw { message: 'Network error. Please check your connection and try again.', fieldErrors: {} };
+        if (process.env.NODE_ENV === 'development') {
+          console.error('submitToAPI error:', error);
         }
-        throw error;
+
+        // Handle different types of errors
+        if (error instanceof TypeError) {
+          throw {
+            message: 'Network error: Please check your connection and try again.',
+            fieldErrors: {},
+          };
+        }
+
+        if (error instanceof SyntaxError) {
+          throw {
+            message: 'Response parsing error: Server returned invalid data. Please try again.',
+            fieldErrors: {},
+          };
+        }
+
+        // Re-throw app errors
+        if (error && typeof error === 'object' && 'message' in error) {
+          throw error;
+        }
+
+        // Unknown error
+        throw {
+          message: error?.message || 'An unexpected error occurred. Please try again.',
+          fieldErrors: {},
+        };
       });
   };
 
@@ -207,15 +255,27 @@ export default function Contact() {
       timeoutsRef.current.push(resetPipelineTimeout);
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('Contact form error:', error);
+        console.error('Contact form submission error:', error);
       }
-      const errorMsg = error.message || error || 'Network error. Please check your connection and try again.';
+
+      // Extract error message and field errors
+      const errorMsg = error?.message || error || 'An unexpected error occurred. Please try again.';
+      const fieldErrs = error?.fieldErrors || {};
+
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error details:', {
+          message: errorMsg,
+          fieldErrors: fieldErrs,
+          statusCode: error?.statusCode,
+        });
+      }
+
       setPipelineState({ stage: 'build', status: 'error' });
       setFormStatus({
         loading: false,
         success: false,
         error: errorMsg,
-        fieldErrors: error.fieldErrors || {},
+        fieldErrors: fieldErrs,
       });
 
       // Show error console lines
@@ -448,19 +508,19 @@ function InfoCards() {
       {/* Persistence Layer Card */}
       <div className="bg-surface-container-high rounded-xl p-4 sm:p-6 border-t-2 border-secondary flex-1">
         <span className="material-symbols-outlined text-secondary text-2xl sm:text-3xl mb-3 sm:mb-4 block">database</span>
-        <h4 className="font-headline text-base sm:text-lg font-bold">Persistence Layer</h4>
+        <h4 className="font-headline text-base sm:text-lg font-bold">Data Persistence</h4>
         <p className="text-on-surface-variant text-xs sm:text-sm mt-2 mb-3 sm:mb-4 leading-relaxed">
-          Currently migrating heavy JSON schemas to MongoDB optimized patterns to reduce latency by 40%.
+          Optimized contact form processing with real-time validation and immediate response feedback through resilient API design.
         </p>
         <div className="flex flex-wrap gap-2">
           <span className="px-2 py-1 bg-surface-container-lowest rounded text-[10px] font-label font-bold text-on-surface border border-outline-variant/20 uppercase">
-            MongoDB
+            Resend
           </span>
           <span className="px-2 py-1 bg-surface-container-lowest rounded text-[10px] font-label font-bold text-on-surface border border-outline-variant/20 uppercase">
-            Node.js
+            Next.js API
           </span>
           <span className="px-2 py-1 bg-surface-container-lowest rounded text-[10px] font-label font-bold text-on-surface border border-outline-variant/20 uppercase">
-            Redis
+            Error Handling
           </span>
         </div>
       </div>
