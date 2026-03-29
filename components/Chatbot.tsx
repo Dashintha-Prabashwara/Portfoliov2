@@ -23,6 +23,7 @@ export default function Chatbot() {
   const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   // Load messages from sessionStorage on mount
   useEffect(() => {
@@ -53,7 +54,7 @@ export default function Chatbot() {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages.length]);
 
   // Welcome message - only show when chat opens
   useEffect(() => {
@@ -78,6 +79,12 @@ export default function Chatbot() {
     return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const copyToClipboard = (text: string, id: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   const formatMessageContent = (text: string): (string | JSX.Element)[] => {
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
     const parts: (string | JSX.Element)[] = [];
@@ -95,9 +102,20 @@ export default function Chatbot() {
       const code = match[2].trim();
 
       parts.push(
-        <div key={`code-${codeIndex++}`} className="bg-slate-800 rounded p-2 my-1 text-xs overflow-x-auto font-mono border border-slate-700 mt-2 mb-2">
-          <div className="text-cyan-400 text-xs mb-1 font-semibold">{lang.toUpperCase()}</div>
-          <pre className="whitespace-pre-wrap break-words text-slate-100">{code}</pre>
+        <div key={`code-${codeIndex++}`} className="bg-slate-800 rounded overflow-hidden my-2 border border-slate-700">
+          <div className="bg-slate-900 px-3 py-2 flex justify-between items-center">
+            <div className="text-cyan-400 text-xs font-semibold">📝 {lang.toUpperCase()}</div>
+            <button
+              onClick={() => copyToClipboard(code, -codeIndex)}
+              className="msg-action-icon"
+              title="Copy code"
+            >
+              {copiedId === -codeIndex ? '✓' : '📋'}
+            </button>
+          </div>
+          <pre className="p-3 overflow-x-auto text-xs font-mono text-slate-100 whitespace-pre-wrap break-words">
+            {code}
+          </pre>
         </div>
       );
 
@@ -127,9 +145,9 @@ export default function Chatbot() {
         }
         const content = trimmed.replace(/^[\*\-]\s+/, '');
         parts.push(
-          <div key={`bullet-${idx}`} className="ml-4 mb-1 flex gap-2">
-            <span className="text-cyan-400 flex-shrink-0">•</span>
-            <span className="flex-1">{formatBoldItalic(content)}</span>
+          <div key={`bullet-${idx}`} className="ml-3 my-1 flex gap-2 p-1.5 rounded bg-slate-800/40 hover:bg-slate-800/60 transition-colors">
+            <span className="text-cyan-400 flex-shrink-0 font-bold">▸</span>
+            <span className="flex-1 text-slate-100">{formatBoldItalic(content)}</span>
           </div>
         );
       } else if (trimmed.length === 0) {
@@ -138,7 +156,7 @@ export default function Chatbot() {
           inList = false;
         }
         if (parts.length > 0) {
-          parts.push(<div key={`space-${idx}`} className="h-2" />);
+          parts.push(<div key={`space-${idx}`} className="h-1.5" />);
         }
       } else {
         // Regular text with potential bold/italic
@@ -147,7 +165,7 @@ export default function Chatbot() {
         }
         const formatted = formatBoldItalic(trimmed);
         parts.push(
-          <div key={`text-${idx}`} className="mb-1">
+          <div key={`text-${idx}`} className="mb-1.5 leading-relaxed">
             {formatted}
           </div>
         );
@@ -164,8 +182,6 @@ export default function Chatbot() {
     const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=]+)/g;
 
     const result: (string | JSX.Element)[] = [];
-    let lastIdx = 0;
-    let boldIdx = 0;
     let linkIdx = 0;
 
     // First pass: handle bold
@@ -174,20 +190,20 @@ export default function Chatbot() {
     let match;
 
     boldRegex.lastIndex = 0;
+    let boldCount = 0;
     while ((match = boldRegex.exec(text)) !== null) {
-      const placeholder = `__BOLD_${boldIdx}__`;
+      const placeholder = `__BOLD_${boldCount}__`;
       const boldContent = match[1] || match[2];
       boldReplacements[placeholder] = (
-        <strong key={`bold-${boldIdx}`} className="font-semibold text-cyan-400">
+        <strong key={`bold-${boldCount}`} className="font-semibold text-cyan-400">
           {boldContent}
         </strong>
       );
       tempText = tempText.replace(match[0], placeholder);
-      boldIdx++;
+      boldCount++;
     }
 
     // Second pass: handle URLs and normal text
-    const urlReplacements: { [key: string]: JSX.Element } = {};
     const urlMatches = [];
     let urlMatch;
 
@@ -658,8 +674,39 @@ export default function Chatbot() {
         font-size: 10px;
         color: var(--text-muted);
         font-family: 'JetBrains Mono', monospace;
-        margin-top: 3px;
         padding: 0 4px;
+        text-nowrap;
+      }
+
+      .msg-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .msg-action-icon {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        background: rgba(99, 188, 130, 0.12);
+        border: 1px solid rgba(99, 188, 130, 0.3);
+        color: var(--accent);
+        font-size: 12px;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, transform 0.1s;
+        padding: 0;
+      }
+
+      .msg-action-icon:hover {
+        background: rgba(99, 188, 130, 0.25);
+        border-color: rgba(99, 188, 130, 0.5);
+      }
+
+      .msg-action-icon:active {
+        transform: scale(0.9);
       }
 
       .typing-indicator {
@@ -796,6 +843,31 @@ export default function Chatbot() {
       .send-btn svg {
         width: 16px;
         height: 16px;
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        background: var(--accent);
+        color: #131313;
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        animation: slideUp 0.3s ease forwards;
+        z-index: 50;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       /* Mobile Responsive */
@@ -1130,7 +1202,41 @@ export default function Chatbot() {
                 <div className="bubble">
                   {msg.role === 'bot' ? formatMessageContent(msg.text) : msg.text}
                 </div>
-                <div className="msg-time">{msg.timestamp}</div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <div className="msg-time">{msg.timestamp}</div>
+                  {msg.role === 'user' && (
+                    <div className="msg-actions">
+                      <button
+                        onClick={() => copyToClipboard(msg.text, idx)}
+                        className="msg-action-icon"
+                        title="Copy message"
+                      >
+                        {copiedId === idx ? '✓' : '📋'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setInput(msg.text);
+                          setTimeout(() => textareaRef.current?.focus(), 100);
+                        }}
+                        className="msg-action-icon"
+                        title="Edit message"
+                      >
+                        ✏️
+                      </button>
+                    </div>
+                  )}
+                  {msg.role === 'bot' && (
+                    <div className="msg-actions">
+                      <button
+                        onClick={() => copyToClipboard(msg.text, idx)}
+                        className="msg-action-icon"
+                        title="Copy message"
+                      >
+                        {copiedId === idx ? '✓' : '📋'}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
             {isLoading && (
@@ -1186,6 +1292,7 @@ export default function Chatbot() {
         </div>
         </>
       )}
+      {copiedId !== null && <div className="toast">Copied to clipboard ✓</div>}
     </>
   );
 }

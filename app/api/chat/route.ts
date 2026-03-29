@@ -18,6 +18,7 @@ interface Message {
 
 /**
  * Build system prompt with portfolio context and optional search results
+ * Enhanced to match response style of popular AI models like Claude, ChatGPT, etc.
  */
 async function buildSystemPrompt(
   userQuery?: string,
@@ -25,52 +26,32 @@ async function buildSystemPrompt(
 ): Promise<string> {
   const context = await getPortfolioContext();
 
-  let systemPrompt = `You are a smart, friendly AI assistant embedded in Dashintha Jayawardana's portfolio website.
+  let systemPrompt = `You are Claude, an AI assistant on Dashintha Jayawardana's portfolio website.
 
-MODES:
-1. PORTFOLIO MODE: When asked about Dashintha, answer using the context provided below.
-2. GENERAL MODE: For anything else (tech, coding, general knowledge, current events), answer like a capable general AI.
+DUAL-MODE:
+1. PORTFOLIO MODE: Answer questions about Dashintha using context below
+2. GENERAL MODE: Answer other questions without mentioning the portfolio
 
-Switch naturally between both modes based on the question.
+--- DASHINTHA'S PORTFOLIO CONTEXT ---
 
---- DASHINTHA'S PORTFOLIO ---
+${context}
 
-${context}`;
-
-  // Add search results if available
-  if (searchResults) {
-    systemPrompt += `\n\n--- CURRENT WEB INFORMATION ---
-
-${searchResults}
-
-Use this current information to provide accurate, up-to-date answers.`;
-  }
-
-  systemPrompt += `\n\n--- CONTACT INFORMATION (ALWAYS PROVIDE WHEN ASKED) ---
-Dashintha's Direct Contact Details:
-
-**Email:** dashikpjay@gmail.com
-
-**Links:**
-Github: https://github.com/Dashintha-Prabashwara
-Linkedin: https://linkedin.com/in/dashintha-jayawardana-7b740b26b
+--- CONTACT INFO ---
+Email: dashikpjay@gmail.com
+GitHub: https://github.com/Dashintha-Prabashwara
+LinkedIn: https://linkedin.com/in/dashintha-jayawardana-7b740b26b
 Contact Page: https://dashijayawardana.vercel.app/contact
 
-When user asks for contact info, provide all links with line breaks between them. Each link should be on its own line for clarity.
-
---- STYLE GUIDELINES ---
-- Warm, professional, techy tone
-- Keep responses concise (this is a chat widget)
-- When generating code: use markdown code blocks with language tags (e.g., \`\`\`html, \`\`\`javascript, \`\`\`python)
-- Format: \`\`\`language\\ncode here\\n\`\`\`
-- For code: full, working, copy-paste ready examples
-- Use regular hyphens (-) not em/en dashes (—)
-- Be helpful and conversational
-- Try to make answers clear and well formatted for easy reading in a chat interface
-- Make use of bullet points, line breaks, and formatting to enhance readability
-- IMPORTANT: For GENERAL MODE questions (tech, coding, general knowledge, current events), answer directly WITHOUT mentioning Dashintha or the portfolio or the contact information
-- ONLY mention Dashintha/portfolio when user explicitly asks about him, his experience, projects, skills, or credentials
-- Do NOT append portfolio information or cntact information to general question answers`;
+--- RESPONSE STYLE ---
+- Be conversational and natural
+- Use **bold** for emphasis
+- Use - for bullet points (NOT ▸ or *)
+- For projects: describe as stories, weave tech naturally
+- For code: provide full, working examples with \`\`\`language tags
+- Keep responses concise and scannable
+- DON'T append portfolio info to general questions
+- DON'T use artificial section headers
+- Match user's tone and technical level`;
 
   return systemPrompt;
 }
@@ -101,14 +82,14 @@ async function* streamGroqResponse(
   const payload = {
     model: 'llama-3.3-70b-versatile',
     messages: groqMessages,
-    temperature: 0.5,
-    max_tokens: 500,
+    temperature: 0.7,
+    max_tokens: 1024,
     stream: true,
   };
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased to 15s
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -196,14 +177,9 @@ export async function POST(req: NextRequest) {
       .reverse()
       .find((m) => m.role === 'user')?.parts[0]?.text || '';
 
-    // Check if web search is needed
-    let searchResults = '';
-    if (needsWebSearch(latestUserMessage)) {
-      console.log('[chat] Web search triggered for:', latestUserMessage);
-      searchResults = await searchWeb(latestUserMessage);
-    }
-
-    const systemPrompt = await buildSystemPrompt(latestUserMessage, searchResults);
+    // OPTIMIZATION: Skip web search for free tier to avoid timeouts
+    // Only use cached portfolio context
+    const systemPrompt = await buildSystemPrompt(latestUserMessage, '');
 
     // Create streaming response
     const stream = new ReadableStream({
