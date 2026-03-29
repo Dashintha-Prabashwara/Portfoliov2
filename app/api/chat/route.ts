@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPortfolioContext, searchWeb, needsWebSearch } from '@/lib/chatbot';
+import { getPortfolioContext } from '@/lib/chatbot';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -17,16 +17,13 @@ interface Message {
 }
 
 /**
- * Build system prompt with portfolio context and optional search results
+ * Build system prompt with portfolio context
  * Enhanced to match response style of popular AI models like Claude, ChatGPT, etc.
  */
-async function buildSystemPrompt(
-  userQuery?: string,
-  searchResults?: string
-): Promise<string> {
+async function buildSystemPrompt(): Promise<string> {
   const context = await getPortfolioContext();
 
-  let systemPrompt = `You are Claude, an AI assistant on Dashintha Jayawardana's portfolio website.
+  const systemPrompt = `You are Claude, an AI assistant on Dashintha Jayawardana's portfolio website.
 
 DUAL-MODE:
 1. PORTFOLIO MODE: Answer questions about Dashintha using context below
@@ -171,15 +168,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get latest user message
-    const latestUserMessage = messages
-      .slice()
-      .reverse()
-      .find((m) => m.role === 'user')?.parts[0]?.text || '';
+    // Get latest user message (for future use with web search)
+    // Keeping for potential enhancement: const latestUserMessage = messages...
 
     // OPTIMIZATION: Skip web search for free tier to avoid timeouts
     // Only use cached portfolio context
-    const systemPrompt = await buildSystemPrompt(latestUserMessage, '');
+    const systemPrompt = await buildSystemPrompt();
 
     // Create streaming response
     const stream = new ReadableStream({
