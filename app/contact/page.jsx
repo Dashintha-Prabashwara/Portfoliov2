@@ -93,15 +93,37 @@ function ContactInfo() {
 
 function ContactHero() {
   return (
-    <header className="mb-16 sm:mb-20">
-      <h1 className="font-headline text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 sm:mb-6">
-        <span className="block">Let&apos;s</span>
-        <span className="block text-gradient ml-6 sm:ml-12 md:ml-24">Build</span>
-        <span className="block">Something.</span>
-      </h1>
-      <p className="font-body text-on-surface-variant max-w-xl text-sm sm:text-base md:text-lg mt-6 sm:mt-8">
-        I&apos;m looking for opportunities to grow, learn, and contribute to interesting projects. Let&apos;s talk about what you&apos;re working on.
-      </p>
+    <header className="mb-16 sm:mb-20 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-20 items-end">
+      <div>
+        <h1 className="font-headline text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 sm:mb-6">
+          <span className="block">Let&apos;s</span>
+          <span className="block text-gradient ml-6 sm:ml-12 md:ml-24">Build</span>
+          <span className="block">Something.</span>
+        </h1>
+        <p className="font-body text-on-surface-variant max-w-xl text-sm sm:text-base md:text-lg mt-6 sm:mt-8">
+          I&apos;m looking for opportunities to grow, learn, and contribute to interesting projects. Let&apos;s talk about what you&apos;re working on.
+        </p>
+      </div>
+
+      <div className="border-l border-primary/40 pl-5 sm:pl-6 pb-1">
+        <p className="font-label text-primary text-[10px] uppercase tracking-[0.25em] mb-5">Open to conversation</p>
+        <div className="space-y-4 text-sm sm:text-base">
+          <div className="flex justify-between gap-6 border-b border-outline-variant/20 pb-3">
+            <span className="text-on-surface-variant">Focus</span>
+            <span className="font-headline font-bold text-right">Cloud &amp; DevOps</span>
+          </div>
+          <div className="flex justify-between gap-6 border-b border-outline-variant/20 pb-3">
+            <span className="text-on-surface-variant">Response</span>
+            <span className="font-headline font-bold text-right">Within 1–2 days</span>
+          </div>
+          <div className="flex justify-between gap-6">
+            <span className="text-on-surface-variant">Direct line</span>
+            <a href={`mailto:${SOCIAL_LINKS.email}`} className="font-headline font-bold text-primary hover:text-on-surface transition-colors text-right">
+              {SOCIAL_LINKS.email}
+            </a>
+          </div>
+        </div>
+      </div>
     </header>
   );
 }

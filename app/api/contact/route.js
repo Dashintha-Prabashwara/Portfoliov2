@@ -4,6 +4,7 @@ import { checkRateLimit, getClientIp } from "@/lib/rateLimiter";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const senderEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be no more than 100 characters"),
@@ -114,8 +115,8 @@ export async function POST(request) {
           return text.replace(/[&<>"']/g, (m) => map[m]);
         };
 
-        await resend.emails.send({
-          from: "Contact Form <onboarding@resend.dev>",
+        const { data, error } = await resend.emails.send({
+          from: `Contact Form <${senderEmail}>`,
           to: process.env.ADMIN_EMAIL,
           replyTo: email,
           subject: `New Message: ${escapeHtml(name)}`,
@@ -129,9 +130,29 @@ export async function POST(request) {
             </div>
           `,
         });
-      } catch {
-        // Don't fail the form submission if email fails - still return success
+        if (error || !data?.id) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Resend rejected contact email:', error);
+          }
+          return NextResponse.json(
+            { success: false, error: 'Your message could not be delivered. Please try again later.' },
+            { status: 502 }
+          );
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Contact email delivery failed:', error);
+        }
+        return NextResponse.json(
+          { success: false, error: 'Your message could not be delivered. Please try again later.' },
+          { status: 502 }
+        );
       }
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Email service is not configured.' },
+        { status: 503 }
+      );
     }
 
     return NextResponse.json(
@@ -142,7 +163,7 @@ export async function POST(request) {
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         success: false,

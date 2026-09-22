@@ -27,6 +27,10 @@
     background-clip: text;
   }
 
+  .profile-photo {
+    filter: brightness(1.14) contrast(1.08) saturate(1.12) drop-shadow(0 0 16px rgba(164, 230, 255, 0.22));
+  }
+
   /* Pipeline Stage Opacity Classes */
   .stage--active {
     opacity: 1;

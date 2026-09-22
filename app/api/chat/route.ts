@@ -35,7 +35,7 @@ DUAL-MODE:
 ${context}
 
 --- CONTACT INFO ---
-Email: dashikpjay@gmail.com
+Email: contact@dashijay.dev
 GitHub: https://github.com/Dashintha-Prabashwara
 LinkedIn: https://linkedin.com/in/dashintha-jayawardana-7b740b26b
 Contact Page: https://dashijayawardana.vercel.app/contact

@@ -66,7 +66,7 @@ function HeroSection() {
         <div className="hidden md:flex justify-center">
           <div className="aspect-square w-full max-w-md mx-auto relative">
             <Image
-              className="w-full h-full object-contain"
+              className="profile-photo w-full h-full object-contain"
               alt="Dashintha's profile"
               src="/images/profile.png"
               width={400}

@@ -94,7 +94,7 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
             onChange={handleChange}
             required
             disabled={status.loading}
-            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-3 sm:py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body disabled:opacity-50 text-sm sm:text-base"
+            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary px-3 sm:px-4 py-3 sm:py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body disabled:opacity-50 text-sm sm:text-base"
             placeholder="Commander Shepherd"
           />
           {status.fieldErrors?.name && (
@@ -118,7 +118,7 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
             onChange={handleChange}
             required
             disabled={status.loading}
-            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-3 sm:py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body disabled:opacity-50 text-sm sm:text-base"
+            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary px-3 sm:px-4 py-3 sm:py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body disabled:opacity-50 text-sm sm:text-base"
             placeholder="shepherd@normandy.com"
           />
           {status.fieldErrors?.email && (
@@ -142,7 +142,7 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
             required
             disabled={status.loading}
             rows="4"
-            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary py-3 sm:py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body resize-none disabled:opacity-50 text-sm sm:text-base"
+            className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary px-3 sm:px-4 py-3 sm:py-4 text-on-surface placeholder:text-on-surface-variant/30 transition-all font-body resize-none disabled:opacity-50 text-sm sm:text-base"
             placeholder="Brief about your system requirements..."
           />
           {status.fieldErrors?.message && (
