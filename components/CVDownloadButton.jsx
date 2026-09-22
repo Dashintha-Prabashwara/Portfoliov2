@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { LockKeyhole } from 'lucide-react';
 
 export default function CVDownloadButton({ className = '' }) {
   const [cv, setCV] = useState(null);
@@ -62,15 +63,17 @@ export default function CVDownloadButton({ className = '' }) {
     }
   };
 
-  // If there's an error or no CV, show minimal button
   if (error || !cv) {
     return (
       <button
-        onClick={fetchCVInfo}
-        className={`bg-gradient-to-r from-primary to-secondary text-on-primary px-5 py-2 rounded-md font-headline text-sm font-bold uppercase tracking-wider hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-primary/20 opacity-50 cursor-not-allowed ${className}`}
+        type="button"
         disabled
+        aria-label="CV locked"
+        title="CV currently unavailable"
+        className={`bg-surface-container-high text-on-surface-variant px-5 py-2 rounded-md font-headline text-sm font-bold uppercase tracking-wider border border-outline-variant/30 opacity-70 cursor-not-allowed flex items-center gap-2 ${className}`}
       >
-        CV Unavailable
+        CV Locked
+        <LockKeyhole className="h-4 w-4" aria-hidden="true" />
       </button>
     );
   }

@@ -1,5 +1,5 @@
 import Navigation from '@/components/Navigation';
-import { SOCIAL_LINKS } from '@/lib/constants';
+import Footer from '@/components/Footer';
 import { getEducation, getCertifications } from '@/lib/notion';
 
 export const dynamic = 'force-dynamic';
@@ -37,7 +37,6 @@ export default async function CertificationsPage() {
 function HeroSection() {
   return (
     <header className="mb-16 sm:mb-20 md:mb-24 relative">
-      <div className="absolute -top-24 -left-24 w-64 sm:w-96 h-64 sm:h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
       <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter mb-4 sm:mb-6 leading-tight">
         System <br />
         <span className="text-gradient italic">Validation.</span>
@@ -88,10 +87,6 @@ function EducationSection({ education }) {
                   {/* Top accent bar animation */}
                   <div className="absolute top-0 left-0 h-[2px] w-6 group-hover:w-12 bg-primary transition-all duration-500"></div>
 
-                  <div className={`flex items-center gap-2 mb-2 ${isLeft ? '' : 'justify-end'}`}>
-                    <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
-                    <span className="font-label text-[10px] text-tertiary tracking-widest uppercase">Active Status</span>
-                  </div>
                   <span className="font-label text-[10px] text-on-surface-variant mb-2 block tracking-widest">
                     {edu.period}
                   </span>
@@ -256,38 +251,3 @@ function CertificationCard({ cert }) {
 }
 
 // ========== FOOTER SECTION ==========
-function Footer() {
-  return (
-    <footer className="bg-zinc-950 w-full py-8 sm:py-12 border-t border-zinc-900 mt-24 sm:mt-32">
-      <div className="flex flex-col gap-6 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 max-w-7xl mx-auto">
-        <div className="font-['Inter'] text-xs tracking-widest uppercase text-zinc-500 text-center sm:text-left">
-          © 2026 Dashintha Jayawardana. Built for the Cloud | All Rights Reserved
-        </div>
-        <div className="flex gap-6 sm:gap-8 justify-center sm:justify-end">
-          <a
-            className="text-zinc-500 hover:text-purple-400 transition-colors opacity-80 hover:opacity-100 duration-200 font-['Inter'] text-xs tracking-widest uppercase"
-            href={SOCIAL_LINKS.github}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            GitHub
-          </a>
-          <a
-            className="text-zinc-500 hover:text-purple-400 transition-colors opacity-80 hover:opacity-100 duration-200 font-['Inter'] text-xs tracking-widest uppercase"
-            href={SOCIAL_LINKS.linkedin}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            LinkedIn
-          </a>
-          <a
-            className="text-zinc-500 hover:text-purple-400 transition-colors opacity-80 hover:opacity-100 duration-200 font-['Inter'] text-xs tracking-widest uppercase"
-            href={`mailto:${SOCIAL_LINKS.email}`}
-          >
-            Email
-          </a>
-        </div>
-      </div>
-    </footer>
-  );
-}

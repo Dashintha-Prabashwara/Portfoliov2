@@ -1,7 +1,7 @@
 'use client';
 
 import Navigation from '@/components/Navigation';
-import { SOCIAL_LINKS } from '@/lib/constants';
+import Footer from '@/components/Footer';
 import { useEffect, useState } from 'react';
 
 export default function Experience() {
@@ -20,6 +20,7 @@ export default function Experience() {
         }
       } finally {
         setLoading(false);
+        window.dispatchEvent(new Event('experience-ready'));
       }
     }
 
@@ -115,16 +116,16 @@ export default function Experience() {
                 const [borderColor, textColor] = colorClass.split(' ').slice(0, 2);
                 const dotColorClass =
                   exp.color === 'primary'
-                    ? 'bg-primary shadow-[0_0_15px_rgba(164,230,255,0.6)]'
+                    ? 'bg-primary'
                     : exp.color === 'secondary'
-                      ? 'bg-secondary shadow-[0_0_15px_rgba(216,185,255,0.6)]'
-                      : 'bg-tertiary shadow-[0_0_15px_rgba(0,249,190,0.6)]';
+                      ? 'bg-secondary'
+                      : 'bg-tertiary';
 
                 return (
                   <div key={exp.id} className="relative mb-16 sm:mb-20 md:mb-24 md:flex items-center justify-between">
                     <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-2'} mb-6 sm:mb-8 md:mb-0`}>
                       <div
-                        className={`surface-container-low p-4 sm:p-6 md:p-8 rounded-lg text-sm sm:text-base ${isLeft ? 'border-l-4' : 'border-r-4'} ${borderColor} hover:bg-surface-container transition-colors ${
+                        className={`bg-surface-container-low p-4 sm:p-6 md:p-8 rounded-lg text-sm sm:text-base ${isLeft ? 'border-l-4' : 'border-r-4'} ${borderColor} hover:bg-surface-container transition-colors ${
                           isLeft ? '' : 'text-right'
                         }`}
                       >
@@ -169,7 +170,7 @@ export default function Experience() {
 
           {/* Leadership Grid - Dynamic Cards with Left-to-Right Animation */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {leadership.map((item, index) => {
+            {leadership.map((item) => {
               const colorClass =
                 item.color === 'primary'
                   ? 'bg-primary'
@@ -186,12 +187,7 @@ export default function Experience() {
               return (
                 <div
                   key={item.title}
-                  className="surface-container-high p-6 sm:p-8 group relative overflow-hidden transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between min-h-[300px] sm:min-h-[320px] animate-in slide-in-from-left fade-in-0"
-                  style={{
-                    animationDelay: `${index * 100}ms`,
-                    animationDuration: '600ms',
-                    animationFillMode: 'both',
-                  }}
+                  className="bg-surface-container-high p-6 sm:p-8 group relative overflow-hidden transition-colors duration-300 flex flex-col justify-between min-h-[300px] sm:min-h-[320px]"
                 >
                   <div className={`absolute top-0 left-0 w-6 h-[2px] ${colorClass}`}></div>
 
@@ -224,7 +220,6 @@ export default function Experience() {
         {/* Quote Section */}
         <section className="mb-8 sm:mb-12">
           <div className="bg-surface-container-low rounded-xl p-8 sm:p-12 md:p-20 relative overflow-hidden">
-            <div className="absolute -right-20 -bottom-20 w-64 sm:w-80 h-64 sm:h-80 bg-primary/10 blur-[100px] rounded-full"></div>
             <div className="relative z-10">
               <span
                 className="material-symbols-outlined text-5xl sm:text-6xl text-outline-variant/20 absolute -top-10 -left-6"
@@ -246,38 +241,7 @@ export default function Experience() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-zinc-950 w-full py-8 sm:py-12 border-t border-zinc-900">
-        <div className="flex flex-col gap-6 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 max-w-7xl mx-auto">
-          <div className="text-zinc-500 font-['Inter'] text-xs tracking-widest uppercase text-center sm:text-left">
-            © 2026 Dashintha Jayawardana. Built for the Cloud | All Rights Reserved
-          </div>
-          <div className="flex gap-6 sm:gap-8 justify-center sm:justify-end">
-            <a
-              className="text-zinc-500 hover:text-purple-400 transition-colors font-['Inter'] text-xs tracking-widest uppercase opacity-80 hover:opacity-100 duration-200"
-              href={SOCIAL_LINKS.github}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              GitHub
-            </a>
-            <a
-              className="text-zinc-500 hover:text-purple-400 transition-colors font-['Inter'] text-xs tracking-widest uppercase opacity-80 hover:opacity-100 duration-200"
-              href={SOCIAL_LINKS.linkedin}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              LinkedIn
-            </a>
-            <a
-              className="text-zinc-500 hover:text-purple-400 transition-colors font-['Inter'] text-xs tracking-widest uppercase opacity-80 hover:opacity-100 duration-200"
-              href={`mailto:${SOCIAL_LINKS.email}`}
-            >
-              Email
-            </a>
-          </div>
-        </div>
-      </footer>
+      <Footer className="mt-0" />
     </>
   );
 }

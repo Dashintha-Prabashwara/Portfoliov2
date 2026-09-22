@@ -27,7 +27,7 @@ export default function Navigation() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-zinc-900/60 backdrop-blur-xl border-b border-zinc-800/50 shadow-2xl shadow-cyan-900/20">
+    <nav className="fixed top-0 w-full z-50 bg-zinc-900/90 backdrop-blur-md border-b border-zinc-800/50">
       <div className="flex justify-between items-center px-4 sm:px-6 py-3 sm:py-4 max-w-7xl mx-auto w-full">
         <Link href="/" className="text-lg sm:text-xl font-bold tracking-tighter text-zinc-100 font-headline hover:text-cyan-400 transition-colors">
           Dashintha
@@ -57,6 +57,8 @@ export default function Navigation() {
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="md:hidden text-on-surface hover:text-primary transition-colors"
           aria-label="Toggle mobile menu"
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-navigation"
         >
           <span className="material-symbols-outlined text-xl sm:text-2xl">
             {mobileMenuOpen ? 'close' : 'menu'}
@@ -66,7 +68,7 @@ export default function Navigation() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-zinc-900/95 border-t border-zinc-800/50 px-4 sm:px-6 py-4">
+        <div id="mobile-navigation" className="md:hidden bg-zinc-900/95 border-t border-zinc-800/50 px-4 sm:px-6 py-4">
           <div className="flex flex-col gap-4">
             {NAV_LINKS.map((link) => {
               const active = isActive(link.href);

@@ -14,9 +14,7 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
-    "ignoreDeprecations": "6.0",
     "resolveJsonModule": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"

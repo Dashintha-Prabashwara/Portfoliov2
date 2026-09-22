@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import Navigation from '@/components/Navigation';
-import { SOCIAL_LINKS } from '@/lib/constants';
+import Footer from '@/components/Footer';
 
 export default function Skills() {
   return (
@@ -11,7 +10,6 @@ export default function Skills() {
       <main className="pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-20 md:pb-24 px-4 sm:px-6 max-w-7xl mx-auto overflow-hidden">
         <SkillsHero />
         <SkillsBentoGrid />
-        <SystemStatusBar />
       </main>
       <Footer />
     </>
@@ -22,8 +20,6 @@ export default function Skills() {
 function SkillsHero() {
   return (
     <section className="mb-12 sm:mb-16 md:mb-20 relative">
-      <div className="absolute -top-24 -left-24 w-64 sm:w-96 h-64 sm:h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute -bottom-24 -right-24 w-64 sm:w-96 h-64 sm:h-96 bg-secondary/10 rounded-full blur-[120px] pointer-events-none"></div>
       <h1 className="font-headline text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter mb-4 opacity-90 leading-tight">
         Building Things <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Reliably</span>
         <br />
@@ -136,55 +132,4 @@ function SkillsBentoGrid() {
   );
 }
 
-// ========== SYSTEM STATUS BAR SECTION ==========
-function SystemStatusBar() {
-  return (
-    <section className="mt-16 sm:mt-20 bg-surface-container/40 backdrop-blur-md border border-outline-variant/10 rounded-lg p-4 sm:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 sm:gap-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full md:w-auto">
-        <div className="flex flex-col">
-          <span className="font-label text-[10px] text-on-surface-variant uppercase tracking-[0.2em]">Deployment Readiness</span>
-          <span className="font-headline text-lg sm:text-xl font-bold">100% Production Ready</span>
-        </div>
-        <div className="h-10 w-[1px] bg-outline-variant/20 hidden md:block"></div>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-tertiary animate-pulse shadow-[0_0_12px_#00f9be]"></span>
-          <span className="font-label text-xs uppercase tracking-widest font-bold text-tertiary">All Systems Operational</span>
-        </div>
-      </div>
-      <div className="flex gap-3 sm:gap-4 w-full md:w-auto">
-        <Link href="/experience">
-          <button className="flex-1 md:flex-none bg-surface-container-high hover:bg-surface-container-highest px-4 sm:px-6 py-2 rounded-md font-label text-xs uppercase tracking-widest transition-all">
-            View Architecture
-          </button>
-        </Link>
-        <Link href="/contact">
-          <button className="flex-1 md:flex-none bg-gradient-to-r from-primary to-secondary text-on-primary px-4 sm:px-6 py-2 rounded-md font-label text-xs uppercase tracking-widest font-bold hover:scale-105 active:scale-95 transition-transform">
-            Hire for Project
-          </button>
-        </Link>
-      </div>
-    </section>
-  );
-}
-
 // ========== FOOTER SECTION ==========
-function Footer() {
-  return (
-    <footer className="bg-zinc-950 w-full py-8 sm:py-12 border-t border-zinc-900 mt-24 sm:mt-32">
-      <div className="flex flex-col gap-6 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 max-w-7xl mx-auto font-['Inter'] text-xs tracking-widest uppercase">
-        <div className="text-zinc-500 opacity-80 text-center sm:text-left">© 2026 Dashintha Jayawardana. Built for the Cloud | All Rights Reserved</div>
-        <div className="flex gap-6 sm:gap-8 justify-center sm:justify-end">
-          <a className="text-zinc-500 hover:text-purple-400 transition-colors opacity-80 hover:opacity-100 duration-200" href={SOCIAL_LINKS.github} rel="noopener noreferrer" target="_blank">
-            GitHub
-          </a>
-          <a className="text-zinc-500 hover:text-purple-400 transition-colors opacity-80 hover:opacity-100 duration-200" href={SOCIAL_LINKS.linkedin} rel="noopener noreferrer" target="_blank">
-            LinkedIn
-          </a>
-          <a className="text-zinc-500 hover:text-purple-400 transition-colors opacity-80 hover:opacity-100 duration-200" href={`mailto:${SOCIAL_LINKS.email}`}>
-            Email
-          </a>
-        </div>
-      </div>
-    </footer>
-  );
-}

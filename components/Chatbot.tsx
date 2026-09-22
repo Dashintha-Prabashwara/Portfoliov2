@@ -1,6 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import {
+  Clipboard,
+  CopyCheck,
+  PencilLine,
+  FileText,
+} from 'lucide-react';
 
 interface Message {
   role: 'user' | 'bot';
@@ -104,13 +110,16 @@ export default function Chatbot() {
       parts.push(
         <div key={`code-${codeIndex++}`} className="bg-slate-800 rounded overflow-hidden my-2 border border-slate-700">
           <div className="bg-slate-900 px-3 py-2 flex justify-between items-center">
-            <div className="text-cyan-400 text-xs font-semibold">📝 {lang.toUpperCase()}</div>
+            <div className="text-cyan-400 text-xs font-semibold flex items-center gap-2">
+              <FileText className="h-3.5 w-3.5" />
+              {lang.toUpperCase()}
+            </div>
             <button
               onClick={() => copyToClipboard(code, -codeIndex)}
               className="msg-action-icon"
               title="Copy code"
             >
-              {copiedId === -codeIndex ? '✓' : '📋'}
+              {copiedId === -codeIndex ? <CopyCheck className="h-3.5 w-3.5" /> : <Clipboard className="h-3.5 w-3.5" />}
             </button>
           </div>
           <pre className="p-3 overflow-x-auto text-xs font-mono text-slate-100 whitespace-pre-wrap break-words">
@@ -396,7 +405,7 @@ export default function Chatbot() {
       .chat-backdrop {
         position: fixed;
         inset: 0;
-        z-index: 39;
+        z-index: 60;
         background: rgba(0, 0, 0, 0);
         backdrop-filter: blur(0px);
         animation: backdropIn 0.2s ease forwards;
@@ -460,19 +469,17 @@ export default function Chatbot() {
         position: fixed;
         bottom: 28px;
         right: 28px;
-        z-index: 40;
+        z-index: 61;
         width: 56px;
         height: 56px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #a4e6ff 0%, #d8b9ff 100%);
+        background: #a4e6ff;
         border: 1px solid rgba(164, 230, 255, 0.3);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 8px 24px rgba(164, 230, 255, 0.2);
-        transition: transform 0.2s, box-shadow 0.2s;
-        backdrop-filter: blur(10px);
+        transition: opacity 0.2s;
       }
 
       .chat-button.closing {
@@ -480,8 +487,7 @@ export default function Chatbot() {
       }
 
       .chat-button:hover {
-        transform: scale(1.1);
-        box-shadow: 0 6px 20px rgba(99, 188, 130, 0.4);
+        opacity: 0.85;
       }
 
       .chat-button:active {
@@ -498,7 +504,7 @@ export default function Chatbot() {
         position: fixed;
         bottom: 28px;
         right: 28px;
-        z-index: 41;
+        z-index: 62;
         width: 370px;
         height: 560px;
         background: rgba(19, 22, 30, 0.95);
@@ -508,7 +514,7 @@ export default function Chatbot() {
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(164, 230, 255, 0.2);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8);
         animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         font-family: 'DM Sans', sans-serif;
       }
@@ -1210,8 +1216,9 @@ export default function Chatbot() {
                         onClick={() => copyToClipboard(msg.text, idx)}
                         className="msg-action-icon"
                         title="Copy message"
+                        aria-label="Copy message"
                       >
-                        {copiedId === idx ? '✓' : '📋'}
+                        {copiedId === idx ? <CopyCheck className="h-3.5 w-3.5" /> : <Clipboard className="h-3.5 w-3.5" />}
                       </button>
                       <button
                         onClick={() => {
@@ -1220,8 +1227,9 @@ export default function Chatbot() {
                         }}
                         className="msg-action-icon"
                         title="Edit message"
+                        aria-label="Edit message"
                       >
-                        ✏️
+                        <PencilLine className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   )}
@@ -1231,8 +1239,9 @@ export default function Chatbot() {
                         onClick={() => copyToClipboard(msg.text, idx)}
                         className="msg-action-icon"
                         title="Copy message"
+                        aria-label="Copy message"
                       >
-                        {copiedId === idx ? '✓' : '📋'}
+                        {copiedId === idx ? <CopyCheck className="h-3.5 w-3.5" /> : <Clipboard className="h-3.5 w-3.5" />}
                       </button>
                     </div>
                   )}
@@ -1292,7 +1301,7 @@ export default function Chatbot() {
         </div>
         </>
       )}
-      {copiedId !== null && <div className="toast">Copied to clipboard ✓</div>}
+      {copiedId !== null && <div className="toast">Copied to clipboard</div>}
     </>
   );
 }

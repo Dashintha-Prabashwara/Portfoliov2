@@ -1,582 +1,107 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import Navigation from '@/components/Navigation';
 import ContactForm from '@/components/ContactForm';
+import Footer from '@/components/Footer';
 import { SOCIAL_LINKS } from '@/lib/constants';
 
-// ========== DATA SECTION ==========
-const pipelineStages = [
-  { id: 1, name: 'Source', icon: 'source', description: 'GitHub Webhook' },
-  { id: 2, name: 'Build & Test', icon: 'build', description: 'Unit Tests: 98% Pass' },
-  { id: 3, name: 'Deploy', icon: 'deployed_code', description: 'Staging Cluster' },
-  { id: 4, name: 'Monitor', icon: 'monitoring', description: 'Awaiting Trigger' },
-];
-
-const headerTextMap = {
-  idle: { name: 'Contact CI/CD Pipeline', status: 'Awaiting Input' },
-  source: { name: 'Initializing Connection Pipeline', status: 'Running Optimization' },
-  build: { name: 'Running Build Optimization', status: 'Running Optimization' },
-  deploy: { name: 'Deploying to Staging Cluster', status: 'Running Optimization' },
-  monitor: { name: 'Pipeline Complete · Monitoring Active', status: 'All Systems Healthy' },
-  error: { name: 'Pipeline Failed · Awaiting Fix', status: 'OFFLINE' },
-};
-
-const consoleLinesByStage = {
-  idle: [
-    { type: 'pending', text: 'awaiting signal...' },
-    { type: 'pending', text: 'system ready · listening on port 3000' },
-  ],
-  source: [
-    { type: 'command', text: 'git status · 1 file modified' },
-    { type: 'command', text: 'git add .' },
-    { type: 'command', text: 'git commit -m "feat: new inbound signal detected"' },
-    { type: 'success', text: 'Webhook received · origin/main' },
-    { type: 'command', text: 'Pulling latest changes...' },
-    { type: 'success', text: 'Repository synced · 3 commits ahead' },
-  ],
-  build: [
-    { type: 'command', text: 'npm install · resolving dependencies...' },
-    { type: 'success', text: '847 packages installed in 3.2s' },
-    { type: 'command', text: 'npm run build --prod' },
-    { type: 'success', text: 'Compiled successfully · bundle size 284kb' },
-    { type: 'command', text: 'Running test suites...' },
-    { type: 'success', text: 'Artifacts stored in S3: build_0422.zip' },
-    { type: 'pending', text: 'Validating API endpoints...' },
-    { type: 'success', text: 'Unit Tests: 98% Pass · 142/145 passed' },
-  ],
-  deploy: [
-    { type: 'command', text: 'Pushing to staging cluster...' },
-    { type: 'success', text: 'Docker image built · sha256:a3f9c1' },
-    { type: 'command', text: 'kubectl apply -f deployment.yaml' },
-    { type: 'success', text: 'Pod running · replicas: 3/3' },
-    { type: 'success', text: 'Deployed to production · env: staging' },
-    { type: 'success', text: 'Email service initialized · latency 14ms' },
-  ],
-  monitor: [
-    { type: 'success', text: 'Health check passed · uptime 100%' },
-    { type: 'success', text: 'API Mesh active · 15 microservices online' },
-    { type: 'success', text: 'Response time: 42ms · p99: 98ms' },
-    { type: 'success', text: 'Zero error rate · all systems nominal' },
-    { type: 'pending', text: 'watching for anomalies...' },
-  ],
-  error: [
-    { type: 'command', text: 'npm run test' },
-    { type: 'error', text: 'Unit Tests: 98% Pass · 2 failures detected' },
-    { type: 'error', text: 'TypeError: Cannot read properties of undefined' },
-    { type: 'error', text: 'AssertionError: expected 200 but got 503' },
-    { type: 'error', text: 'Rolling back to last stable build...' },
-    { type: 'error', text: 'Pipeline halted · intervention required' },
-  ],
-};
-
 export default function Contact() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: '',
-    website: '',
-  });
-  const [pipelineState, setPipelineState] = useState({ stage: 'idle', status: 'ok' });
-  const [consoleOutput, setConsoleOutput] = useState(consoleLinesByStage.idle);
-  const [formStatus, setFormStatus] = useState({
-    loading: false,
-    success: false,
-    error: null,
-    fieldErrors: {},
-  });
-  const timeoutsRef = useRef([]);
+  const [formData, setFormData] = useState({ name: '', email: '', message: '', website: '' });
+  const [formStatus, setFormStatus] = useState({ loading: false, success: false, error: null, fieldErrors: {} });
 
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      timeoutsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
-    };
-  }, []);
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    const updatedData = { ...formData, [name]: value };
-    setFormData(updatedData);
-
-    // Clear field error when user starts typing
-    if (formStatus.fieldErrors?.[name]) {
-      setFormStatus(prev => ({
-        ...prev,
-        fieldErrors: {
-          ...prev.fieldErrors,
-          [name]: null
-        }
-      }));
-    }
-
-    // Check if all fields are empty
-    const isEmpty = !updatedData.name.trim() && !updatedData.email.trim() && !updatedData.message.trim();
-
-    if (isEmpty) {
-      // Reset to idle if all fields are cleared
-      setPipelineState({ stage: 'idle', status: 'ok' });
-      setConsoleOutput(consoleLinesByStage.idle);
-      setFormStatus({ loading: false, success: false, error: null, fieldErrors: {} });
-    } else if (pipelineState.stage === 'idle') {
-      // Transition from idle to source on first input
-      setPipelineState({ stage: 'source', status: 'ok' });
-      setConsoleOutput(consoleLinesByStage.source);
-    }
-  };
-
-  // Submit form to API
-  const submitToAPI = async (submittedData) => {
-    // Call API directly
-    return fetch('/api/contact', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(submittedData),
-    })
-      .then(async (response) => {
-        let data;
-
-        // Try to parse JSON response
-        try {
-          data = await response.json();
-        } catch (parseError) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('Failed to parse JSON response:', parseError);
-          }
-          // Response is not valid JSON (e.g., server error, HTML error page)
-          throw {
-            message: `Server error (Status ${response.status}): Unable to process response. Please try again.`,
-            fieldErrors: {},
-            statusCode: response.status,
-          };
-        }
-
-        // Check if response indicates success
-        if (response.ok && data.success) {
-          return data;
-        }
-
-        // API returned an error
-        if (process.env.NODE_ENV === 'development') {
-          console.error('API returned error:', {
-            status: response.status,
-            data: data,
-          });
-        }
-
-        throw {
-          message: data.error || 'Submission failed',
-          fieldErrors: data.errors || {},
-          statusCode: response.status,
-        };
-      })
-      .catch((error) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('submitToAPI error:', error);
-        }
-
-        // Handle different types of errors
-        if (error instanceof TypeError) {
-          throw {
-            message: 'Network error: Please check your connection and try again.',
-            fieldErrors: {},
-          };
-        }
-
-        if (error instanceof SyntaxError) {
-          throw {
-            message: 'Response parsing error: Server returned invalid data. Please try again.',
-            fieldErrors: {},
-          };
-        }
-
-        // Re-throw app errors
-        if (error && typeof error === 'object' && 'message' in error) {
-          throw error;
-        }
-
-        // Unknown error
-        throw {
-          message: error?.message || 'An unexpected error occurred. Please try again.',
-          fieldErrors: {},
-        };
-      });
+  const handleFormChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((current) => ({ ...current, [name]: value }));
+    setFormStatus((current) => ({
+      ...current,
+      error: null,
+      fieldErrors: { ...current.fieldErrors, [name]: null },
+    }));
   };
 
   const handleFormSubmit = async (submittedData) => {
-    setPipelineState({ stage: 'build', status: 'ok' });
-    setFormStatus({ loading: true, success: false, error: null });
-    setConsoleOutput(consoleLinesByStage.build);
-
-    // Clear any existing timeouts
-    timeoutsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
-    timeoutsRef.current = [];
+    setFormStatus({ loading: true, success: false, error: null, fieldErrors: {} });
 
     try {
-      // Add simulated delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      await submitToAPI(submittedData);
-
-      // Transition to deploy after API succeeds
-      const deployTimeout = setTimeout(() => {
-        setPipelineState({ stage: 'deploy', status: 'ok' });
-        setConsoleOutput(consoleLinesByStage.deploy);
-      }, 800);
-      timeoutsRef.current.push(deployTimeout);
-
-      // Transition to monitor
-      const monitorTimeout = setTimeout(() => {
-        setPipelineState({ stage: 'monitor', status: 'ok' });
-        setConsoleOutput(consoleLinesByStage.monitor);
-      }, 2300);
-      timeoutsRef.current.push(monitorTimeout);
-
-      setFormStatus({
-        loading: false,
-        success: true,
-        error: null,
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submittedData),
       });
+      const data = await response.json();
 
-      // Reset form after 5 seconds
-      const resetFormTimeout = setTimeout(() => {
-        setFormData({ name: '', email: '', message: '', website: '' });
-        setFormStatus({ loading: false, success: false, error: null, fieldErrors: {} });
-      }, 5000);
-      timeoutsRef.current.push(resetFormTimeout);
+      if (!response.ok || !data.success) {
+        throw { message: data.error || 'Submission failed. Please try again.', fieldErrors: data.errors || {} };
+      }
 
-      // Reset pipeline after 8 seconds
-      const resetPipelineTimeout = setTimeout(() => {
-        setPipelineState({ stage: 'idle', status: 'ok' });
-        setConsoleOutput(consoleLinesByStage.idle);
-      }, 8000);
-      timeoutsRef.current.push(resetPipelineTimeout);
+      setFormStatus({ loading: false, success: true, error: null, fieldErrors: {} });
+      setFormData({ name: '', email: '', message: '', website: '' });
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Contact form submission error:', error);
       }
-
-      // Extract error message and field errors
-      const errorMsg = error?.message || error || 'An unexpected error occurred. Please try again.';
-      const fieldErrs = error?.fieldErrors || {};
-
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error details:', {
-          message: errorMsg,
-          fieldErrors: fieldErrs,
-          statusCode: error?.statusCode,
-        });
-      }
-
-      setPipelineState({ stage: 'build', status: 'error' });
       setFormStatus({
         loading: false,
         success: false,
-        error: errorMsg,
-        fieldErrors: fieldErrs,
+        error: error?.message || 'Network error. Please try again.',
+        fieldErrors: error?.fieldErrors || {},
       });
-
-      // Show error console lines
-      setConsoleOutput(consoleLinesByStage.error);
     }
-  };
-
-  const handleRetry = () => {
-    // Reset to build stage without going back to source
-    setPipelineState({ stage: 'build', status: 'ok' });
-    setFormStatus({ loading: true, success: false, error: null });
-    setConsoleOutput(consoleLinesByStage.build);
-    // Re-submit
-    handleFormSubmit(formData);
   };
 
   return (
     <>
       <Navigation />
-      <main className="pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto overflow-hidden relative">
+      <main className="pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <ContactHero />
-
-
-        {/* Live Infrastructure Section Header */}
-        <div className="flex items-center gap-4 mb-6 sm:mb-8">
-          <div className="h-px flex-1 bg-outline-variant/30"></div>
-          <h2 className="font-headline text-xs sm:text-sm uppercase tracking-[0.2em] text-primary whitespace-nowrap">Live Infrastructure</h2>
-        </div>
-
-        {/* FRAME 1: Pipeline Viz (LEFT) + Contact Form (RIGHT) */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 md:gap-20 items-start mb-24 sm:mb-32">
-          {/* LEFT - Pipeline Visualization */}
-          <PipelinePanel
-            stages={pipelineStages}
-            pipelineState={pipelineState}
-            consoleOutput={consoleOutput}
-            onRetry={handleRetry}
-          />
-
-          {/* RIGHT - Contact Form */}
-          <ContactForm
-            formData={formData}
-            status={formStatus}
-            onFormChange={handleFormChange}
-            onFormSubmit={handleFormSubmit}
-          />
-        </section>
-
-        {/* FRAME 2: Contact Info (LEFT) + Info Cards (RIGHT) */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 md:gap-20 items-start">
-          {/* LEFT - Contact Info */}
           <ContactInfo />
-
-          {/* RIGHT - Info Cards */}
-          <InfoCards />
+          <ContactForm formData={formData} status={formStatus} onFormChange={handleFormChange} onFormSubmit={handleFormSubmit} />
         </section>
       </main>
-      <Footer />
+      <Footer className="mt-24 sm:mt-32" />
     </>
   );
 }
 
-// ========== CONSOLE LINE COMPONENT ==========
-function ConsoleLine({ log }) {
-  const getIndicator = () => {
-    switch (log.type) {
-      case 'command':
-        return <span className="text-on-surface">$</span>;
-      case 'success':
-        return <span className="text-tertiary">✔</span>;
-      case 'error':
-        return <span className="text-error">✖</span>;
-      case 'pending':
-        return <span className="text-primary">➜</span>;
-      default:
-        return <span className="text-on-surface">$</span>;
-    }
-  };
-
-  const getTextColor = () => {
-    switch (log.type) {
-      case 'error':
-        return 'text-error';
-      case 'success':
-        return 'text-tertiary';
-      case 'pending':
-        return 'text-primary';
-      default:
-        return 'text-on-surface-variant';
-    }
-  };
-
-  return (
-    <div className="flex gap-3">
-      <span className="flex-shrink-0">{getIndicator()}</span>
-      <span className={`font-mono ${getTextColor()}`}>{log.text}</span>
-    </div>
-  );
-}
-
-// ========== PIPELINE PANEL SECTION ==========
-function PipelinePanel({ stages, pipelineState, consoleOutput, onRetry }) {
-  const headerText = headerTextMap[pipelineState.stage] || headerTextMap.idle;
-  const isError = pipelineState.status === 'error';
-
-  return (
-    <div className="bg-surface-container-low rounded-xl p-4 sm:p-6 md:p-8 border-l-2 border-primary">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <div>
-          <h3 className="font-headline text-lg sm:text-xl md:text-2xl font-bold">{headerText.name}</h3>
-          <p className={`text-xs sm:text-sm font-label uppercase tracking-widest mt-1 ${isError ? 'text-error' : 'text-on-surface-variant'}`}>
-            {headerText.status}
-          </p>
-        </div>
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-full border whitespace-nowrap ${isError ? 'bg-error/10 border-error/20' : 'bg-tertiary/10 border-tertiary/20'}`}>
-          <span className={`w-2 h-2 rounded-full ${isError ? 'bg-error' : 'bg-tertiary'} ${pipelineState.stage !== 'idle' ? 'animate-pulse' : ''}`}></span>
-          <span className={`text-[10px] font-bold uppercase ${isError ? 'text-error' : 'text-tertiary'}`}>
-            {isError ? 'OFFLINE' : pipelineState.stage === 'idle' ? 'Idle' : 'Active'}
-          </span>
-        </div>
-      </div>
-
-      {/* Pipeline Stages */}
-      <div className="relative flex flex-row justify-between items-center gap-2 sm:gap-4 md:gap-8 py-3 sm:py-4 mb-6 sm:mb-8 overflow-x-auto">
-        <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-outline-variant/20 -translate-y-1/2 z-0"></div>
-        {stages.map((stage) => {
-          const stageKey = ['source', 'build', 'deploy', 'monitor'][stage.id - 1];
-          const isActive = pipelineState.stage === stageKey;
-          const isFailed = isError && pipelineState.stage === 'build';
-          const opacityClass = isActive ? 'stage--active' : 'stage--dimmed';
-
-          return (
-            <div
-              key={stage.id}
-              className={`z-10 p-2 sm:p-3 md:p-4 rounded-lg border shadow-xl text-center transition-all flex-1 md:flex-initial w-20 sm:w-24 md:w-auto ${opacityClass} ${
-                isFailed
-                  ? 'bg-surface-container-high border-error/40 ring-2 ring-error/10'
-                  : isActive
-                    ? stage.id === 3
-                      ? 'bg-surface-container-high border-secondary/40 ring-2 ring-secondary/10'
-                      : 'bg-surface-container-high border-primary/40 ring-2 ring-primary/10'
-                    : 'bg-surface-container-high border-outline-variant/10'
-              }`}
-            >
-              <span
-                className={`material-symbols-outlined mb-1 sm:mb-2 block text-xl sm:text-2xl ${
-                  isFailed ? 'text-error' : stage.id === 3 && isActive ? 'text-secondary' : 'text-primary'
-                }`}
-              >
-                {stage.icon}
-              </span>
-              <p className={`text-xs font-label font-bold uppercase mb-1 ${isFailed ? 'text-error' : 'text-on-surface'}`}>
-                {stage.name}
-              </p>
-              <p className="text-[10px] text-on-surface-variant hidden sm:block">{stage.description}</p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Console Output */}
-      <div className="p-3 sm:p-4 bg-surface-container-lowest rounded-lg font-mono text-xs text-on-surface-variant border border-outline-variant/10 min-h-[100px] sm:min-h-[120px] max-h-[200px] overflow-y-auto space-y-1">
-        {consoleOutput.length === 0 ? (
-          <div className="text-on-surface-variant/50">Awaiting input...</div>
-        ) : (
-          consoleOutput.map((log, index) => (
-            <ConsoleLine key={index} log={log} />
-          ))
-        )}
-      </div>
-
-      {/* Retry Button - Only show on error */}
-      {isError && (
-        <button
-          onClick={onRetry}
-          className="mt-4 sm:mt-6 w-full px-4 sm:px-6 py-2 sm:py-3 bg-primary text-surface rounded-lg font-label font-bold text-xs sm:text-sm uppercase tracking-wider hover:bg-primary/80 transition-colors"
-        >
-          Retry Pipeline
-        </button>
-      )}
-    </div>
-  );
-}
-
-
-// ========== CONTACT SECTION ==========
 function ContactInfo() {
   return (
-    <div>
+    <section>
       <h2 className="font-headline text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">Get In Touch.</h2>
       <p className="text-on-surface-variant text-sm sm:text-base md:text-lg max-w-md mb-8 sm:mb-12">
-        Looking to work together or just want to chat about tech? I'm always interested in hearing about what people are building and learning.
+        Looking to work together or just want to chat about tech? I&apos;m always interested in hearing about what people are building and learning.
       </p>
       <div className="space-y-6 sm:space-y-8">
-        <div className="flex items-center gap-4 sm:gap-6 group">
-          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-surface-container-high flex items-center justify-center border border-outline-variant/10 group-hover:border-primary/50 transition-colors flex-shrink-0">
-            <span className="material-symbols-outlined text-primary text-lg sm:text-xl">alternate_email</span>
-          </div>
-          <div>
-            <p className="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Email</p>
-            <a href={`mailto:${SOCIAL_LINKS.email}`} className="font-headline font-bold text-sm sm:text-base md:text-lg hover:text-primary transition-colors">
-              {SOCIAL_LINKS.email}
-            </a>
-          </div>
+        <div>
+          <p className="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Email</p>
+          <a href={`mailto:${SOCIAL_LINKS.email}`} className="font-headline font-bold text-sm sm:text-base md:text-lg hover:text-primary transition-colors">
+            {SOCIAL_LINKS.email}
+          </a>
         </div>
-        <div className="flex items-center gap-4 sm:gap-6 group">
-          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-surface-container-high flex items-center justify-center border border-outline-variant/10 group-hover:border-secondary/50 transition-colors flex-shrink-0">
-            <span className="material-symbols-outlined text-secondary text-lg sm:text-xl">share</span>
-          </div>
-          <div className="flex gap-2 sm:gap-4 flex-wrap">
-            <a className="text-on-surface-variant hover:text-on-surface transition-colors font-headline font-bold text-sm sm:text-base md:text-lg" href={SOCIAL_LINKS.github} rel="noopener noreferrer" target="_blank">
-              GitHub
-            </a>
-            <span className="text-outline-variant/30">/</span>
-            <a className="text-on-surface-variant hover:text-on-surface transition-colors font-headline font-bold text-sm sm:text-base md:text-lg" href={SOCIAL_LINKS.linkedin} rel="noopener noreferrer" target="_blank">
-              LinkedIn
-            </a>
+        <div>
+          <p className="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Profiles</p>
+          <div className="flex gap-4 flex-wrap">
+            <a className="text-on-surface-variant hover:text-on-surface transition-colors font-headline font-bold text-sm sm:text-base md:text-lg" href={SOCIAL_LINKS.github} rel="noopener noreferrer" target="_blank">GitHub</a>
+            <a className="text-on-surface-variant hover:text-on-surface transition-colors font-headline font-bold text-sm sm:text-base md:text-lg" href={SOCIAL_LINKS.linkedin} rel="noopener noreferrer" target="_blank">LinkedIn</a>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-// ========== INFO CARDS SECTION ==========
-function InfoCards() {
-  return (
-    <div className="flex flex-col gap-4 sm:gap-6">
-      {/* Persistence Layer Card */}
-      <div className="bg-surface-container-high rounded-xl p-4 sm:p-6 border-t-2 border-secondary flex-1">
-        <span className="material-symbols-outlined text-secondary text-2xl sm:text-3xl mb-3 sm:mb-4 block">database</span>
-        <h4 className="font-headline text-base sm:text-lg font-bold">Data Persistence</h4>
-        <p className="text-on-surface-variant text-xs sm:text-sm mt-2 mb-3 sm:mb-4 leading-relaxed">
-          Optimized contact form processing with real-time validation and immediate response feedback through resilient API design.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <span className="px-2 py-1 bg-surface-container-lowest rounded text-[10px] font-label font-bold text-on-surface border border-outline-variant/20 uppercase">
-            Resend
-          </span>
-          <span className="px-2 py-1 bg-surface-container-lowest rounded text-[10px] font-label font-bold text-on-surface border border-outline-variant/20 uppercase">
-            Next.js API
-          </span>
-          <span className="px-2 py-1 bg-surface-container-lowest rounded text-[10px] font-label font-bold text-on-surface border border-outline-variant/20 uppercase">
-            Error Handling
-          </span>
-        </div>
-      </div>
-
-      {/* API Mesh Card */}
-      <div className="bg-surface-container-high rounded-xl p-4 sm:p-6 border-t-2 border-primary flex-1">
-        <span className="material-symbols-outlined text-primary text-2xl sm:text-3xl mb-3 sm:mb-4 block">hub</span>
-        <h4 className="font-headline text-base sm:text-lg font-bold">API Mesh</h4>
-        <p className="text-on-surface-variant text-xs sm:text-sm mt-2 mb-3 sm:mb-4">
-          Implementing Istio service mesh for enhanced observability across 15+ microservices.
-        </p>
-        <div className="w-full bg-outline-variant/20 h-1 rounded-full overflow-hidden">
-          <div className="bg-primary h-full w-[65%]"></div>
-        </div>
-        <p className="text-[10px] font-label text-primary mt-2 uppercase font-bold">65% Integration Complete</p>
-      </div>
-    </div>
-  );
-}
-
-// ========== HERO SECTION ==========
 function ContactHero() {
   return (
-    <div className="mb-16 sm:mb-20">
+    <header className="mb-16 sm:mb-20">
       <h1 className="font-headline text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 sm:mb-6">
-        <span className="block">Let&rsquo;s</span>
+        <span className="block">Let&apos;s</span>
         <span className="block text-gradient ml-6 sm:ml-12 md:ml-24">Build</span>
         <span className="block">Something.</span>
       </h1>
       <p className="font-body text-on-surface-variant max-w-xl text-sm sm:text-base md:text-lg mt-6 sm:mt-8">
-        I'm looking for opportunities to grow, learn, and contribute to interesting projects. Let's talk about what you're working on.
+        I&apos;m looking for opportunities to grow, learn, and contribute to interesting projects. Let&apos;s talk about what you&apos;re working on.
       </p>
-    </div>
-  );
-}
-
-// ========== FOOTER SECTION ==========
-function Footer() {
-  return (
-    <footer className="bg-zinc-950 w-full py-8 sm:py-12 border-t border-zinc-900 mt-24 sm:mt-32">
-      <div className="flex flex-col gap-6 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 max-w-7xl mx-auto">
-        <div className="text-zinc-500 font-['Inter'] text-xs tracking-widest uppercase text-center sm:text-left">
-          © 2026 Dashintha Jayawardana. Built for the Cloud | All Rights Reserved
-        </div>
-        <div className="flex gap-6 sm:gap-8 justify-center sm:justify-end">
-          <a className="text-zinc-500 hover:text-purple-400 transition-colors font-['Inter'] text-xs tracking-widest uppercase opacity-80 hover:opacity-100 duration-200" href={SOCIAL_LINKS.github} rel="noopener noreferrer" target="_blank">
-            GitHub
-          </a>
-          <a className="text-zinc-500 hover:text-purple-400 transition-colors font-['Inter'] text-xs tracking-widest uppercase opacity-80 hover:opacity-100 duration-200" href={SOCIAL_LINKS.linkedin} rel="noopener noreferrer" target="_blank">
-            LinkedIn
-          </a>
-          <a className="text-zinc-500 hover:text-purple-400 transition-colors font-['Inter'] text-xs tracking-widest uppercase opacity-80 hover:opacity-100 duration-200" href={`mailto:${SOCIAL_LINKS.email}`}>
-            Email
-          </a>
-        </div>
-      </div>
-    </footer>
+    </header>
   );
 }

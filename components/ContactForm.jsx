@@ -77,9 +77,6 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
 
   return (
     <div className="bg-surface-container-low p-6 sm:p-8 md:p-12 rounded-2xl relative">
-      {/* Abstract Glow */}
-      <div className="absolute -top-20 -right-20 w-48 sm:w-64 h-48 sm:h-64 bg-primary/5 blur-[100px] rounded-full"></div>
-
       <form onSubmit={handleSubmit} className="relative z-10 space-y-6 sm:space-y-8">
         {/* Name Field */}
         <div className="relative">
@@ -170,7 +167,7 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
           <button
             type="submit"
             disabled={status.loading}
-            className="w-full bg-gradient-to-r from-primary to-secondary text-on-primary font-headline font-bold uppercase tracking-[0.2em] py-4 sm:py-5 rounded-md hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-primary/10 flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+            className="w-full bg-gradient-to-r from-primary to-secondary text-on-primary font-headline font-bold uppercase tracking-[0.2em] py-4 sm:py-5 rounded-md active:opacity-90 transition-opacity flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           >
             {status.loading ? (
               <>
@@ -245,6 +242,9 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowEmailWarning(false)}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="email-warning-title"
               className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             >
               <motion.div
@@ -259,7 +259,7 @@ export default function ContactForm({ formData, status, onFormChange, onFormSubm
                     <span className="material-symbols-outlined text-warning text-2xl flex-shrink-0">
                       warning
                     </span>
-                    <h3 className="font-headline text-base sm:text-lg font-bold">Possible Email Typo</h3>
+                    <h3 id="email-warning-title" className="font-headline text-base sm:text-lg font-bold">Possible Email Typo</h3>
                   </div>
                   <button
                     type="button"

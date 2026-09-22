@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import Navigation from '@/components/Navigation';
-import { SOCIAL_LINKS } from '@/lib/constants';
+import Footer from '@/components/Footer';
 import { getProjects } from '@/lib/notion';
 
 export const dynamic = 'force-dynamic';
@@ -35,8 +35,6 @@ export default async function ProjectsPage() {
 function HeroSection() {
   return (
     <div className="relative mb-16 sm:mb-20 md:mb-24">
-      <div className="absolute -top-24 -left-24 w-64 sm:w-96 h-64 sm:h-96 bg-primary/10 rounded-full blur-[120px]"></div>
-      <div className="absolute top-0 right-0 w-48 sm:w-64 h-48 sm:h-64 bg-secondary/10 rounded-full blur-[100px]"></div>
       <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter mb-6 leading-none">
         <span className="text-on-surface">Building</span>
         <br />
@@ -53,6 +51,15 @@ function HeroSection() {
 
 // ========== PROJECTS GRID SECTION ==========
 function ProjectsGrid({ projects }) {
+  if (projects.length === 0) {
+    return (
+      <div className="border border-dashed border-outline-variant/30 rounded-xl px-6 py-12 text-center">
+        <h2 className="font-headline text-xl sm:text-2xl font-bold mb-2">Projects are being updated</h2>
+        <p className="text-on-surface-variant text-sm">Please check back soon for the latest work.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12">
       {projects.map((project) => (
@@ -91,7 +98,7 @@ function ProjectCard({ project }) {
         {project.status && statusStyles && (
           <div className="absolute top-3 sm:top-4 left-3 sm:left-4">
             <span className={`${statusStyles.bg} ${statusStyles.text} text-[10px] font-bold tracking-[0.2em] px-3 py-1 rounded-full uppercase flex items-center gap-1.5 border ${statusStyles.border}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${statusStyles.dot} animate-pulse`}></span>
+              <span className={`w-1.5 h-1.5 rounded-full ${statusStyles.dot}`}></span>
               {project.status}
             </span>
           </div>
@@ -177,17 +184,14 @@ function ContactCTASection() {
           <p className="text-on-surface-variant font-light mb-6 sm:mb-8 text-sm sm:text-base">
             Let's discuss how we can build resilient systems and beautiful user experiences for your next project.
           </p>
-          <Link href="/contact">
-            <button className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-on-surface text-surface rounded-md font-bold text-xs sm:text-sm uppercase tracking-widest transition-all hover:pr-12 w-full md:w-auto">
-              Get In Touch
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">
-                arrow_forward
-              </span>
-            </button>
+          <Link href="/contact" className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-on-surface text-surface rounded-md font-bold text-xs sm:text-sm uppercase tracking-widest transition-all hover:pr-12 w-full md:w-auto">
+            Get In Touch
+            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">
+              arrow_forward
+            </span>
           </Link>
         </div>
         <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 shrink-0">
-          <div className="absolute inset-0 bg-primary/20 rounded-full blur-[60px] animate-pulse"></div>
           <div className="w-full h-full border border-outline-variant/30 rounded-full flex items-center justify-center relative z-10">
             <span className="material-symbols-outlined text-6xl sm:text-8xl text-primary/50">cloud_done</span>
           </div>
@@ -198,25 +202,3 @@ function ContactCTASection() {
 }
 
 // ========== FOOTER SECTION ==========
-function Footer() {
-  return (
-    <footer className="bg-zinc-950 w-full py-8 sm:py-12 border-t border-zinc-900">
-      <div className="flex flex-col gap-6 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 max-w-7xl mx-auto">
-        <div className="font-['Inter'] text-xs tracking-widest uppercase text-zinc-500 text-center sm:text-left">
-          © 2026 Dashintha Jayawardana. Built for the Cloud | All Rights Reserved
-        </div>
-        <div className="flex gap-6 sm:gap-8 justify-center sm:justify-end">
-          <a className="text-zinc-500 hover:text-purple-400 transition-colors opacity-80 hover:opacity-100 duration-200 font-['Inter'] text-xs tracking-widest uppercase" href={SOCIAL_LINKS.github} rel="noopener noreferrer" target="_blank">
-            GitHub
-          </a>
-          <a className="text-zinc-500 hover:text-purple-400 transition-colors opacity-80 hover:opacity-100 duration-200 font-['Inter'] text-xs tracking-widest uppercase" href={SOCIAL_LINKS.linkedin} rel="noopener noreferrer" target="_blank">
-            LinkedIn
-          </a>
-          <a className="text-zinc-500 hover:text-purple-400 transition-colors opacity-80 hover:opacity-100 duration-200 font-['Inter'] text-xs tracking-widest uppercase" href={`mailto:${SOCIAL_LINKS.email}`}>
-            Email
-          </a>
-        </div>
-      </div>
-    </footer>
-  );
-}
