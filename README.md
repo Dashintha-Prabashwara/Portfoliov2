@@ -50,7 +50,7 @@ portfoliov2/
 │   │   ├── cv/
 │   │   │   └── route.js                    # CV file endpoint (static)
 │   │   └── chat/
-│   │       └── route.ts                    # Chatbot AI endpoint (Groq)
+│   │       └── route.ts                    # Chatbot AI endpoint (Gemini)
 │   ├── page.jsx                            # Home page
 │   ├── skills/
 │   │   ├── page.jsx                        # Skills showcase page
@@ -159,7 +159,8 @@ NOTION_EDUCATION_DB=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NOTION_CERTIFICATIONS_DB=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Chatbot
-GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-3.6-flash
 TAVILY_API_KEY=tvly_xxxxxxxxxxxxxxxxxxxxxxxxxxxx (optional, for web search)
 
 # Email Service (Resend)
@@ -356,7 +357,7 @@ Retrieves CV file information (static file from `public/cv.pdf`).
 
 **POST** `/api/chat`
 
-Sends a message to the AI chatbot powered by Groq.
+Sends a message to the AI chatbot powered by Gemini.
 
 **Request Body:**
 ```json
@@ -371,7 +372,7 @@ Sends a message to the AI chatbot powered by Groq.
 ```
 
 **Success Response (200):**
-Streams text response from Groq AI
+Streams text response from Gemini AI
 
 **Error Response (500):**
 ```json
@@ -425,7 +426,7 @@ npm i -g vercel
    - `NOTION_PROJECTS_DB`
    - `NOTION_EDUCATION_DB`
    - `NOTION_CERTIFICATIONS_DB`
-   - `GROQ_API_KEY`
+  - `GEMINI_API_KEY`
    - `TAVILY_API_KEY` (optional)
    - `RESEND_API_KEY`
    - `ADMIN_EMAIL`
@@ -876,7 +877,7 @@ Follow the interactive prompts and add environment variables when asked.
 - [ ] Notion databases created and populated
 - [ ] Notion API key added to environment
 - [ ] All database IDs correctly configured
-- [ ] Groq API key set up (https://console.groq.com)
+- [ ] Gemini API key set up (https://aistudio.google.com/apikey)
 - [ ] Resend account set up with API key
 - [ ] Admin email verified in Resend
 - [ ] CV PDF file placed at `public/cv.pdf`
@@ -897,7 +898,7 @@ Follow the interactive prompts and add environment variables when asked.
 - **Styling**: Tailwind CSS 3.4
 - **Animations**: Framer Motion 11.0
 - **Data Source**: Notion API (Dynamic CMS)
-- **Chatbot**: Groq AI (streaming responses)
+- **Chatbot**: Gemini AI (streaming responses)
 - **Email Service**: Resend (Contact form)
 - **Search**: Tavily API (Web search for chatbot)
 - **Validation**: Zod 3.23

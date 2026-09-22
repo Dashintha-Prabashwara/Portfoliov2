@@ -4,11 +4,12 @@ import { getPortfolioContext } from '@/lib/chatbot';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
 // Validate API key at module load
-if (!GROQ_API_KEY) {
-  console.error('❌ GROQ_API_KEY environment variable is not configured. Chat functionality will be disabled.');
+if (!GEMINI_API_KEY) {
+  console.error('❌ GEMINI_API_KEY environment variable is not configured. Chat functionality will be disabled.');
 }
 
 interface Message {
@@ -54,58 +55,61 @@ Contact Page: https://dashijayawardana.vercel.app/contact
 }
 
 /**
- * Stream response from Groq API
+ * Stream response from Gemini API
  */
-async function* streamGroqResponse(
+async function* streamGeminiResponse(
   messages: Message[],
   systemPrompt: string
 ): AsyncGenerator<string> {
-  if (!GROQ_API_KEY) {
-    yield 'Error: GROQ_API_KEY not configured';
+  if (!GEMINI_API_KEY) {
+    yield 'Error: GEMINI_API_KEY not configured';
     return;
   }
 
-  // Convert to Groq format (model -> assistant)
-  const groqMessages = [
-    { role: 'system' as const, content: systemPrompt },
+  const contents = [
     ...messages
       .filter((msg) => msg.parts && msg.parts.length > 0)
       .map((msg) => ({
-        role: msg.role === 'model' ? ('assistant' as const) : ('user' as const),
-        content: msg.parts[0]?.text || '',
+        role: msg.role,
+        parts: [{ text: msg.parts[0]?.text || '' }],
       })),
   ];
 
   const payload = {
-    model: 'llama-3.3-70b-versatile',
-    messages: groqMessages,
-    temperature: 0.7,
-    max_tokens: 1024,
-    stream: true,
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents,
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 1024,
+    },
   };
 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased to 15s
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${encodeURIComponent(GEMINI_API_KEY)}`,
+      {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify(payload),
       signal: controller.signal,
-    });
+      }
+    );
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => null);
       const msg = error?.error?.message || `HTTP ${response.status}`;
 
-      if (response.status === 401) {
-        yield 'Error: Invalid API key';
+      if (response.status === 400 || response.status === 401 || response.status === 403) {
+        yield `Error: ${msg}`;
+      } else if (response.status === 404) {
+        yield `Error: Gemini model unavailable: ${msg}`;
       } else if (response.status === 429) {
         yield 'Error: Too many requests — please wait a moment';
       } else {
@@ -140,7 +144,7 @@ async function* streamGroqResponse(
 
         try {
           const parsed = JSON.parse(data);
-          const chunk = parsed.choices?.[0]?.delta?.content || '';
+          const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
           if (chunk) yield chunk;
         } catch {
           // Ignore parsing errors
@@ -178,7 +182,7 @@ export async function POST(req: NextRequest) {
     // Create streaming response
     const stream = new ReadableStream({
       async start(controller) {
-        for await (const chunk of streamGroqResponse(messages, systemPrompt)) {
+        for await (const chunk of streamGeminiResponse(messages, systemPrompt)) {
           controller.enqueue(new TextEncoder().encode(chunk));
         }
         controller.close();

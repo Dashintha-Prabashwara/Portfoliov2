@@ -78,13 +78,6 @@ export async function POST(request) {
       const fieldErrors = validation.error.flatten().fieldErrors;
       const formattedErrors = formatValidationErrors(fieldErrors);
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log("Validation failed:", {
-          rawErrors: fieldErrors,
-          formattedErrors: formattedErrors,
-        });
-      }
-
       return NextResponse.json(
         {
           success: false,
@@ -136,23 +129,8 @@ export async function POST(request) {
             </div>
           `,
         });
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`✅ Contact email sent to ${process.env.ADMIN_EMAIL}`);
-        }
-      } catch (emailError) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error("⚠️ Email notification failed:", {
-            error: emailError.message,
-            code: emailError.code,
-            name: emailError.name,
-          });
-        }
+      } catch {
         // Don't fail the form submission if email fails - still return success
-        // but log it for debugging
-      }
-    } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn("⚠️ Email service not configured - RESEND_API_KEY or ADMIN_EMAIL missing");
       }
     }
 
@@ -165,14 +143,6 @@ export async function POST(request) {
       { status: 200 }
     );
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error("Contact API Error:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-      });
-    }
-
     return NextResponse.json(
       {
         success: false,

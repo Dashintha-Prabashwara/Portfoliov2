@@ -4,8 +4,8 @@ Your portfolio chatbot is now upgraded to production-grade with streaming respon
 
 ## ✅ What's Included
 
-### 1. **Groq AI Integration** ⚡
-- Uses Groq API for fast, intelligent responses
+### 1. **Gemini AI Integration** ⚡
+- Uses Google Gemini API for fast, intelligent responses
 - Streaming responses in real-time like ChatGPT
 - Natural language understanding of your portfolio content
 
@@ -33,9 +33,9 @@ Your portfolio chatbot is now upgraded to production-grade with streaming respon
 
 ## 🛠 Setup Instructions
 
-### Step 1: Get Groq API Key
+### Step 1: Get a Gemini API Key
 
-1. Go to **[Groq Console](https://console.groq.com/keys)**
+1. Go to **[Google AI Studio](https://aistudio.google.com/apikey)**
 2. Sign up or log in
 3. Click **"Create API key"**
 4. Copy your API key
@@ -51,7 +51,8 @@ Your portfolio chatbot is now upgraded to production-grade with streaming respon
 Open `.env.local` and fill in your keys:
 
 ```env
-GROQ_API_KEY=your_groq_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-3.6-flash
 TAVILY_API_KEY=your_tavily_api_key_here (optional)
 ```
 
@@ -83,7 +84,7 @@ Vercel automatically deploys your changes.
 app/
 ├── api/
 │   └── chat/
-│       └── route.ts           # Streams AI response (Groq)
+│       └── route.ts           # Streams AI response (Gemini)
 └── ...
 
 components/
@@ -104,7 +105,7 @@ public/
 
 ### POST `/api/chat`
 
-Streams AI response using Groq with portfolio context.
+Streams AI response using Gemini with portfolio context.
 
 **Request:**
 ```json
@@ -133,7 +134,7 @@ Streams AI response using Groq with portfolio context.
 2. **Frontend sends message** to `/api/chat` with chat history
 3. **Backend retrieves portfolio context** (cached from your pages)
 4. **System prompt combines** portfolio data + web search (optional) + user query
-5. **Groq AI generates response** based on context
+5. **Gemini AI generates response** based on context
 6. **Response streams** back to frontend in real-time
 7. **Chat history stored** locally for follow-up questions
 
@@ -161,9 +162,9 @@ Streams AI response using Groq with portfolio context.
 
 ## ⚠️ Important Notes
 
-1. **API Key Security**: Never commit your GROQ_API_KEY to git. It's in `.env.local` which is gitignored.
+1. **API Key Security**: Never commit your GEMINI_API_KEY to git. It's in `.env.local` which is gitignored.
 
-2. **Groq Free Tier**: Has rate limits. Monitor usage in [Groq Console](https://console.groq.com).
+2. **Gemini Free Tier**: Has rate limits. Monitor usage in [Google AI Studio](https://aistudio.google.com).
 
 3. **Portfolio URLs**: The bot scrapes your live portfolio pages and Notion content. Make sure your deployment is live!
 
@@ -209,12 +210,12 @@ Check deployment health:
 ## 🐛 Troubleshooting
 
 ### Bot says "API key not configured"
-- Add `GROQ_API_KEY` to `.env.local`
+- Add `GEMINI_API_KEY` to `.env.local`
 - Restart dev server: `npm run dev`
-- Make sure key is valid from https://console.groq.com
+- Make sure key is valid from https://aistudio.google.com
 
 ### Responses are slow or timing out
-- Check if Groq API is responding: Test in [Groq Console](https://console.groq.com)
+- Check if Gemini API is responding: Test in [Google AI Studio](https://aistudio.google.com)
 - Verify your portfolio pages are accessible
 - Try simpler questions first
 
@@ -224,9 +225,9 @@ Check deployment health:
 - Make sure Chatbot component is imported in layout
 
 ### "Too many requests" error
-- Groq has rate limits on free tier
+- Gemini has rate limits on the free tier
 - Wait a moment and try again
-- Consider upgrading Groq plan for higher limits
+- Consider upgrading your Gemini plan for higher limits
 
 ### Web search not working (if Tavily enabled)
 - Verify `TAVILY_API_KEY` is set in `.env.local`
@@ -237,7 +238,7 @@ Check deployment health:
 
 ## 📚 Resources
 
-- [Groq API Docs](https://console.groq.com/docs)
+- [Gemini API Docs](https://ai.google.dev/gemini-api/docs)
 - [Next.js Streaming API Routes](https://nextjs.org/docs/app/api-routes/route-handlers)
 - [Tavily Search API](https://tavily.com/docs)
 - [ReadableStream API](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream)
@@ -267,5 +268,5 @@ Check deployment health:
 **Status**: ✅ Production Ready
 **Last Updated**: 2026-03-29
 **Chatbot Lives At**: `http://localhost:3000` (bottom-right corner)
-**Backend**: `/api/chat` (Groq streaming endpoint)
+**Backend**: `/api/chat` (Gemini streaming endpoint)
 

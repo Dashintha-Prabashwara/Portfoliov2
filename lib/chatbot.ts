@@ -78,8 +78,6 @@ export async function getPortfolioContext(): Promise<string> {
     return globalCache.text;
   }
 
-  console.log('[chatbot] Fetching fresh portfolio context...');
-
   // Scrape all pages in parallel
   const sections = await Promise.all(
     PAGES.map(async (page) => {
@@ -94,9 +92,6 @@ export async function getPortfolioContext(): Promise<string> {
   let trimmed = combined;
   if (combined.length > MAX_CHARS) {
     trimmed = summarize(combined, MAX_CHARS);
-    console.log(
-      `[chatbot] Context trimmed from ${combined.length} to ${trimmed.length} chars`
-    );
   }
 
   // Update global cache

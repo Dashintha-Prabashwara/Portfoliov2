@@ -65,7 +65,7 @@ export default function Chatbot() {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }]);
     }
-  }, [isOpen, isHydrated]);
+  }, [isOpen, isHydrated, messages.length]);
 
   // Auto-resize textarea
   useEffect(() => {
