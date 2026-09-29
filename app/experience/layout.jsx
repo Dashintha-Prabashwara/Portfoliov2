@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Experience | Dashintha',
+  title: 'Experience',
   description: 'Discover my professional journey in DevOps, cloud architecture, leadership, and technical innovation across various domains.',
 };
 

@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import HeroProfileImage from '@/components/HeroProfileImage';
 
 // ========== DATA SECTION ==========
 const techStackData = [
@@ -62,18 +62,9 @@ function HeroSection() {
           </div>
         </div>
 
-        {/* Profile image */}
-        <div className="hidden md:flex justify-center">
-          <div className="aspect-square w-full max-w-md mx-auto relative">
-            <Image
-              className="profile-photo w-full h-full object-contain"
-              alt="Dashintha's profile"
-              src="/images/profile.png"
-              width={400}
-              height={400}
-              priority
-            />
-          </div>
+        {/* Profile image with orbital rings and bottom fade */}
+        <div className="flex justify-center">
+          <HeroProfileImage />
         </div>
       </div>
     </section>
