@@ -82,6 +82,89 @@
     animation-delay: 0.48s;
   }
 
+  /* Profile Fade and Orbital Animation Utilities */
+  .profile-mask-fade {
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 52%, rgba(0, 0, 0, 0) 95%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 52%, rgba(0, 0, 0, 0) 95%);
+  }
+
+  .animate-orbit-cw {
+    animation: orbitSpinClockwise 26s linear infinite;
+  }
+
+  .animate-orbit-ccw {
+    animation: orbitSpinCounter 20s linear infinite;
+  }
+
+  .animate-orbit-slow {
+    animation: orbitSpinClockwise 40s linear infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulseGlow 5s ease-in-out infinite;
+  }
+
+  .animate-float-gentle {
+    animation: floatGentle 5s ease-in-out infinite;
+  }
+
+  .animate-radar-ping {
+    animation: radarPing 4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  @keyframes orbitSpinClockwise {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes orbitSpinCounter {
+    from {
+      transform: rotate(360deg);
+    }
+    to {
+      transform: rotate(-360deg);
+    }
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% {
+      opacity: 0.25;
+      transform: scale(0.95);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.05);
+    }
+  }
+
+  @keyframes floatGentle {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  @keyframes radarPing {
+    0% {
+      transform: scale(0.85);
+      opacity: 0.45;
+    }
+    60% {
+      transform: scale(1.15);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.2);
+      opacity: 0;
+    }
+  }
+
   @keyframes loadingBarWave {
     0%,
     100% {
@@ -95,9 +178,14 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .loading-bar {
+    .loading-bar,
+    .animate-orbit-cw,
+    .animate-orbit-ccw,
+    .animate-orbit-slow,
+    .animate-pulse-glow,
+    .animate-float-gentle,
+    .animate-radar-ping {
       animation: none;
     }
   }
-
 }
