@@ -1,11 +1,11 @@
-import { getProjects } from '@/lib/notion';
+import { getProjectsDb } from '@/lib/dbData';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
   try {
-    const projects = await getProjects();
+    const projects = await getProjectsDb();
     return Response.json(projects, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',

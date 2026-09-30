@@ -1,6 +1,6 @@
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { getEducation, getCertifications } from '@/lib/notion';
+import { getEducationDb, getCertificationsDb } from '@/lib/dbData';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -11,8 +11,8 @@ export default async function CertificationsPage() {
 
   try {
     [education, certifications] = await Promise.all([
-      getEducation(),
-      getCertifications(),
+      getEducationDb(),
+      getCertificationsDb(),
     ]);
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {

@@ -1,0 +1,194 @@
+{
+  "experiences": [
+    {
+      "id": "32bf326f-dd49-804c-b192-e1afdc47d446",
+      "company": "IoT Research Labs",
+      "role": "Developer - Software Branch",
+      "startDate": "Aug 2026",
+      "endDate": "Present",
+      "description": "Building IoT and embedded systems at Faculty of IT. Architecting real-time data processing pipelines and sensor integration frameworks for research applications.",
+      "tags": [
+        "IOT",
+        "EMBEDDED"
+      ],
+      "color": "primary",
+      "align": "left",
+      "period": "Aug 2026 - Present"
+    },
+    {
+      "id": "32bf326f-dd49-8015-9a17-ca1479e11828",
+      "company": "Rotaract Club of University of Moratuwa",
+      "role": "Co-Director - IT Avenue",
+      "startDate": "Sep 2026",
+      "endDate": "Present",
+      "description": "Led the club's IT initiatives by managing digital infrastructure, maintaining online platforms, and supporting technical operations across projects and events. Rotaract Club of University of Moratuwa.",
+      "tags": [
+        "LEADERSHIP",
+        "IT OPERATIONS"
+      ],
+      "color": "secondary",
+      "align": "right",
+      "period": "Sep 2026 - Present"
+    },
+    {
+      "id": "32cf326f-dd49-8040-b4eb-d7adf28fa060",
+      "company": "Rotaract Club of University of Moratuwa",
+      "role": "IT Team Leader",
+      "startDate": "Jul 2026",
+      "endDate": "Sep 2026",
+      "description": "Responsible for supporting the management of the official website, internal systems, and online communications. Working closely with the IT team to ensure smooth technical operations for club projects and events, while enabling efficient collaboration and outreach.",
+      "tags": [
+        "LEADERSHIP",
+        "IT OPERATIONS"
+      ],
+      "color": "tertiary",
+      "align": "left",
+      "period": "Jul 2026 - Sep 2026"
+    }
+  ],
+  "projects": [
+    {
+      "id": "32cf326f-dd49-8067-a244-f691bd2e4f83",
+      "title": "AirLux",
+      "status": "Production",
+      "statusColor": "tertiary",
+      "barColor": "from-primary to-primary",
+      "description": "E-commerce and service management platform for air conditioning products. Features AC sales, installation, service scheduling, warranty tracking, and role-based access control.",
+      "technologies": [
+        "Angular",
+        "Node.js",
+        "MongoDB"
+      ],
+      "image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1000&q=80",
+      "githubUrl": "",
+      "liveUrl": ""
+    },
+    {
+      "id": "331f326f-dd49-806e-b665-dcc50cd903bb",
+      "title": "Personal Portfolio v2",
+      "status": "Active",
+      "statusColor": "primary",
+      "barColor": "from-secondary to-secondary",
+      "description": "A modern, full-stack portfolio platform built to showcase projects, experience, and technical expertise with real-time dynamic content and an integrated AI assistant. Designed beyond a static portfolio, this system acts as an interactive developer hub where visitors can explore, ask questions, and engage directly with your work.",
+      "technologies": [
+        "Next.js",
+        "Tailwind CSS",
+        "Groq API",
+        "Tavily API",
+        "Notion API",
+        "MongoDB",
+        "Resend API"
+      ],
+      "image": "https://res.cloudinary.com/dvwxwb9wp/image/upload/v1774726708/Capture_rlwcu9.png",
+      "githubUrl": "https://github.com/Dashintha-Prabashwara/Portfoliov2",
+      "liveUrl": "https://dashijayawardana.vercel.app/"
+    },
+    {
+      "id": "355f326f-dd49-80d8-a8a0-e23feaeea28a",
+      "title": "Credenza",
+      "status": "Production",
+      "statusColor": "tertiary",
+      "barColor": "from-tertiary to-tertiary",
+      "description": "A full-stack, TypeScript-powered certificate automation system that enables drag-and-drop template upload, pixel-accurate name placement, real-time preview rendering, configurable text styling, and high-volume batch generation from structured participant lists, with integrated backend APIs and cloud storage support. ",
+      "technologies": [
+        "TypeScript",
+        "HTML",
+        "CSS",
+        "JS",
+        "Superbase",
+        "Gmail  SMPT"
+      ],
+      "image": "https://res.cloudinary.com/dvwxwb9wp/image/upload/v1777814792/Capture_t1lmil.png",
+      "githubUrl": "https://github.com/Dashintha-Prabashwara/Credenza",
+      "liveUrl": "https://credenza-nine.vercel.app/"
+    },
+    {
+      "id": "32cf326f-dd49-80fa-8cc8-cb9f412a86f5",
+      "title": "Personal Portfolio v1",
+      "status": "Active",
+      "statusColor": "primary",
+      "barColor": "from-primary to-primary",
+      "description": "Personal portfolio v1  built with HTML, CSS, and JS, and deployed on Vercel - showcasing projects and skills in DevOps, cloud, and full-stack development. ",
+      "technologies": [
+        "HTML",
+        "CSS",
+        "JS"
+      ],
+      "image": "https://res.cloudinary.com/dvwxwb9wp/image/upload/v1774241765/web-app_nlcv8l.png",
+      "githubUrl": "https://github.com/Dashintha-Prabashwara/Portfolio_V1.0",
+      "liveUrl": "https://dashijayawardana-old.vercel.app/"
+    },
+    {
+      "id": "32cf326f-dd49-809f-aea7-ee1b251e1d10",
+      "title": "Learning Management System",
+      "status": "Developed",
+      "statusColor": null,
+      "barColor": "from-secondary to-secondary",
+      "description": "Desktop application built with Java Swing and MySQL. Features authentication, email activation, comprehensive logging with Log4j, and XML data handling for educational management.",
+      "technologies": [
+        "Java",
+        "MySQL",
+        "Log4j"
+      ],
+      "image": "https://res.cloudinary.com/dvwxwb9wp/image/upload/v1774241807/java-lms_f2grk2.jpg",
+      "githubUrl": "https://github.com/Dashintha-Prabashwara/Learning-Management-System_JAVA",
+      "liveUrl": ""
+    },
+    {
+      "id": "32cf326f-dd49-80bd-aefb-e6bab94bc906",
+      "title": "Player Dashboard - IoT Cricket Training System",
+      "status": "Active",
+      "statusColor": "primary",
+      "barColor": "from-tertiary to-tertiary",
+      "description": "Web platform integrated with ESP32 sensors for cricket training analytics. Features real-time player performance tracking, automated player ID generation, and interactive analytics dashboard.",
+      "technologies": [
+        "HTML",
+        "CSS",
+        "JS"
+      ],
+      "image": "https://res.cloudinary.com/dvwxwb9wp/image/upload/v1774241622/Capture_tcgfdj.png",
+      "githubUrl": "https://github.com/Dashintha-Prabashwara/Cricket-Drill-Trainer-WEB",
+      "liveUrl": "https://admin-web-trainer.vercel.app/"
+    }
+  ],
+  "education": [
+    {
+      "id": "32cf326f-dd49-809e-8cbf-ee47abe40327",
+      "title": "Undergraduate in IT & Management",
+      "institution": "Faculty of Information Technology - University of Moratuwa",
+      "description": "Specializing in cloud systems and high-concurrency enterprise applications. ",
+      "tags": [
+        "Level 2"
+      ],
+      "startDate": "2024",
+      "endDate": "PRESENT",
+      "period": "2024 - PRESENT"
+    }
+  ],
+  "certifications": [
+    {
+      "id": "32cf326f-dd49-80d7-bc59-c32c8472c805",
+      "title": "Multicloud Network Associate",
+      "organization": "Aviatrix",
+      "credentialId": "",
+      "icon": "shield_lock",
+      "status": "Verified",
+      "statusColor": "tertiary",
+      "issueDate": "Dec 2025",
+      "expiryDate": "Dec 2028",
+      "verificationUrl": "https://www.credly.com/badges/ef191df7-e5c6-496e-8d4a-7622d0e21af1/linked_in_profile"
+    },
+    {
+      "id": "32cf326f-dd49-80b5-83c9-f2b354a03b4c",
+      "title": "Postman API Fundamentals Student Expert",
+      "organization": "Postman",
+      "credentialId": "6702ea706ca8094df587d245",
+      "icon": "settings_ethernet",
+      "status": "Verified",
+      "statusColor": "tertiary",
+      "issueDate": "Oct 2024",
+      "expiryDate": "",
+      "verificationUrl": "https://badgr.com/public/assertions/Y0qpoRXaS9iNadOvt8bVdQ"
+    }
+  ]
+}
