@@ -1,11 +1,11 @@
-import { getExperience } from '@/lib/notion';
+import { getExperiencesDb } from '@/lib/dbData';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
   try {
-    const experiences = await getExperience();
+    const experiences = await getExperiencesDb();
     return Response.json(experiences, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { getProjects } from '@/lib/notion';
+import { getProjectsDb } from '@/lib/dbData';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -11,7 +11,7 @@ export default async function ProjectsPage() {
   let projects = [];
 
   try {
-    projects = await getProjects();
+    projects = await getProjectsDb();
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
       console.error('Error fetching projects:', error);

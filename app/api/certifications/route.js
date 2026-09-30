@@ -1,11 +1,11 @@
-import { getCertifications } from '@/lib/notion';
+import { getCertificationsDb } from '@/lib/dbData';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
   try {
-    const certifications = await getCertifications();
+    const certifications = await getCertificationsDb();
     return Response.json(certifications, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',

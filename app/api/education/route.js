@@ -1,11 +1,11 @@
-import { getEducation } from '@/lib/notion';
+import { getEducationDb } from '@/lib/dbData';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
   try {
-    const education = await getEducation();
+    const education = await getEducationDb();
     return Response.json(education, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',

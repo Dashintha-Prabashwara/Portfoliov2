@@ -1,20 +1,43 @@
 import { NextResponse } from 'next/server';
+import { getCvDb } from '@/lib/dbData';
+import connectToDatabase from '@/lib/mongodb';
+import Cv from '@/models/Cv';
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const track = searchParams.get('track') === 'true';
+
+    if (track) {
+      try {
+        if (process.env.MONGODB_URI) {
+          await connectToDatabase();
+          await Cv.findOneAndUpdate(
+            { isActive: true },
+            { $inc: { downloadsCount: 1 } },
+            { upsert: false }
+          );
+        }
+      } catch (trackError) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Failed to track CV download count:', trackError);
+        }
+      }
+    }
+
+    const cvData = await getCvDb();
+
     return NextResponse.json(
       {
         success: true,
-        data: {
-          title: 'Dashintha Jayawardana - CV',
-          fileUrl: '/cv.pdf',
-          description: 'Professional CV and Resume',
-        },
+        data: cvData,
       },
       {
         status: 200,
         headers: {
-          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
         },
       }
     );
