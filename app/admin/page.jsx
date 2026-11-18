@@ -400,8 +400,8 @@ export default function AdminPage() {
       {toast && (
         <div
           className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-lg shadow-xl border flex items-center gap-3 transition-all animate-bounce ${toast.type === 'error'
-              ? 'bg-error-container text-on-error-container border-error/40'
-              : 'bg-surface-container-highest text-primary border-primary/40'
+            ? 'bg-error-container text-on-error-container border-error/40'
+            : 'bg-surface-container-highest text-primary border-primary/40'
             }`}
         >
           <span className="material-symbols-outlined text-lg">
@@ -425,8 +425,8 @@ export default function AdminPage() {
             {/* DB Status Badge */}
             <div
               className={`hidden sm:flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full border ${dbStatus.connected
-                  ? 'border-tertiary/30 text-tertiary bg-tertiary/10'
-                  : 'border-warning/30 text-warning bg-warning/10'
+                ? 'border-tertiary/30 text-tertiary bg-tertiary/10'
+                : 'border-warning/30 text-warning bg-warning/10'
                 }`}
               title={
                 dbStatus.connected
@@ -488,8 +488,8 @@ export default function AdminPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-headline text-xs font-bold uppercase tracking-wider transition-all ${activeTab === tab.id
-                  ? 'bg-primary text-on-primary shadow-lg shadow-primary/20'
-                  : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+                ? 'bg-primary text-on-primary shadow-lg shadow-primary/20'
+                : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
             >
               <span className="material-symbols-outlined text-sm">{tab.icon}</span>
