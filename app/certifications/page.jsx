@@ -106,7 +106,7 @@ function EducationSection({ education }) {
                   </div>
                 </div>
               </div>
-              <div className="absolute left-0 md:left-1/2 w-4 h-4 bg-primary rounded-full transform -translate-x-1/2 hidden md:block shadow-[0_0_15px_rgba(164,230,255,0.6)]"></div>
+              <div className="absolute left-0 md:left-1/2 w-4 h-4 bg-primary rounded-full transform -translate-x-1/2 hidden md:block shadow-[0_0_15px_rgba(217,84,30,0.5)]"></div>
               <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-1'}`}></div>
             </div>
           );
@@ -156,11 +156,11 @@ function CertificationsSection({ certifications }) {
 // ========== CERTIFICATION CARD COMPONENT ==========
 function CertificationCard({ cert }) {
   const colorValues = {
-    primary: '#a4e6ff',
-    secondary: '#d8b9ff',
-    tertiary: '#00f9be',
-    error: '#ffb4ab',
-    warning: '#ffc107',
+    primary: '#D9541E',
+    secondary: '#B84112',
+    tertiary: '#8C330B',
+    error: '#BA1A1A',
+    warning: '#D97706',
   };
 
   const accentColor = colorValues[cert.statusColor] || colorValues.primary;

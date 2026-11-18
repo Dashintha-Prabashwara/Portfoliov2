@@ -67,21 +67,50 @@ function summarize(text: string, maxChars: number): string {
   return result || text.substring(0, maxChars);
 }
 
+interface SeedExperience {
+  role?: string;
+  company?: string;
+  startDate?: string;
+  endDate?: string;
+  description?: string;
+}
+
+interface SeedProject {
+  title?: string;
+  status?: string;
+  description?: string;
+  technologies?: string[];
+}
+
+interface SeedEducation {
+  title?: string;
+  institution?: string;
+  startDate?: string;
+  endDate?: string;
+  description?: string;
+}
+
+interface SeedCertification {
+  title?: string;
+  organization?: string;
+  status?: string;
+}
+
 function getStructuredSeedContext(): string {
-  const exps = (seedData.experiences || [])
-    .map((e: any) => `- ${e.role} at ${e.company} (${e.startDate} - ${e.endDate || 'Present'}): ${e.description}`)
+  const exps = ((seedData.experiences || []) as SeedExperience[])
+    .map((e) => `- ${e.role} at ${e.company} (${e.startDate} - ${e.endDate || 'Present'}): ${e.description}`)
     .join('\n');
 
-  const projs = (seedData.projects || [])
-    .map((p: any) => `- ${p.title} (${p.status}): ${p.description}. Tech: ${(p.technologies || []).join(', ')}.`)
+  const projs = ((seedData.projects || []) as SeedProject[])
+    .map((p) => `- ${p.title} (${p.status}): ${p.description}. Tech: ${(p.technologies || []).join(', ')}.`)
     .join('\n');
 
-  const edus = (seedData.education || [])
-    .map((e: any) => `- ${e.title} at ${e.institution} (${e.startDate} - ${e.endDate}): ${e.description}`)
+  const edus = ((seedData.education || []) as SeedEducation[])
+    .map((e) => `- ${e.title} at ${e.institution} (${e.startDate} - ${e.endDate}): ${e.description}`)
     .join('\n');
 
-  const certs = (seedData.certifications || [])
-    .map((c: any) => `- ${c.title} by ${c.organization} (${c.status})`)
+  const certs = ((seedData.certifications || []) as SeedCertification[])
+    .map((c) => `- ${c.title} by ${c.organization} (${c.status})`)
     .join('\n');
 
   return `=== Experiences ===\n${exps}\n\n=== Projects ===\n${projs}\n\n=== Education ===\n${edus}\n\n=== Certifications ===\n${certs}`;

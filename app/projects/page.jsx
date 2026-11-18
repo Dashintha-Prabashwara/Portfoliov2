@@ -137,7 +137,7 @@ function ProjectCard({ project }) {
               href={project.liveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gradient-to-r from-primary to-secondary text-on-primary text-xs font-bold px-4 sm:px-6 py-2.5 sm:py-3 rounded-md uppercase tracking-widest hover:shadow-[0px_0px_20px_rgba(164,230,255,0.3)] transition-all active:scale-95 text-center sm:text-left"
+              className="bg-gradient-to-r from-primary to-secondary text-on-primary text-xs font-bold px-4 sm:px-6 py-2.5 sm:py-3 rounded-md uppercase tracking-widest hover:shadow-[0px_0px_20px_rgba(217,84,30,0.35)] transition-all active:scale-95 text-center sm:text-left"
             >
               View Project
             </a>

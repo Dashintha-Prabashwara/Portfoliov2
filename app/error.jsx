@@ -14,7 +14,7 @@ export default function Error({ error, reset }) {
   }, [error]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-zinc-950 px-4">
+    <div className="flex items-center justify-center min-h-screen bg-surface px-4">
       <div className="text-center max-w-md">
         <div className="mb-6">
           <span className="material-symbols-outlined text-7xl text-error opacity-40">
