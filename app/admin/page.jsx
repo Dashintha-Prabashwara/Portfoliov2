@@ -189,7 +189,8 @@ export default function AdminPage() {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
 
     try {
-      const res = await fetch(`/api/admin/${type}s?id=${id}`, {
+      const endpoint = type === 'education' ? 'education' : `${type}s`;
+      const res = await fetch(`/api/admin/${endpoint}?id=${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();

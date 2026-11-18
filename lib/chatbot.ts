@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import seedData from './seedData.json';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://dashijayawardana.vercel.app';
 const PAGES = ['/skills', '/experience', '/projects', '/certifications'];
@@ -66,6 +67,26 @@ function summarize(text: string, maxChars: number): string {
   return result || text.substring(0, maxChars);
 }
 
+function getStructuredSeedContext(): string {
+  const exps = (seedData.experiences || [])
+    .map((e: any) => `- ${e.role} at ${e.company} (${e.startDate} - ${e.endDate || 'Present'}): ${e.description}`)
+    .join('\n');
+
+  const projs = (seedData.projects || [])
+    .map((p: any) => `- ${p.title} (${p.status}): ${p.description}. Tech: ${(p.technologies || []).join(', ')}.`)
+    .join('\n');
+
+  const edus = (seedData.education || [])
+    .map((e: any) => `- ${e.title} at ${e.institution} (${e.startDate} - ${e.endDate}): ${e.description}`)
+    .join('\n');
+
+  const certs = (seedData.certifications || [])
+    .map((c: any) => `- ${c.title} by ${c.organization} (${c.status})`)
+    .join('\n');
+
+  return `=== Experiences ===\n${exps}\n\n=== Projects ===\n${projs}\n\n=== Education ===\n${edus}\n\n=== Certifications ===\n${certs}`;
+}
+
 /**
  * Fetch and parse portfolio context with intelligent truncation
  */
@@ -78,29 +99,38 @@ export async function getPortfolioContext(): Promise<string> {
     return globalCache.text;
   }
 
-  // Scrape all pages in parallel
-  const sections = await Promise.all(
-    PAGES.map(async (page) => {
-      const content = await scrapePage(page);
-      return `=== ${page} ===\n${content}`;
-    })
-  );
-
-  const combined = sections.join('\n\n');
-
-  // Trim if too large, keeping most recent sections
-  let trimmed = combined;
-  if (combined.length > MAX_CHARS) {
-    trimmed = summarize(combined, MAX_CHARS);
-  }
-
-  // Update global cache
+  // Pre-seed cache with instant structured context so request is never blocked
+  const baseContext = getStructuredSeedContext();
   globalCache = {
-    text: trimmed,
+    text: baseContext,
     timestamp: now,
   };
 
-  return trimmed;
+  // Attempt live scrape in background/fast attempt without blocking
+  try {
+    const sections = await Promise.all(
+      PAGES.map(async (page) => {
+        const content = await scrapePage(page);
+        return `=== ${page} ===\n${content}`;
+      })
+    );
+
+    const combined = sections.join('\n\n').trim();
+    if (combined && combined.length > 100) {
+      let trimmed = combined;
+      if (combined.length > MAX_CHARS) {
+        trimmed = summarize(combined, MAX_CHARS);
+      }
+      globalCache = {
+        text: `${baseContext}\n\n${trimmed}`,
+        timestamp: now,
+      };
+    }
+  } catch {
+    // Keep baseContext if live scrape fails or times out
+  }
+
+  return globalCache.text;
 }
 
 /**
