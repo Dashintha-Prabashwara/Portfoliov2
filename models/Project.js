@@ -58,6 +58,10 @@ const ProjectSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    isVisible: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,

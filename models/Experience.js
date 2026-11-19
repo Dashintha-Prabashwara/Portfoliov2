@@ -40,6 +40,10 @@ const ExperienceSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    isVisible: {
+      type: Boolean,
+      default: true,
+    },
     align: {
       type: String,
       enum: ['left', 'right', 'auto'],

@@ -61,11 +61,15 @@ export async function PUT(request) {
         body.map((item, idx) => {
           const itemId = item._id || item.id;
           if (!itemId) return null;
-          return Project.findByIdAndUpdate(itemId, {
+          const update = {
             order: item.order !== undefined ? item.order : idx + 1,
             statusColor: item.statusColor || ['primary', 'secondary', 'tertiary'][idx % 3],
             barColor: item.barColor || defaultBarColors[idx % 3],
-          });
+          };
+          if (item.isVisible !== undefined) {
+            update.isVisible = item.isVisible;
+          }
+          return Project.findByIdAndUpdate(itemId, update);
         })
       );
       const all = await Project.find({}).sort({ order: 1, createdAt: -1 });

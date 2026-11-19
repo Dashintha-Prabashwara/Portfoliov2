@@ -56,10 +56,14 @@ export async function PUT(request) {
         body.map((item, idx) => {
           const itemId = item._id || item.id;
           if (!itemId) return null;
-          return Experience.findByIdAndUpdate(itemId, {
+          const update = {
             order: item.order !== undefined ? item.order : idx + 1,
             color: item.color || ['primary', 'secondary', 'tertiary'][idx % 3],
-          });
+          };
+          if (item.isVisible !== undefined) {
+            update.isVisible = item.isVisible;
+          }
+          return Experience.findByIdAndUpdate(itemId, update);
         })
       );
       const all = await Experience.find({}).sort({ order: 1, createdAt: -1 });

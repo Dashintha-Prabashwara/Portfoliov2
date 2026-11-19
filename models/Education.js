@@ -40,6 +40,10 @@ const EducationSchema = new mongoose.Schema(
       default: 'primary',
       trim: true,
     },
+    isVisible: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,

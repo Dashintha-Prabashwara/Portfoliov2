@@ -10,6 +10,41 @@ const BAR_COLOR_CYCLE = [
   'from-tertiary to-tertiary',
 ];
 
+// Helper: automatically cycles Primary -> Secondary -> Tertiary ONLY across visible items
+const applyVisibleColorCycle = (items = [], type = 'experience') => {
+  let visibleCount = 0;
+  return items.map((item, idx) => {
+    const isVisible = item.isVisible !== false;
+    let cycleColor = item.color || 'primary';
+    let cycleBarColor = item.barColor || 'from-primary to-primary';
+
+    if (isVisible) {
+      cycleColor = COLOR_CYCLE[visibleCount % COLOR_CYCLE.length];
+      cycleBarColor = BAR_COLOR_CYCLE[visibleCount % BAR_COLOR_CYCLE.length];
+      visibleCount++;
+    }
+
+    const updated = {
+      ...item,
+      order: idx + 1,
+      isVisible,
+    };
+
+    if (type === 'experience') {
+      updated.color = cycleColor;
+    } else if (type === 'project') {
+      updated.statusColor = cycleColor;
+      updated.barColor = cycleBarColor;
+    } else if (type === 'certification') {
+      updated.statusColor = cycleColor;
+    } else if (type === 'education') {
+      updated.color = cycleColor;
+    }
+
+    return updated;
+  });
+};
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -35,6 +70,7 @@ export default function AdminPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState(null); // 'experience' | 'project' | 'certification' | 'education' | 'cv'
   const [editingItem, setEditingItem] = useState(null);
+  const [modalIsVisible, setModalIsVisible] = useState(true); // Default is visible
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
 
@@ -71,10 +107,10 @@ export default function AdminPage() {
         cvRes.json(),
       ]);
 
-      setExperiences(expData.data || []);
-      setProjects(projData.data || []);
-      setCertifications(certData.data || []);
-      setEducation(eduData.data || []);
+      setExperiences(applyVisibleColorCycle(expData.data || [], 'experience'));
+      setProjects(applyVisibleColorCycle(projData.data || [], 'project'));
+      setCertifications(applyVisibleColorCycle(certData.data || [], 'certification'));
+      setEducation(applyVisibleColorCycle(eduData.data || [], 'education'));
       setCvData(cvResp.data || null);
 
       setDbStatus({
@@ -187,6 +223,7 @@ export default function AdminPage() {
   const openModal = (type, item = null) => {
     setModalType(type);
     setEditingItem(item);
+    setModalIsVisible(item ? item.isVisible !== false : true); // Default is visible
     setModalOpen(true);
   };
 
@@ -260,26 +297,7 @@ export default function AdminPage() {
     const [movedItem] = list.splice(sourceIndex, 1);
     list.splice(targetIndex, 0, movedItem);
 
-    const updatedList = list.map((item, idx) => {
-      const cycleColor = COLOR_CYCLE[idx % COLOR_CYCLE.length];
-      const cycleBarColor = BAR_COLOR_CYCLE[idx % BAR_COLOR_CYCLE.length];
-      const updated = {
-        ...item,
-        order: idx + 1,
-      };
-      if (type === 'experience') {
-        updated.color = cycleColor;
-      } else if (type === 'project') {
-        updated.statusColor = cycleColor;
-        updated.barColor = cycleBarColor;
-      } else if (type === 'certification') {
-        updated.statusColor = cycleColor;
-      } else if (type === 'education') {
-        updated.color = cycleColor;
-      }
-      return updated;
-    });
-
+    const updatedList = applyVisibleColorCycle(list, type);
     setList(updatedList);
 
     try {
@@ -294,7 +312,7 @@ export default function AdminPage() {
           `Reordered with colors synced: Primary → Secondary → Tertiary!`
         );
         if (Array.isArray(data.data)) {
-          setList(data.data);
+          setList(applyVisibleColorCycle(data.data, type));
         }
       } else {
         showToast(data.error || 'Failed to sync reorder with server', 'error');
@@ -303,6 +321,72 @@ export default function AdminPage() {
     } catch (err) {
       console.error('Reorder update error:', err);
       showToast('Failed to sync reorder to server', 'error');
+      fetchAllData();
+    }
+  };
+
+  // Toggle item visibility on/off with instant color cycle re-calculation
+  const handleToggleVisibility = async (type, itemToToggle) => {
+    let list = [];
+    let setList = null;
+    let endpoint = '';
+
+    if (type === 'experience') {
+      list = [...experiences];
+      setList = setExperiences;
+      endpoint = '/api/admin/experiences';
+    } else if (type === 'project') {
+      list = [...projects];
+      setList = setProjects;
+      endpoint = '/api/admin/projects';
+    } else if (type === 'certification') {
+      list = [...certifications];
+      setList = setCertifications;
+      endpoint = '/api/admin/certifications';
+    } else if (type === 'education') {
+      list = [...education];
+      setList = setEducation;
+      endpoint = '/api/admin/education';
+    } else {
+      return;
+    }
+
+    const itemId = itemToToggle._id || itemToToggle.id;
+    const newVisibility = itemToToggle.isVisible === false ? true : false;
+
+    const toggledList = list.map((item) => {
+      if ((item._id || item.id) === itemId) {
+        return { ...item, isVisible: newVisibility };
+      }
+      return item;
+    });
+
+    const updatedList = applyVisibleColorCycle(toggledList, type);
+    setList(updatedList);
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedList),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(
+          newVisibility
+            ? `${type.charAt(0).toUpperCase() + type.slice(1)} is now Visible (colors synced)!`
+            : `${type.charAt(0).toUpperCase() + type.slice(1)} is now Hidden.`
+        );
+        if (Array.isArray(data.data)) {
+          setList(applyVisibleColorCycle(data.data, type));
+        }
+      } else {
+        showToast(data.error || 'Failed to update visibility', 'error');
+        fetchAllData();
+      }
+    } catch (err) {
+      console.error('Toggle visibility error:', err);
+      showToast('Failed to save visibility change', 'error');
       fetchAllData();
     }
   };
@@ -343,7 +427,33 @@ export default function AdminPage() {
     setDragOverInfo({ type: null, index: null });
   };
 
-  const renderColorBadge = (color = 'primary') => {
+  const renderVisibilityBadge = (isVisible = true) => {
+    const visible = isVisible !== false;
+    return (
+      <span
+        className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded-full font-bold border flex items-center gap-1 ${visible
+          ? 'bg-primary/10 text-primary border-primary/30'
+          : 'bg-surface-container-high text-on-surface-variant/60 border-outline-variant/30'
+          }`}
+      >
+        <span className="material-symbols-outlined text-[13px] leading-none">
+          {visible ? 'visibility' : 'visibility_off'}
+        </span>
+        {visible ? 'Visible' : 'Hidden'}
+      </span>
+    );
+  };
+
+  const renderColorBadge = (color = 'primary', isVisible = true) => {
+    if (isVisible === false) {
+      return (
+        <span className="text-[10px] uppercase font-label px-2.5 py-0.5 rounded-full font-medium border bg-surface-container-high text-on-surface-variant/50 border-outline-variant/20 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-on-surface-variant/40" />
+          Muted (Hidden)
+        </span>
+      );
+    }
+
     const norm = (color || 'primary').toLowerCase();
     const isPrimary = norm === 'primary';
     const isSecondary = norm === 'secondary';
@@ -351,20 +461,18 @@ export default function AdminPage() {
 
     return (
       <span
-        className={`text-[10px] uppercase font-label px-2.5 py-0.5 rounded-full font-bold border flex items-center gap-1.5 ${
-          isPrimary
-            ? 'bg-primary/15 text-primary border-primary/30'
-            : isSecondary
+        className={`text-[10px] uppercase font-label px-2.5 py-0.5 rounded-full font-bold border flex items-center gap-1.5 ${isPrimary
+          ? 'bg-primary/15 text-primary border-primary/30'
+          : isSecondary
             ? 'bg-secondary/15 text-secondary border-secondary/30'
             : isTertiary
-            ? 'bg-tertiary/15 text-tertiary border-tertiary/30'
-            : 'bg-surface-container-high text-on-surface-variant border-outline-variant/30'
-        }`}
+              ? 'bg-tertiary/15 text-tertiary border-tertiary/30'
+              : 'bg-surface-container-high text-on-surface-variant border-outline-variant/30'
+          }`}
       >
         <span
-          className={`w-1.5 h-1.5 rounded-full ${
-            isPrimary ? 'bg-primary' : isSecondary ? 'bg-secondary' : 'bg-tertiary'
-          }`}
+          className={`w-1.5 h-1.5 rounded-full ${isPrimary ? 'bg-primary' : isSecondary ? 'bg-secondary' : 'bg-tertiary'
+            }`}
         />
         {color}
       </span>
@@ -393,6 +501,10 @@ export default function AdminPage() {
         payload[key] = value;
       }
     });
+
+    if (modalType !== 'cv') {
+      payload.isVisible = modalIsVisible;
+    }
 
     const isEdit = !!editingItem?._id;
     const url = `/api/admin/${modalType === 'education' ? 'education' : modalType + 's'}`;
@@ -841,6 +953,7 @@ export default function AdminPage() {
                     {experiences.map((exp, idx) => {
                       const isDragging = dragInfo.type === 'experience' && dragInfo.index === idx;
                       const isDragOver = dragOverInfo.type === 'experience' && dragOverInfo.index === idx;
+                      const isVisible = exp.isVisible !== false;
 
                       return (
                         <div
@@ -851,13 +964,14 @@ export default function AdminPage() {
                           onDragOver={onDragOver}
                           onDragEnd={onDragEnd}
                           onDrop={(e) => onDrop(e, 'experience', idx)}
-                          className={`bg-surface-container-low border rounded-xl p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-200 cursor-move ${
-                            isDragging
-                              ? 'opacity-30 border-dashed border-primary scale-[0.99]'
-                              : isDragOver
+                          className={`border rounded-xl p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-200 cursor-move ${isDragging
+                            ? 'opacity-30 border-dashed border-primary scale-[0.99] bg-surface-container-low'
+                            : isDragOver
                               ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
-                              : 'border-outline-variant/20 hover:border-outline-variant/50'
-                          }`}
+                              : !isVisible
+                                ? 'opacity-65 border-dashed border-outline-variant/40 bg-surface-container-low/60'
+                                : 'bg-surface-container-low border-outline-variant/20 hover:border-outline-variant/50'
+                            }`}
                         >
                           <div className="flex items-start md:items-center gap-3 flex-grow w-full md:w-auto">
                             {/* Drag handle & Move Up/Down buttons */}
@@ -895,6 +1009,7 @@ export default function AdminPage() {
                                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 font-bold">
                                   #{idx + 1}
                                 </span>
+                                {renderVisibilityBadge(exp.isVisible)}
                                 <span className="font-headline text-base sm:text-lg font-bold text-on-surface">
                                   {exp.role}
                                 </span>
@@ -902,7 +1017,7 @@ export default function AdminPage() {
                                 <span className="text-xs sm:text-sm font-semibold text-primary">
                                   {exp.company}
                                 </span>
-                                {renderColorBadge(exp.color || COLOR_CYCLE[idx % 3])}
+                                {renderColorBadge(exp.color || COLOR_CYCLE[idx % 3], exp.isVisible)}
                               </div>
 
                               <p className="text-xs text-on-surface-variant/80 font-mono">
@@ -927,6 +1042,19 @@ export default function AdminPage() {
                           </div>
 
                           <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleVisibility('experience', exp)}
+                              className={`p-2 rounded transition-colors ${isVisible
+                                ? 'text-primary hover:bg-primary/10'
+                                : 'text-on-surface-variant/50 hover:text-on-surface hover:bg-surface-container-high'
+                                }`}
+                              title={isVisible ? 'Click to Hide on website' : 'Click to Make Visible on website'}
+                            >
+                              <span className="material-symbols-outlined text-lg">
+                                {isVisible ? 'visibility' : 'visibility_off'}
+                              </span>
+                            </button>
                             <button
                               onClick={() => openModal('experience', exp)}
                               className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
@@ -990,6 +1118,7 @@ export default function AdminPage() {
                     {projects.map((proj, idx) => {
                       const isDragging = dragInfo.type === 'project' && dragInfo.index === idx;
                       const isDragOver = dragOverInfo.type === 'project' && dragOverInfo.index === idx;
+                      const isVisible = proj.isVisible !== false;
 
                       return (
                         <div
@@ -1000,13 +1129,14 @@ export default function AdminPage() {
                           onDragOver={onDragOver}
                           onDragEnd={onDragEnd}
                           onDrop={(e) => onDrop(e, 'project', idx)}
-                          className={`bg-surface-container-low border rounded-xl overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-move ${
-                            isDragging
-                              ? 'opacity-30 border-dashed border-primary scale-[0.99]'
-                              : isDragOver
+                          className={`border rounded-xl overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-move ${isDragging
+                            ? 'opacity-30 border-dashed border-primary scale-[0.99] bg-surface-container-low'
+                            : isDragOver
                               ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
-                              : 'border-outline-variant/20 hover:border-outline-variant/50'
-                          }`}
+                              : !isVisible
+                                ? 'opacity-65 border-dashed border-outline-variant/40 bg-surface-container-low/60'
+                                : 'bg-surface-container-low border-outline-variant/20 hover:border-outline-variant/50'
+                            }`}
                         >
                           <div className="p-5 sm:p-6 space-y-4">
                             <div className="flex items-start justify-between gap-2">
@@ -1046,7 +1176,8 @@ export default function AdminPage() {
                                     <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 font-bold">
                                       #{idx + 1}
                                     </span>
-                                    {renderColorBadge(proj.statusColor || COLOR_CYCLE[idx % 3])}
+                                    {renderVisibilityBadge(proj.isVisible)}
+                                    {renderColorBadge(proj.statusColor || COLOR_CYCLE[idx % 3], proj.isVisible)}
                                   </div>
                                   <h3 className="font-headline text-lg sm:text-xl font-bold text-on-surface">
                                     {proj.title}
@@ -1060,6 +1191,19 @@ export default function AdminPage() {
                               </div>
 
                               <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleVisibility('project', proj)}
+                                  className={`p-2 rounded transition-colors ${isVisible
+                                    ? 'text-primary hover:bg-primary/10'
+                                    : 'text-on-surface-variant/50 hover:text-on-surface hover:bg-surface-container-high'
+                                    }`}
+                                  title={isVisible ? 'Click to Hide on website' : 'Click to Make Visible on website'}
+                                >
+                                  <span className="material-symbols-outlined text-lg">
+                                    {isVisible ? 'visibility' : 'visibility_off'}
+                                  </span>
+                                </button>
                                 <button
                                   onClick={() => openModal('project', proj)}
                                   className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
@@ -1164,6 +1308,7 @@ export default function AdminPage() {
                     {certifications.map((cert, idx) => {
                       const isDragging = dragInfo.type === 'certification' && dragInfo.index === idx;
                       const isDragOver = dragOverInfo.type === 'certification' && dragOverInfo.index === idx;
+                      const isVisible = cert.isVisible !== false;
 
                       return (
                         <div
@@ -1174,13 +1319,14 @@ export default function AdminPage() {
                           onDragOver={onDragOver}
                           onDragEnd={onDragEnd}
                           onDrop={(e) => onDrop(e, 'certification', idx)}
-                          className={`bg-surface-container-low border rounded-xl p-5 flex flex-col justify-between transition-all duration-200 cursor-move ${
-                            isDragging
-                              ? 'opacity-30 border-dashed border-primary scale-[0.99]'
-                              : isDragOver
+                          className={`border rounded-xl p-5 flex flex-col justify-between transition-all duration-200 cursor-move ${isDragging
+                            ? 'opacity-30 border-dashed border-primary scale-[0.99] bg-surface-container-low'
+                            : isDragOver
                               ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
-                              : 'border-outline-variant/20 hover:border-outline-variant/50'
-                          }`}
+                              : !isVisible
+                                ? 'opacity-65 border-dashed border-outline-variant/40 bg-surface-container-low/60'
+                                : 'bg-surface-container-low border-outline-variant/20 hover:border-outline-variant/50'
+                            }`}
                         >
                           <div className="space-y-3">
                             <div className="flex items-start justify-between gap-2">
@@ -1222,14 +1368,29 @@ export default function AdminPage() {
 
                               <div className="flex items-center gap-1">
                                 <button
+                                  type="button"
+                                  onClick={() => handleToggleVisibility('certification', cert)}
+                                  className={`p-1.5 rounded transition-colors ${isVisible
+                                    ? 'text-primary hover:bg-primary/10'
+                                    : 'text-on-surface-variant/50 hover:text-on-surface hover:bg-surface-container-high'
+                                    }`}
+                                  title={isVisible ? 'Click to Hide on website' : 'Click to Make Visible on website'}
+                                >
+                                  <span className="material-symbols-outlined text-base">
+                                    {isVisible ? 'visibility' : 'visibility_off'}
+                                  </span>
+                                </button>
+                                <button
                                   onClick={() => openModal('certification', cert)}
                                   className="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
+                                  title="Edit Certification"
                                 >
                                   <span className="material-symbols-outlined text-base">edit</span>
                                 </button>
                                 <button
                                   onClick={() => handleDelete('certification', cert._id || cert.id)}
                                   className="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
+                                  title="Delete Certification"
                                 >
                                   <span className="material-symbols-outlined text-base">delete</span>
                                 </button>
@@ -1240,7 +1401,8 @@ export default function AdminPage() {
                               <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 font-bold">
                                 #{idx + 1}
                               </span>
-                              {renderColorBadge(cert.statusColor || COLOR_CYCLE[idx % 3])}
+                              {renderVisibilityBadge(cert.isVisible)}
+                              {renderColorBadge(cert.statusColor || COLOR_CYCLE[idx % 3], cert.isVisible)}
                             </div>
 
                             <h3 className="font-headline text-base font-bold text-on-surface">
@@ -1306,6 +1468,7 @@ export default function AdminPage() {
                     {education.map((edu, idx) => {
                       const isDragging = dragInfo.type === 'education' && dragInfo.index === idx;
                       const isDragOver = dragOverInfo.type === 'education' && dragOverInfo.index === idx;
+                      const isVisible = edu.isVisible !== false;
 
                       return (
                         <div
@@ -1316,13 +1479,14 @@ export default function AdminPage() {
                           onDragOver={onDragOver}
                           onDragEnd={onDragEnd}
                           onDrop={(e) => onDrop(e, 'education', idx)}
-                          className={`bg-surface-container-low border rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-200 cursor-move ${
-                            isDragging
-                              ? 'opacity-30 border-dashed border-primary scale-[0.99]'
-                              : isDragOver
+                          className={`border rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-200 cursor-move ${isDragging
+                            ? 'opacity-30 border-dashed border-primary scale-[0.99] bg-surface-container-low'
+                            : isDragOver
                               ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
-                              : 'border-outline-variant/20 hover:border-outline-variant/50'
-                          }`}
+                              : !isVisible
+                                ? 'opacity-65 border-dashed border-outline-variant/40 bg-surface-container-low/60'
+                                : 'bg-surface-container-low border-outline-variant/20 hover:border-outline-variant/50'
+                            }`}
                         >
                           <div className="flex items-start md:items-center gap-3 flex-grow w-full md:w-auto">
                             {/* Drag handle & Move Up/Down buttons */}
@@ -1360,11 +1524,12 @@ export default function AdminPage() {
                                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 font-bold">
                                   #{idx + 1}
                                 </span>
+                                {renderVisibilityBadge(edu.isVisible)}
                                 <h3 className="font-headline text-base font-bold text-on-surface">
                                   {edu.title}
                                 </h3>
                                 <span className="text-xs font-semibold text-primary">{edu.institution}</span>
-                                {renderColorBadge(edu.color || COLOR_CYCLE[idx % 3])}
+                                {renderColorBadge(edu.color || COLOR_CYCLE[idx % 3], edu.isVisible)}
                               </div>
                               <p className="text-xs text-on-surface-variant/80 font-mono">
                                 {edu.period || `${edu.startDate} - ${edu.endDate}`}
@@ -1377,14 +1542,29 @@ export default function AdminPage() {
 
                           <div className="flex items-center gap-2 shrink-0">
                             <button
+                              type="button"
+                              onClick={() => handleToggleVisibility('education', edu)}
+                              className={`p-2 rounded transition-colors ${isVisible
+                                ? 'text-primary hover:bg-primary/10'
+                                : 'text-on-surface-variant/50 hover:text-on-surface hover:bg-surface-container-high'
+                                }`}
+                              title={isVisible ? 'Click to Hide on website' : 'Click to Make Visible on website'}
+                            >
+                              <span className="material-symbols-outlined text-lg">
+                                {isVisible ? 'visibility' : 'visibility_off'}
+                              </span>
+                            </button>
+                            <button
                               onClick={() => openModal('education', edu)}
                               className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
+                              title="Edit Education"
                             >
                               <span className="material-symbols-outlined text-lg">edit</span>
                             </button>
                             <button
                               onClick={() => handleDelete('education', edu._id || edu.id)}
                               className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
+                              title="Delete Education"
                             >
                               <span className="material-symbols-outlined text-lg">delete</span>
                             </button>
@@ -1556,6 +1736,47 @@ export default function AdminPage() {
             </div>
 
             <form onSubmit={handleSaveItem} className="space-y-4">
+              {/* ELEMENT VISIBILITY TOGGLE (Default is visible) */}
+              {modalType !== 'cv' && (
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-surface-container-highest border border-outline-variant/30">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-headline font-bold text-on-surface uppercase tracking-wider">
+                        Element Visibility
+                      </span>
+                      {modalIsVisible ? (
+                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 font-bold flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[13px] leading-none">visibility</span> Visible
+                        </span>
+                      ) : (
+                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant/60 border border-outline-variant/30 font-bold flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[13px] leading-none">visibility_off</span> Hidden
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-on-surface-variant">
+                      {modalIsVisible
+                        ? 'Published on your public portfolio (rotates in Primary → Secondary → Tertiary cycle)'
+                        : 'Hidden from public visitors (saved as draft or archived)'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setModalIsVisible(!modalIsVisible)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${modalIsVisible ? 'bg-primary' : 'bg-outline-variant/40'
+                      }`}
+                    role="switch"
+                    aria-checked={modalIsVisible}
+                    title={modalIsVisible ? 'Click to set hidden' : 'Click to set visible'}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-on-primary shadow ring-0 transition duration-200 ease-in-out ${modalIsVisible ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                    />
+                  </button>
+                </div>
+              )}
+
               {/* EXPERIENCE FORM */}
               {modalType === 'experience' && (
                 <>
