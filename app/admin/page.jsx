@@ -3,10 +3,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
+const COLOR_CYCLE = ['primary', 'secondary', 'tertiary'];
+const BAR_COLOR_CYCLE = [
+  'from-primary to-primary',
+  'from-secondary to-secondary',
+  'from-tertiary to-tertiary',
+];
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
@@ -29,6 +37,10 @@ export default function AdminPage() {
   const [editingItem, setEditingItem] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+
+  // Drag and drop states
+  const [dragInfo, setDragInfo] = useState({ type: null, index: null });
+  const [dragOverInfo, setDragOverInfo] = useState({ type: null, index: null });
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
@@ -206,6 +218,159 @@ export default function AdminPage() {
     }
   };
 
+  // Reorder elements with cyclical colors (primary -> secondary -> tertiary -> ...)
+  const handleReorder = async (type, sourceIndex, targetIndex) => {
+    if (
+      sourceIndex === targetIndex ||
+      sourceIndex === null ||
+      targetIndex === null ||
+      sourceIndex === undefined ||
+      targetIndex === undefined
+    ) {
+      return;
+    }
+
+    let list = [];
+    let setList = null;
+    let endpoint = '';
+
+    if (type === 'experience') {
+      list = [...experiences];
+      setList = setExperiences;
+      endpoint = '/api/admin/experiences';
+    } else if (type === 'project') {
+      list = [...projects];
+      setList = setProjects;
+      endpoint = '/api/admin/projects';
+    } else if (type === 'certification') {
+      list = [...certifications];
+      setList = setCertifications;
+      endpoint = '/api/admin/certifications';
+    } else if (type === 'education') {
+      list = [...education];
+      setList = setEducation;
+      endpoint = '/api/admin/education';
+    } else {
+      return;
+    }
+
+    if (sourceIndex < 0 || sourceIndex >= list.length) return;
+    if (targetIndex < 0 || targetIndex >= list.length) return;
+
+    const [movedItem] = list.splice(sourceIndex, 1);
+    list.splice(targetIndex, 0, movedItem);
+
+    const updatedList = list.map((item, idx) => {
+      const cycleColor = COLOR_CYCLE[idx % COLOR_CYCLE.length];
+      const cycleBarColor = BAR_COLOR_CYCLE[idx % BAR_COLOR_CYCLE.length];
+      const updated = {
+        ...item,
+        order: idx + 1,
+      };
+      if (type === 'experience') {
+        updated.color = cycleColor;
+      } else if (type === 'project') {
+        updated.statusColor = cycleColor;
+        updated.barColor = cycleBarColor;
+      } else if (type === 'certification') {
+        updated.statusColor = cycleColor;
+      } else if (type === 'education') {
+        updated.color = cycleColor;
+      }
+      return updated;
+    });
+
+    setList(updatedList);
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedList),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(
+          `Reordered with colors synced: Primary → Secondary → Tertiary!`
+        );
+        if (Array.isArray(data.data)) {
+          setList(data.data);
+        }
+      } else {
+        showToast(data.error || 'Failed to sync reorder with server', 'error');
+        fetchAllData();
+      }
+    } catch (err) {
+      console.error('Reorder update error:', err);
+      showToast('Failed to sync reorder to server', 'error');
+      fetchAllData();
+    }
+  };
+
+  const moveItem = (type, index, direction) => {
+    handleReorder(type, index, index + direction);
+  };
+
+  const onDragStart = (e, type, index) => {
+    setDragInfo({ type, index });
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', `${type}:${index}`);
+  };
+
+  const onDragEnter = (e, type, index) => {
+    e.preventDefault();
+    if (dragInfo.type === type && dragInfo.index !== index) {
+      setDragOverInfo({ type, index });
+    }
+  };
+
+  const onDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const onDragEnd = () => {
+    setDragInfo({ type: null, index: null });
+    setDragOverInfo({ type: null, index: null });
+  };
+
+  const onDrop = (e, type, index) => {
+    e.preventDefault();
+    if (dragInfo.type === type && dragInfo.index !== null) {
+      handleReorder(type, dragInfo.index, index);
+    }
+    setDragInfo({ type: null, index: null });
+    setDragOverInfo({ type: null, index: null });
+  };
+
+  const renderColorBadge = (color = 'primary') => {
+    const norm = (color || 'primary').toLowerCase();
+    const isPrimary = norm === 'primary';
+    const isSecondary = norm === 'secondary';
+    const isTertiary = norm === 'tertiary';
+
+    return (
+      <span
+        className={`text-[10px] uppercase font-label px-2.5 py-0.5 rounded-full font-bold border flex items-center gap-1.5 ${
+          isPrimary
+            ? 'bg-primary/15 text-primary border-primary/30'
+            : isSecondary
+            ? 'bg-secondary/15 text-secondary border-secondary/30'
+            : isTertiary
+            ? 'bg-tertiary/15 text-tertiary border-tertiary/30'
+            : 'bg-surface-container-high text-on-surface-variant border-outline-variant/30'
+        }`}
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${
+            isPrimary ? 'bg-primary' : isSecondary ? 'bg-secondary' : 'bg-tertiary'
+          }`}
+        />
+        {color}
+      </span>
+    );
+  };
+
   // Save handler (Create / Update)
   const handleSaveItem = async (e) => {
     e.preventDefault();
@@ -347,13 +512,24 @@ export default function AdminPage() {
               </label>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your CMS admin password"
                   required
-                  className="w-full bg-surface-container-highest border border-outline-variant/40 rounded-lg px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors"
+                  className="w-full bg-surface-container-highest border border-outline-variant/40 rounded-lg pl-4 pr-11 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors p-1 flex items-center justify-center rounded focus:outline-none"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  <span className="material-symbols-outlined text-xl select-none">
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
               </div>
               <p className="text-[11px] text-on-surface-variant/60 mt-1.5">
                 Default password configured in <code className="text-primary/80">.env.local</code> (ADMIN_PASSWORD).
@@ -635,13 +811,19 @@ export default function AdminPage() {
                       Manage career timeline items displayed on the /experience page
                     </p>
                   </div>
-                  <button
-                    onClick={() => openModal('experience')}
-                    className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
-                  >
-                    <span className="material-symbols-outlined text-sm">add</span>
-                    Add Experience
-                  </button>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-[11px] font-mono text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-lg border border-outline-variant/20 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm text-primary">drag_indicator</span>
+                      Drag &amp; drop to reorder • Primary → Secondary → Tertiary
+                    </span>
+                    <button
+                      onClick={() => openModal('experience')}
+                      className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                      Add Experience
+                    </button>
+                  </div>
                 </div>
 
                 {experiences.length === 0 ? (
@@ -656,66 +838,113 @@ export default function AdminPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {experiences.map((exp, idx) => (
-                      <div
-                        key={exp._id || exp.id || idx}
-                        className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-outline-variant/50 transition-colors"
-                      >
-                        <div className="space-y-2 flex-grow">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-headline text-base sm:text-lg font-bold text-on-surface">
-                              {exp.role}
-                            </span>
-                            <span className="text-xs text-on-surface-variant/60">at</span>
-                            <span className="text-xs sm:text-sm font-semibold text-primary">
-                              {exp.company}
-                            </span>
-                            <span className="text-[10px] uppercase font-label px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant/20">
-                              Order: {exp.order ?? idx + 1}
-                            </span>
-                            <span className="text-[10px] uppercase font-label px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant/20">
-                              Color: {exp.color || 'primary'}
-                            </span>
-                          </div>
+                    {experiences.map((exp, idx) => {
+                      const isDragging = dragInfo.type === 'experience' && dragInfo.index === idx;
+                      const isDragOver = dragOverInfo.type === 'experience' && dragOverInfo.index === idx;
 
-                          <p className="text-xs text-on-surface-variant/80 font-mono">
-                            {exp.period || `${exp.startDate} - ${exp.endDate}`}
-                          </p>
-
-                          <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl line-clamp-2">
-                            {exp.description}
-                          </p>
-
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {exp.tags?.map((tag) => (
-                              <span
-                                key={tag}
-                                className="text-[10px] bg-surface-container-high px-2 py-0.5 rounded text-on-surface-variant"
+                      return (
+                        <div
+                          key={exp._id || exp.id || idx}
+                          draggable
+                          onDragStart={(e) => onDragStart(e, 'experience', idx)}
+                          onDragEnter={(e) => onDragEnter(e, 'experience', idx)}
+                          onDragOver={onDragOver}
+                          onDragEnd={onDragEnd}
+                          onDrop={(e) => onDrop(e, 'experience', idx)}
+                          className={`bg-surface-container-low border rounded-xl p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-200 cursor-move ${
+                            isDragging
+                              ? 'opacity-30 border-dashed border-primary scale-[0.99]'
+                              : isDragOver
+                              ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
+                              : 'border-outline-variant/20 hover:border-outline-variant/50'
+                          }`}
+                        >
+                          <div className="flex items-start md:items-center gap-3 flex-grow w-full md:w-auto">
+                            {/* Drag handle & Move Up/Down buttons */}
+                            <div className="flex items-center gap-1 shrink-0 self-start md:self-center">
+                              <div
+                                className="cursor-grab active:cursor-grabbing p-1.5 text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center rounded hover:bg-surface-container-high"
+                                title="Drag to reorder"
                               >
-                                {tag}
-                              </span>
-                            ))}
+                                <span className="material-symbols-outlined text-xl select-none">drag_indicator</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <button
+                                  type="button"
+                                  onClick={() => moveItem('experience', idx, -1)}
+                                  disabled={idx === 0}
+                                  className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 disabled:hover:text-on-surface-variant transition-colors"
+                                  title="Move up"
+                                >
+                                  <span className="material-symbols-outlined text-base select-none leading-none">arrow_drop_up</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveItem('experience', idx, 1)}
+                                  disabled={idx === experiences.length - 1}
+                                  className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 disabled:hover:text-on-surface-variant transition-colors"
+                                  title="Move down"
+                                >
+                                  <span className="material-symbols-outlined text-base select-none leading-none">arrow_drop_down</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 flex-grow">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 font-bold">
+                                  #{idx + 1}
+                                </span>
+                                <span className="font-headline text-base sm:text-lg font-bold text-on-surface">
+                                  {exp.role}
+                                </span>
+                                <span className="text-xs text-on-surface-variant/60">at</span>
+                                <span className="text-xs sm:text-sm font-semibold text-primary">
+                                  {exp.company}
+                                </span>
+                                {renderColorBadge(exp.color || COLOR_CYCLE[idx % 3])}
+                              </div>
+
+                              <p className="text-xs text-on-surface-variant/80 font-mono">
+                                {exp.period || `${exp.startDate} - ${exp.endDate}`}
+                              </p>
+
+                              <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl line-clamp-2">
+                                {exp.description}
+                              </p>
+
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                {exp.tags?.map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="text-[10px] bg-surface-container-high px-2 py-0.5 rounded text-on-surface-variant"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                            <button
+                              onClick={() => openModal('experience', exp)}
+                              className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
+                              title="Edit Experience"
+                            >
+                              <span className="material-symbols-outlined text-lg">edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleDelete('experience', exp._id || exp.id)}
+                              className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
+                              title="Delete Experience"
+                            >
+                              <span className="material-symbols-outlined text-lg">delete</span>
+                            </button>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                          <button
-                            onClick={() => openModal('experience', exp)}
-                            className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
-                            title="Edit Experience"
-                          >
-                            <span className="material-symbols-outlined text-lg">edit</span>
-                          </button>
-                          <button
-                            onClick={() => handleDelete('experience', exp._id || exp.id)}
-                            className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
-                            title="Delete Experience"
-                          >
-                            <span className="material-symbols-outlined text-lg">delete</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -731,13 +960,19 @@ export default function AdminPage() {
                       Manage portfolio projects showcased on /projects
                     </p>
                   </div>
-                  <button
-                    onClick={() => openModal('project')}
-                    className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
-                  >
-                    <span className="material-symbols-outlined text-sm">add</span>
-                    Add Project
-                  </button>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-[11px] font-mono text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-lg border border-outline-variant/20 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm text-primary">drag_indicator</span>
+                      Drag &amp; drop to reorder • Primary → Secondary → Tertiary
+                    </span>
+                    <button
+                      onClick={() => openModal('project')}
+                      className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                      Add Project
+                    </button>
+                  </div>
                 </div>
 
                 {projects.length === 0 ? (
@@ -752,92 +987,147 @@ export default function AdminPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {projects.map((proj, idx) => (
-                      <div
-                        key={proj._id || proj.id || idx}
-                        className="bg-surface-container-low border border-outline-variant/20 rounded-xl overflow-hidden flex flex-col justify-between hover:border-outline-variant/50 transition-colors"
-                      >
-                        <div className="p-5 sm:p-6 space-y-4">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <h3 className="font-headline text-lg sm:text-xl font-bold text-on-surface">
-                                {proj.title}
-                              </h3>
-                              {proj.status && (
-                                <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-tertiary bg-tertiary/10 border border-tertiary/20 px-2 py-0.5 rounded-full mt-1">
-                                  {proj.status}
+                    {projects.map((proj, idx) => {
+                      const isDragging = dragInfo.type === 'project' && dragInfo.index === idx;
+                      const isDragOver = dragOverInfo.type === 'project' && dragOverInfo.index === idx;
+
+                      return (
+                        <div
+                          key={proj._id || proj.id || idx}
+                          draggable
+                          onDragStart={(e) => onDragStart(e, 'project', idx)}
+                          onDragEnter={(e) => onDragEnter(e, 'project', idx)}
+                          onDragOver={onDragOver}
+                          onDragEnd={onDragEnd}
+                          onDrop={(e) => onDrop(e, 'project', idx)}
+                          className={`bg-surface-container-low border rounded-xl overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-move ${
+                            isDragging
+                              ? 'opacity-30 border-dashed border-primary scale-[0.99]'
+                              : isDragOver
+                              ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
+                              : 'border-outline-variant/20 hover:border-outline-variant/50'
+                          }`}
+                        >
+                          <div className="p-5 sm:p-6 space-y-4">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-start gap-2.5 flex-grow">
+                                {/* Drag handle & Move Up/Down buttons */}
+                                <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                                  <div
+                                    className="cursor-grab active:cursor-grabbing p-1 text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center rounded hover:bg-surface-container-high"
+                                    title="Drag to reorder"
+                                  >
+                                    <span className="material-symbols-outlined text-lg select-none">drag_indicator</span>
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <button
+                                      type="button"
+                                      onClick={() => moveItem('project', idx, -1)}
+                                      disabled={idx === 0}
+                                      className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 disabled:hover:text-on-surface-variant transition-colors"
+                                      title="Move up"
+                                    >
+                                      <span className="material-symbols-outlined text-sm select-none leading-none">arrow_drop_up</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => moveItem('project', idx, 1)}
+                                      disabled={idx === projects.length - 1}
+                                      className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 disabled:hover:text-on-surface-variant transition-colors"
+                                      title="Move down"
+                                    >
+                                      <span className="material-symbols-outlined text-sm select-none leading-none">arrow_drop_down</span>
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 font-bold">
+                                      #{idx + 1}
+                                    </span>
+                                    {renderColorBadge(proj.statusColor || COLOR_CYCLE[idx % 3])}
+                                  </div>
+                                  <h3 className="font-headline text-lg sm:text-xl font-bold text-on-surface">
+                                    {proj.title}
+                                  </h3>
+                                  {proj.status && (
+                                    <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full mt-1">
+                                      {proj.status}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => openModal('project', proj)}
+                                  className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
+                                  title="Edit Project"
+                                >
+                                  <span className="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDelete('project', proj._id || proj.id)}
+                                  className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
+                                  title="Delete Project"
+                                >
+                                  <span className="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-3">
+                              {proj.description}
+                            </p>
+
+                            <div className="flex flex-wrap gap-1.5">
+                              {proj.technologies?.map((tech) => (
+                                <span
+                                  key={tech}
+                                  className="text-[10px] bg-surface-container-high px-2 py-0.5 rounded text-on-surface-variant"
+                                >
+                                  {tech}
                                 </span>
+                              ))}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-4 text-xs pt-2">
+                              {proj.liveUrl && (
+                                <a
+                                  href={proj.liveUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-primary hover:underline inline-flex items-center gap-1 font-semibold"
+                                >
+                                  Live Demo <span className="material-symbols-outlined text-xs">open_in_new</span>
+                                </a>
+                              )}
+                              {proj.githubUrl && (
+                                <a
+                                  href={proj.githubUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-on-surface-variant hover:text-on-surface inline-flex items-center gap-1 font-semibold"
+                                >
+                                  GitHub <span className="material-symbols-outlined text-xs">code</span>
+                                </a>
                               )}
                             </div>
+                          </div>
 
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => openModal('project', proj)}
-                                className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
-                                title="Edit Project"
-                              >
-                                <span className="material-symbols-outlined text-lg">edit</span>
-                              </button>
-                              <button
-                                onClick={() => handleDelete('project', proj._id || proj.id)}
-                                className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
-                                title="Delete Project"
-                              >
-                                <span className="material-symbols-outlined text-lg">delete</span>
-                              </button>
+                          {proj.image && (
+                            <div className="h-32 bg-surface-container-lowest border-t border-outline-variant/10 overflow-hidden">
+                              <img
+                                src={proj.image}
+                                alt={proj.title}
+                                className="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity"
+                              />
                             </div>
-                          </div>
-
-                          <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-3">
-                            {proj.description}
-                          </p>
-
-                          <div className="flex flex-wrap gap-1.5">
-                            {proj.technologies?.map((tech) => (
-                              <span
-                                key={tech}
-                                className="text-[10px] bg-surface-container-high px-2 py-0.5 rounded text-on-surface-variant"
-                              >
-                                {tech}
-                              </span>
-                            ))}
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-4 text-xs pt-2">
-                            {proj.liveUrl && (
-                              <a
-                                href={proj.liveUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-primary hover:underline inline-flex items-center gap-1 font-semibold"
-                              >
-                                Live Demo <span className="material-symbols-outlined text-xs">open_in_new</span>
-                              </a>
-                            )}
-                            {proj.githubUrl && (
-                              <a
-                                href={proj.githubUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-on-surface-variant hover:text-on-surface inline-flex items-center gap-1 font-semibold"
-                              >
-                                GitHub <span className="material-symbols-outlined text-xs">code</span>
-                              </a>
-                            )}
-                          </div>
+                          )}
                         </div>
-
-                        {proj.image && (
-                          <div className="h-32 bg-surface-container-lowest border-t border-outline-variant/10 overflow-hidden">
-                            <img
-                              src={proj.image}
-                              alt={proj.title}
-                              className="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -855,73 +1145,136 @@ export default function AdminPage() {
                         Certifications showcased on /certifications
                       </p>
                     </div>
-                    <button
-                      onClick={() => openModal('certification')}
-                      className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
-                    >
-                      <span className="material-symbols-outlined text-sm">add</span>
-                      Add Certification
-                    </button>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-[11px] font-mono text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-lg border border-outline-variant/20 flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-sm text-primary">drag_indicator</span>
+                        Drag &amp; drop to reorder • Primary → Secondary → Tertiary
+                      </span>
+                      <button
+                        onClick={() => openModal('certification')}
+                        className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined text-sm">add</span>
+                        Add Certification
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {certifications.map((cert, idx) => (
-                      <div
-                        key={cert._id || cert.id || idx}
-                        className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-5 flex flex-col justify-between hover:border-outline-variant/50 transition-colors"
-                      >
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="material-symbols-outlined text-tertiary text-2xl">
-                              {cert.icon || 'verified'}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => openModal('certification', cert)}
-                                className="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
-                              >
-                                <span className="material-symbols-outlined text-base">edit</span>
-                              </button>
-                              <button
-                                onClick={() => handleDelete('certification', cert._id || cert.id)}
-                                className="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
-                              >
-                                <span className="material-symbols-outlined text-base">delete</span>
-                              </button>
+                    {certifications.map((cert, idx) => {
+                      const isDragging = dragInfo.type === 'certification' && dragInfo.index === idx;
+                      const isDragOver = dragOverInfo.type === 'certification' && dragOverInfo.index === idx;
+
+                      return (
+                        <div
+                          key={cert._id || cert.id || idx}
+                          draggable
+                          onDragStart={(e) => onDragStart(e, 'certification', idx)}
+                          onDragEnter={(e) => onDragEnter(e, 'certification', idx)}
+                          onDragOver={onDragOver}
+                          onDragEnd={onDragEnd}
+                          onDrop={(e) => onDrop(e, 'certification', idx)}
+                          className={`bg-surface-container-low border rounded-xl p-5 flex flex-col justify-between transition-all duration-200 cursor-move ${
+                            isDragging
+                              ? 'opacity-30 border-dashed border-primary scale-[0.99]'
+                              : isDragOver
+                              ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
+                              : 'border-outline-variant/20 hover:border-outline-variant/50'
+                          }`}
+                        >
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                {/* Drag handle & Move Up/Down buttons */}
+                                <div className="flex items-center gap-0.5">
+                                  <div
+                                    className="cursor-grab active:cursor-grabbing p-1 text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center rounded hover:bg-surface-container-high"
+                                    title="Drag to reorder"
+                                  >
+                                    <span className="material-symbols-outlined text-lg select-none">drag_indicator</span>
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <button
+                                      type="button"
+                                      onClick={() => moveItem('certification', idx, -1)}
+                                      disabled={idx === 0}
+                                      className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 disabled:hover:text-on-surface-variant transition-colors"
+                                      title="Move up"
+                                    >
+                                      <span className="material-symbols-outlined text-xs select-none leading-none">arrow_drop_up</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => moveItem('certification', idx, 1)}
+                                      disabled={idx === certifications.length - 1}
+                                      className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 disabled:hover:text-on-surface-variant transition-colors"
+                                      title="Move down"
+                                    >
+                                      <span className="material-symbols-outlined text-xs select-none leading-none">arrow_drop_down</span>
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <span className="material-symbols-outlined text-primary text-2xl">
+                                  {cert.icon || 'verified'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => openModal('certification', cert)}
+                                  className="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
+                                >
+                                  <span className="material-symbols-outlined text-base">edit</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDelete('certification', cert._id || cert.id)}
+                                  className="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
+                                >
+                                  <span className="material-symbols-outlined text-base">delete</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 font-bold">
+                                #{idx + 1}
+                              </span>
+                              {renderColorBadge(cert.statusColor || COLOR_CYCLE[idx % 3])}
+                            </div>
+
+                            <h3 className="font-headline text-base font-bold text-on-surface">
+                              {cert.title}
+                            </h3>
+                            <p className="text-xs text-on-surface-variant">{cert.organization}</p>
+
+                            {cert.credentialId && (
+                              <p className="text-[11px] font-mono text-on-surface-variant/70">
+                                ID: {cert.credentialId}
+                              </p>
+                            )}
+
+                            <div className="flex items-center gap-2 text-[10px] uppercase font-mono text-on-surface-variant">
+                              {cert.issueDate && <span>Issued: {cert.issueDate}</span>}
+                              {cert.expiryDate && <span>Expires: {cert.expiryDate}</span>}
                             </div>
                           </div>
 
-                          <h3 className="font-headline text-base font-bold text-on-surface">
-                            {cert.title}
-                          </h3>
-                          <p className="text-xs text-on-surface-variant">{cert.organization}</p>
-
-                          {cert.credentialId && (
-                            <p className="text-[11px] font-mono text-on-surface-variant/70">
-                              ID: {cert.credentialId}
-                            </p>
+                          {cert.verificationUrl && (
+                            <div className="mt-4 pt-3 border-t border-outline-variant/10">
+                              <a
+                                href={cert.verificationUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold"
+                              >
+                                Verify Badge <span className="material-symbols-outlined text-xs">open_in_new</span>
+                              </a>
+                            </div>
                           )}
-
-                          <div className="flex items-center gap-2 text-[10px] uppercase font-mono text-on-surface-variant">
-                            {cert.issueDate && <span>Issued: {cert.issueDate}</span>}
-                            {cert.expiryDate && <span>Expires: {cert.expiryDate}</span>}
-                          </div>
                         </div>
-
-                        {cert.verificationUrl && (
-                          <div className="mt-4 pt-3 border-t border-outline-variant/10">
-                            <a
-                              href={cert.verificationUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-xs text-tertiary hover:underline inline-flex items-center gap-1 font-semibold"
-                            >
-                              Verify Badge <span className="material-symbols-outlined text-xs">open_in_new</span>
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -934,50 +1287,111 @@ export default function AdminPage() {
                         Education history items shown on /certifications
                       </p>
                     </div>
-                    <button
-                      onClick={() => openModal('education')}
-                      className="py-2.5 px-4 rounded-lg bg-surface-container-high border border-outline-variant/30 hover:border-primary text-on-surface font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-sm">add</span>
-                      Add Education
-                    </button>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-[11px] font-mono text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-lg border border-outline-variant/20 flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-sm text-primary">drag_indicator</span>
+                        Drag &amp; drop to reorder • Primary → Secondary → Tertiary
+                      </span>
+                      <button
+                        onClick={() => openModal('education')}
+                        className="py-2.5 px-4 rounded-lg bg-surface-container-high border border-outline-variant/30 hover:border-primary text-on-surface font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-sm">add</span>
+                        Add Education
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-4">
-                    {education.map((edu, idx) => (
-                      <div
-                        key={edu._id || edu.id || idx}
-                        className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-                      >
-                        <div className="space-y-2">
-                          <h3 className="font-headline text-base font-bold text-on-surface">
-                            {edu.title}
-                          </h3>
-                          <p className="text-xs font-semibold text-primary">{edu.institution}</p>
-                          <p className="text-xs text-on-surface-variant/80 font-mono">
-                            {edu.period || `${edu.startDate} - ${edu.endDate}`}
-                          </p>
-                          {edu.description && (
-                            <p className="text-xs text-on-surface-variant max-w-2xl">{edu.description}</p>
-                          )}
-                        </div>
+                    {education.map((edu, idx) => {
+                      const isDragging = dragInfo.type === 'education' && dragInfo.index === idx;
+                      const isDragOver = dragOverInfo.type === 'education' && dragOverInfo.index === idx;
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => openModal('education', edu)}
-                            className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-lg">edit</span>
-                          </button>
-                          <button
-                            onClick={() => handleDelete('education', edu._id || edu.id)}
-                            className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-lg">delete</span>
-                          </button>
+                      return (
+                        <div
+                          key={edu._id || edu.id || idx}
+                          draggable
+                          onDragStart={(e) => onDragStart(e, 'education', idx)}
+                          onDragEnter={(e) => onDragEnter(e, 'education', idx)}
+                          onDragOver={onDragOver}
+                          onDragEnd={onDragEnd}
+                          onDrop={(e) => onDrop(e, 'education', idx)}
+                          className={`bg-surface-container-low border rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-200 cursor-move ${
+                            isDragging
+                              ? 'opacity-30 border-dashed border-primary scale-[0.99]'
+                              : isDragOver
+                              ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
+                              : 'border-outline-variant/20 hover:border-outline-variant/50'
+                          }`}
+                        >
+                          <div className="flex items-start md:items-center gap-3 flex-grow w-full md:w-auto">
+                            {/* Drag handle & Move Up/Down buttons */}
+                            <div className="flex items-center gap-1 shrink-0 self-start md:self-center">
+                              <div
+                                className="cursor-grab active:cursor-grabbing p-1.5 text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center rounded hover:bg-surface-container-high"
+                                title="Drag to reorder"
+                              >
+                                <span className="material-symbols-outlined text-xl select-none">drag_indicator</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <button
+                                  type="button"
+                                  onClick={() => moveItem('education', idx, -1)}
+                                  disabled={idx === 0}
+                                  className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 disabled:hover:text-on-surface-variant transition-colors"
+                                  title="Move up"
+                                >
+                                  <span className="material-symbols-outlined text-base select-none leading-none">arrow_drop_up</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveItem('education', idx, 1)}
+                                  disabled={idx === education.length - 1}
+                                  className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 disabled:hover:text-on-surface-variant transition-colors"
+                                  title="Move down"
+                                >
+                                  <span className="material-symbols-outlined text-base select-none leading-none">arrow_drop_down</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 flex-grow">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 font-bold">
+                                  #{idx + 1}
+                                </span>
+                                <h3 className="font-headline text-base font-bold text-on-surface">
+                                  {edu.title}
+                                </h3>
+                                <span className="text-xs font-semibold text-primary">{edu.institution}</span>
+                                {renderColorBadge(edu.color || COLOR_CYCLE[idx % 3])}
+                              </div>
+                              <p className="text-xs text-on-surface-variant/80 font-mono">
+                                {edu.period || `${edu.startDate} - ${edu.endDate}`}
+                              </p>
+                              {edu.description && (
+                                <p className="text-xs text-on-surface-variant max-w-2xl">{edu.description}</p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={() => openModal('education', edu)}
+                              className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-lg">edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleDelete('education', edu._id || edu.id)}
+                              className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-lg">delete</span>
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -1235,9 +1649,9 @@ export default function AdminPage() {
                         defaultValue={editingItem?.color || 'primary'}
                         className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                       >
-                        <option value="primary">Primary (Cyan)</option>
-                        <option value="secondary">Secondary (Purple)</option>
-                        <option value="tertiary">Tertiary (Emerald)</option>
+                        <option value="primary">Primary (Burnt Orange)</option>
+                        <option value="secondary">Secondary (Amber / Rust)</option>
+                        <option value="tertiary">Tertiary (Deep Rust)</option>
                       </select>
                     </div>
                     <div>
@@ -1360,9 +1774,9 @@ export default function AdminPage() {
                         defaultValue={editingItem?.barColor || 'from-primary to-primary'}
                         className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                       >
-                        <option value="from-primary to-primary">Primary (Cyan)</option>
-                        <option value="from-secondary to-secondary">Secondary (Purple)</option>
-                        <option value="from-tertiary to-tertiary">Tertiary (Emerald)</option>
+                        <option value="from-primary to-primary">Primary (Burnt Orange)</option>
+                        <option value="from-secondary to-secondary">Secondary (Amber / Rust)</option>
+                        <option value="from-tertiary to-tertiary">Tertiary (Deep Rust)</option>
                       </select>
                     </div>
                     <div>

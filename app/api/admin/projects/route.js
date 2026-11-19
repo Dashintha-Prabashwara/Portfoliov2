@@ -49,6 +49,29 @@ export async function PUT(request) {
 
     await connectToDatabase();
     const body = await request.json();
+
+    // Support bulk reordering and color updates
+    if (Array.isArray(body)) {
+      const defaultBarColors = [
+        'from-primary to-primary',
+        'from-secondary to-secondary',
+        'from-tertiary to-tertiary',
+      ];
+      await Promise.all(
+        body.map((item, idx) => {
+          const itemId = item._id || item.id;
+          if (!itemId) return null;
+          return Project.findByIdAndUpdate(itemId, {
+            order: item.order !== undefined ? item.order : idx + 1,
+            statusColor: item.statusColor || ['primary', 'secondary', 'tertiary'][idx % 3],
+            barColor: item.barColor || defaultBarColors[idx % 3],
+          });
+        })
+      );
+      const all = await Project.find({}).sort({ order: 1, createdAt: -1 });
+      return NextResponse.json({ success: true, data: all });
+    }
+
     const { id, _id, ...updateData } = body;
 
     const projectId = id || _id;

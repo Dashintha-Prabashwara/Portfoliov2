@@ -35,6 +35,11 @@ const EducationSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    color: {
+      type: String,
+      default: 'primary',
+      trim: true,
+    },
   },
   {
     timestamps: true,

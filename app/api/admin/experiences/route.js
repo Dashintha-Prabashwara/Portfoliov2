@@ -49,6 +49,23 @@ export async function PUT(request) {
 
     await connectToDatabase();
     const body = await request.json();
+
+    // Support bulk reordering and color updates
+    if (Array.isArray(body)) {
+      await Promise.all(
+        body.map((item, idx) => {
+          const itemId = item._id || item.id;
+          if (!itemId) return null;
+          return Experience.findByIdAndUpdate(itemId, {
+            order: item.order !== undefined ? item.order : idx + 1,
+            color: item.color || ['primary', 'secondary', 'tertiary'][idx % 3],
+          });
+        })
+      );
+      const all = await Experience.find({}).sort({ order: 1, createdAt: -1 });
+      return NextResponse.json({ success: true, data: all });
+    }
+
     const { id, _id, ...updateData } = body;
 
     const experienceId = id || _id;
