@@ -134,7 +134,9 @@ export default function Experience() {
                         </span>
                         <h3 className="font-headline text-lg sm:text-xl font-bold mb-1 text-on-surface">{exp.role}</h3>
                         <p className="text-on-surface-variant text-xs sm:text-sm font-medium mb-4">{exp.company}</p>
-                        <p className="text-on-surface-variant text-xs sm:text-sm leading-relaxed mb-4">{exp.description}</p>
+                        {exp.description && (
+                          <p className="text-on-surface-variant text-xs sm:text-sm leading-relaxed mb-4">{exp.description}</p>
+                        )}
                         <div className={`flex flex-wrap gap-2 ${isLeft ? '' : 'justify-end'}`}>
                           {exp.tags.map((tag) => (
                             <span key={tag} className="bg-surface-container-high px-2 sm:px-3 py-1 text-[10px] font-label text-on-surface flex items-center gap-1">

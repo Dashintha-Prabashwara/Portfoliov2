@@ -81,6 +81,7 @@ function ProjectCard({ project }) {
           src={project.image}
           width={500}
           height={256}
+          unoptimized
         />
         <div className="absolute inset-0 bg-gradient-to-t from-surface-container-low via-transparent to-transparent"></div>
       </div>
@@ -104,9 +105,11 @@ function ProjectCard({ project }) {
         </div>
 
         {/* Description */}
-        <p className="text-on-surface-variant text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 font-light">
-          {project.description}
-        </p>
+        {project.description && (
+          <p className="text-on-surface-variant text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 font-light">
+            {project.description}
+          </p>
+        )}
 
         {/* Tech Tags */}
         <div className="flex flex-wrap gap-2 mb-6 sm:mb-8">

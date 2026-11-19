@@ -9,7 +9,7 @@ const ProjectSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: [true, 'Description is required'],
+      default: '',
       trim: true,
     },
     technologies: {
@@ -18,7 +18,7 @@ const ProjectSchema = new mongoose.Schema(
     },
     image: {
       type: String,
-      default: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1000&q=80',
+      default: '',
       trim: true,
     },
     githubUrl: {

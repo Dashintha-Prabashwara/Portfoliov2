@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { getProjectCoverImage } from '@/lib/projectImage';
 
 const COLOR_CYCLE = ['primary', 'secondary', 'tertiary'];
 const BAR_COLOR_CYCLE = [
@@ -78,6 +79,16 @@ export default function AdminPage() {
   const [dragInfo, setDragInfo] = useState({ type: null, index: null });
   const [dragOverInfo, setDragOverInfo] = useState({ type: null, index: null });
 
+  // Project Live Preview / Cover helper states in modal
+  const [modalCoverImage, setModalCoverImage] = useState('');
+  const [modalLiveUrl, setModalLiveUrl] = useState('');
+  const [fetchingPreview, setFetchingPreview] = useState(false);
+
+  // Drag & drop scrolling refs (for wheel scrolling & edge auto-scroll)
+  const isDraggingRef = useRef(false);
+  const autoScrollSpeedRef = useRef(0);
+  const autoScrollRafRef = useRef(null);
+
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
@@ -148,6 +159,75 @@ export default function AdminPage() {
       fetchAllData();
     }
   }, [isAuthenticated, fetchAllData]);
+
+  // Handle Drag & Drop Window Wheel Scrolling & Edge Auto-scrolling
+  useEffect(() => {
+    const stepAutoScroll = () => {
+      if (autoScrollSpeedRef.current !== 0 && isDraggingRef.current) {
+        window.scrollBy({ top: autoScrollSpeedRef.current, behavior: 'auto' });
+        autoScrollRafRef.current = requestAnimationFrame(stepAutoScroll);
+      } else {
+        autoScrollRafRef.current = null;
+      }
+    };
+
+    const handleWindowWheel = (e) => {
+      if (isDraggingRef.current) {
+        // Native D&D often blocks default wheel scrolling; force scroll
+        window.scrollBy({ top: e.deltaY, behavior: 'auto' });
+      }
+    };
+
+    const handleWindowDragOver = (e) => {
+      if (!isDraggingRef.current) return;
+      const clientY = e.clientY;
+      const threshold = 120; // 120px edge margin
+      const windowHeight = window.innerHeight;
+
+      if (clientY < threshold) {
+        // Near top -> scroll up smoothly
+        const factor = (threshold - clientY) / threshold;
+        autoScrollSpeedRef.current = -Math.round(factor * 18 + 5);
+        if (!autoScrollRafRef.current) {
+          autoScrollRafRef.current = requestAnimationFrame(stepAutoScroll);
+        }
+      } else if (clientY > windowHeight - threshold) {
+        // Near bottom -> scroll down smoothly
+        const factor = (clientY - (windowHeight - threshold)) / threshold;
+        autoScrollSpeedRef.current = Math.round(factor * 18 + 5);
+        if (!autoScrollRafRef.current) {
+          autoScrollRafRef.current = requestAnimationFrame(stepAutoScroll);
+        }
+      } else {
+        // Neutral center zone
+        autoScrollSpeedRef.current = 0;
+      }
+    };
+
+    const stopDragging = () => {
+      isDraggingRef.current = false;
+      autoScrollSpeedRef.current = 0;
+      if (autoScrollRafRef.current) {
+        cancelAnimationFrame(autoScrollRafRef.current);
+        autoScrollRafRef.current = null;
+      }
+    };
+
+    window.addEventListener('wheel', handleWindowWheel, { passive: true });
+    window.addEventListener('dragover', handleWindowDragOver);
+    window.addEventListener('dragend', stopDragging);
+    window.addEventListener('drop', stopDragging);
+
+    return () => {
+      window.removeEventListener('wheel', handleWindowWheel);
+      window.removeEventListener('dragover', handleWindowDragOver);
+      window.removeEventListener('dragend', stopDragging);
+      window.removeEventListener('drop', stopDragging);
+      if (autoScrollRafRef.current) {
+        cancelAnimationFrame(autoScrollRafRef.current);
+      }
+    };
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -224,6 +304,8 @@ export default function AdminPage() {
     setModalType(type);
     setEditingItem(item);
     setModalIsVisible(item ? item.isVisible !== false : true); // Default is visible
+    setModalCoverImage(item?.image || '');
+    setModalLiveUrl(item?.liveUrl || '');
     setModalOpen(true);
   };
 
@@ -231,6 +313,30 @@ export default function AdminPage() {
     setModalOpen(false);
     setEditingItem(null);
     setModalType(null);
+    setModalCoverImage('');
+    setModalLiveUrl('');
+  };
+
+  const handleFetchLivePreview = async () => {
+    if (!modalLiveUrl || !modalLiveUrl.trim()) {
+      showToast('Please enter a Live Demo URL first', 'error');
+      return;
+    }
+    setFetchingPreview(true);
+    try {
+      const res = await fetch(`/api/preview?url=${encodeURIComponent(modalLiveUrl.trim())}`);
+      const data = await res.json();
+      if (res.ok && data.success && data.previewUrl) {
+        setModalCoverImage(data.previewUrl);
+        showToast('OpenGraph preview image fetched!');
+      } else {
+        showToast('Auto-preview ready via Live Demo URL screenshot');
+      }
+    } catch {
+      showToast('Auto-preview ready via Live Demo URL screenshot');
+    } finally {
+      setFetchingPreview(false);
+    }
   };
 
   // Delete handler
@@ -396,6 +502,7 @@ export default function AdminPage() {
   };
 
   const onDragStart = (e, type, index) => {
+    isDraggingRef.current = true;
     setDragInfo({ type, index });
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', `${type}:${index}`);
@@ -414,12 +521,24 @@ export default function AdminPage() {
   };
 
   const onDragEnd = () => {
+    isDraggingRef.current = false;
+    autoScrollSpeedRef.current = 0;
+    if (autoScrollRafRef.current) {
+      cancelAnimationFrame(autoScrollRafRef.current);
+      autoScrollRafRef.current = null;
+    }
     setDragInfo({ type: null, index: null });
     setDragOverInfo({ type: null, index: null });
   };
 
   const onDrop = (e, type, index) => {
     e.preventDefault();
+    isDraggingRef.current = false;
+    autoScrollSpeedRef.current = 0;
+    if (autoScrollRafRef.current) {
+      cancelAnimationFrame(autoScrollRafRef.current);
+      autoScrollRafRef.current = null;
+    }
     if (dragInfo.type === type && dragInfo.index !== null) {
       handleReorder(type, dragInfo.index, index);
     }
@@ -1024,9 +1143,11 @@ export default function AdminPage() {
                                 {exp.period || `${exp.startDate} - ${exp.endDate}`}
                               </p>
 
-                              <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl line-clamp-2">
-                                {exp.description}
-                              </p>
+                              {exp.description && (
+                                <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl line-clamp-2">
+                                  {exp.description}
+                                </p>
+                              )}
 
                               <div className="flex flex-wrap gap-1.5 pt-1">
                                 {exp.tags?.map((tag) => (
@@ -1139,6 +1260,20 @@ export default function AdminPage() {
                             }`}
                         >
                           <div className="p-5 sm:p-6 space-y-4">
+                            {/* Project Cover / Live Preview Card */}
+                            <div className="relative w-full h-36 rounded-lg overflow-hidden bg-surface-container-highest border border-outline-variant/30">
+                              <img
+                                src={getProjectCoverImage(proj)}
+                                alt={proj.title}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                              <div className="absolute top-2 right-2 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-mono text-white/90 border border-white/10 shadow-sm flex items-center gap-1.5">
+                                <span className={`w-1.5 h-1.5 rounded-full ${proj.image ? 'bg-secondary' : proj.liveUrl ? 'bg-primary' : 'bg-on-surface-variant'}`} />
+                                {proj.image ? 'Custom Banner' : proj.liveUrl ? 'Live Preview' : 'Default Placeholder'}
+                              </div>
+                            </div>
+
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-start gap-2.5 flex-grow">
                                 {/* Drag handle & Move Up/Down buttons */}
@@ -1221,9 +1356,11 @@ export default function AdminPage() {
                               </div>
                             </div>
 
-                            <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-3">
-                              {proj.description}
-                            </p>
+                            {proj.description && (
+                              <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-3">
+                                {proj.description}
+                              </p>
+                            )}
 
                             <div className="flex flex-wrap gap-1.5">
                               {proj.technologies?.map((tech) => (
@@ -1721,522 +1858,588 @@ export default function AdminPage() {
 
       {/* CREATE / EDIT MODAL */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl bg-surface-container-low border border-outline-variant/30 rounded-2xl p-6 sm:p-8 shadow-2xl relative my-8">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-outline-variant/20">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+          <div className="w-full max-w-2xl max-h-[92vh] bg-surface-container-low border border-outline-variant/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* PINNED HEADER */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/20 shrink-0 bg-surface-container-low">
               <h3 className="font-headline text-lg sm:text-xl font-bold text-on-surface capitalize">
                 {editingItem ? 'Edit' : 'Add New'} {modalType}
               </h3>
               <button
+                type="button"
                 onClick={closeModal}
-                className="p-1 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
+                className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
               >
                 <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
 
-            <form onSubmit={handleSaveItem} className="space-y-4">
-              {/* ELEMENT VISIBILITY TOGGLE (Default is visible) */}
-              {modalType !== 'cv' && (
-                <div className="flex items-center justify-between p-3.5 rounded-xl bg-surface-container-highest border border-outline-variant/30">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-headline font-bold text-on-surface uppercase tracking-wider">
-                        Element Visibility
-                      </span>
-                      {modalIsVisible ? (
-                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 font-bold flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[13px] leading-none">visibility</span> Visible
+            {/* SCROLLABLE BODY & PINNED FOOTER FORM */}
+            <form onSubmit={handleSaveItem} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 custom-scrollbar">
+                {/* ELEMENT VISIBILITY TOGGLE (Default is visible) */}
+                {modalType !== 'cv' && (
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-surface-container-highest border border-outline-variant/30">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-headline font-bold text-on-surface uppercase tracking-wider">
+                          Element Visibility
                         </span>
-                      ) : (
-                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant/60 border border-outline-variant/30 font-bold flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[13px] leading-none">visibility_off</span> Hidden
-                        </span>
-                      )}
+                        {modalIsVisible ? (
+                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 font-bold flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[13px] leading-none">visibility</span> Visible
+                          </span>
+                        ) : (
+                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant/60 border border-outline-variant/30 font-bold flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[13px] leading-none">visibility_off</span> Hidden
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-on-surface-variant">
+                        {modalIsVisible
+                          ? 'Published on your public portfolio (rotates in Primary → Secondary → Tertiary cycle)'
+                          : 'Hidden from public visitors (saved as draft or archived)'}
+                      </p>
                     </div>
-                    <p className="text-[11px] text-on-surface-variant">
-                      {modalIsVisible
-                        ? 'Published on your public portfolio (rotates in Primary → Secondary → Tertiary cycle)'
-                        : 'Hidden from public visitors (saved as draft or archived)'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setModalIsVisible(!modalIsVisible)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${modalIsVisible ? 'bg-primary' : 'bg-outline-variant/40'
-                      }`}
-                    role="switch"
-                    aria-checked={modalIsVisible}
-                    title={modalIsVisible ? 'Click to set hidden' : 'Click to set visible'}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-on-primary shadow ring-0 transition duration-200 ease-in-out ${modalIsVisible ? 'translate-x-5' : 'translate-x-0'
+                    <button
+                      type="button"
+                      onClick={() => setModalIsVisible(!modalIsVisible)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${modalIsVisible ? 'bg-primary' : 'bg-outline-variant/40'
                         }`}
-                    />
-                  </button>
-                </div>
-              )}
+                      role="switch"
+                      aria-checked={modalIsVisible}
+                      title={modalIsVisible ? 'Click to set hidden' : 'Click to set visible'}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-on-primary shadow ring-0 transition duration-200 ease-in-out ${modalIsVisible ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                      />
+                    </button>
+                  </div>
+                )}
 
-              {/* EXPERIENCE FORM */}
-              {modalType === 'experience' && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* EXPERIENCE FORM */}
+                {modalType === 'experience' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Company *
+                        </label>
+                        <input
+                          type="text"
+                          name="company"
+                          defaultValue={editingItem?.company || ''}
+                          required
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Role / Title *
+                        </label>
+                        <input
+                          type="text"
+                          name="role"
+                          defaultValue={editingItem?.role || ''}
+                          required
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Start Date *
+                        </label>
+                        <input
+                          type="text"
+                          name="startDate"
+                          defaultValue={editingItem?.startDate || ''}
+                          placeholder="e.g. Aug 2026"
+                          required
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          End Date
+                        </label>
+                        <input
+                          type="text"
+                          name="endDate"
+                          defaultValue={editingItem?.endDate || 'Present'}
+                          placeholder="e.g. Present or Sep 2026"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Company *
+                        Description (optional)
+                      </label>
+                      <textarea
+                        name="description"
+                        rows={3}
+                        defaultValue={editingItem?.description || ''}
+                        placeholder="Role summary, accomplishments, and tech details..."
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Tags (comma separated)
+                        </label>
+                        <input
+                          type="text"
+                          name="tags"
+                          defaultValue={editingItem?.tags?.join(', ') || ''}
+                          placeholder="IOT, CLOUD, DEVOPS"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Theme Color
+                        </label>
+                        <select
+                          name="color"
+                          defaultValue={editingItem?.color || 'primary'}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        >
+                          <option value="primary">Primary (Burnt Orange)</option>
+                          <option value="secondary">Secondary (Amber / Rust)</option>
+                          <option value="tertiary">Tertiary (Deep Rust)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Display Order
+                        </label>
+                        <input
+                          type="number"
+                          name="order"
+                          defaultValue={editingItem?.order ?? experiences.length + 1}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* PROJECT FORM */}
+                {modalType === 'project' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Project Title *
+                        </label>
+                        <input
+                          type="text"
+                          name="title"
+                          defaultValue={editingItem?.title || ''}
+                          required
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Status Badge
+                        </label>
+                        <input
+                          type="text"
+                          name="status"
+                          defaultValue={editingItem?.status || 'Active'}
+                          placeholder="Active, Production, etc."
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                        Description (optional)
+                      </label>
+                      <textarea
+                        name="description"
+                        rows={3}
+                        defaultValue={editingItem?.description || ''}
+                        placeholder="Role summary, accomplishments, and tech details..."
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                        Technologies (comma separated)
                       </label>
                       <input
                         type="text"
-                        name="company"
-                        defaultValue={editingItem?.company || ''}
-                        required
+                        name="technologies"
+                        defaultValue={editingItem?.technologies?.join(', ') || ''}
+                        placeholder="Next.js, Node.js, Docker, MongoDB"
                         className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                       />
                     </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          GitHub URL
+                        </label>
+                        <input
+                          type="text"
+                          name="githubUrl"
+                          defaultValue={editingItem?.githubUrl || ''}
+                          placeholder="https://github.com/..."
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                            Live Demo URL
+                          </label>
+                          <span className="text-[10px] text-primary font-mono font-bold">Powers Auto-Preview</span>
+                        </div>
+                        <input
+                          type="text"
+                          name="liveUrl"
+                          value={modalLiveUrl}
+                          onChange={(e) => setModalLiveUrl(e.target.value)}
+                          placeholder="https://your-site.com"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    {/* COVER IMAGE & LIVE PREVIEW SYSTEM */}
+                    <div className="p-4 rounded-xl bg-surface-container-highest/60 border border-outline-variant/30 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <label className="block text-xs font-headline font-bold uppercase tracking-wider text-on-surface">
+                            Cover Image / Preview
+                          </label>
+                          <p className="text-[11px] text-on-surface-variant">
+                            Priority: Custom Banner → Live Site Preview (from Live URL) → Default Fallback
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {modalCoverImage && (
+                            <button
+                              type="button"
+                              onClick={() => setModalCoverImage('')}
+                              className="text-[11px] font-mono text-tertiary hover:underline flex items-center gap-1"
+                              title="Clear custom banner to use automatic live website preview"
+                            >
+                              <span className="material-symbols-outlined text-xs">backspace</span>
+                              Clear Banner
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleFetchLivePreview}
+                            disabled={fetchingPreview || !modalLiveUrl}
+                            className="px-2.5 py-1 rounded bg-surface-container-high text-[11px] font-mono text-primary hover:bg-surface-container-highest border border-primary/30 flex items-center gap-1 disabled:opacity-40 transition-colors"
+                          >
+                            <span className={`material-symbols-outlined text-xs ${fetchingPreview ? 'animate-spin' : ''}`}>
+                              {fetchingPreview ? 'progress_activity' : 'refresh'}
+                            </span>
+                            Fetch OG Preview
+                          </button>
+                        </div>
+                      </div>
+
+                      <input
+                        type="text"
+                        name="image"
+                        value={modalCoverImage}
+                        onChange={(e) => setModalCoverImage(e.target.value)}
+                        placeholder="Leave empty to auto-use Live Preview from Live Demo URL"
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                      />
+
+                      {/* Visual Card Preview */}
+                      <div className="relative aspect-[16/9] w-full max-h-44 rounded-lg overflow-hidden border border-outline-variant/40 bg-black/40">
+                        <img
+                          src={getProjectCoverImage({ image: modalCoverImage, liveUrl: modalLiveUrl })}
+                          alt="Project Cover Preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1000&q=80';
+                          }}
+                        />
+                        <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-md bg-black/80 backdrop-blur-md text-[10px] font-mono text-white/90 border border-white/10 flex items-center gap-1.5 shadow-md">
+                          <span className={`w-1.5 h-1.5 rounded-full ${modalCoverImage ? 'bg-secondary' : modalLiveUrl ? 'bg-primary' : 'bg-on-surface-variant'}`} />
+                          {modalCoverImage
+                            ? 'Priority 1: Custom Banner Image'
+                            : modalLiveUrl
+                            ? 'Priority 2: Auto Live Website Preview'
+                            : 'Fallback: Default Placeholder'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Accent Bar Color
+                        </label>
+                        <select
+                          name="barColor"
+                          defaultValue={editingItem?.barColor || 'from-primary to-primary'}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        >
+                          <option value="from-primary to-primary">Primary (Burnt Orange)</option>
+                          <option value="from-secondary to-secondary">Secondary (Amber / Rust)</option>
+                          <option value="from-tertiary to-tertiary">Tertiary (Deep Rust)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Display Order
+                        </label>
+                        <input
+                          type="number"
+                          name="order"
+                          defaultValue={editingItem?.order ?? projects.length + 1}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* CERTIFICATION FORM */}
+                {modalType === 'certification' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Certification Title *
+                        </label>
+                        <input
+                          type="text"
+                          name="title"
+                          defaultValue={editingItem?.title || ''}
+                          required
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Organization *
+                        </label>
+                        <input
+                          type="text"
+                          name="organization"
+                          defaultValue={editingItem?.organization || ''}
+                          required
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Credential ID
+                        </label>
+                        <input
+                          type="text"
+                          name="credentialId"
+                          defaultValue={editingItem?.credentialId || ''}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Material Symbol Icon
+                        </label>
+                        <input
+                          type="text"
+                          name="icon"
+                          defaultValue={editingItem?.icon || 'verified'}
+                          placeholder="verified, shield_lock, settings_ethernet"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Issue Date
+                        </label>
+                        <input
+                          type="text"
+                          name="issueDate"
+                          defaultValue={editingItem?.issueDate || ''}
+                          placeholder="Dec 2025"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Expiry Date
+                        </label>
+                        <input
+                          type="text"
+                          name="expiryDate"
+                          defaultValue={editingItem?.expiryDate || ''}
+                          placeholder="Dec 2028 or blank"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Role / Title *
+                        Verification / Credly URL
                       </label>
                       <input
                         type="text"
-                        name="role"
-                        defaultValue={editingItem?.role || ''}
-                        required
+                        name="verificationUrl"
+                        defaultValue={editingItem?.verificationUrl || ''}
+                        placeholder="https://www.credly.com/..."
                         className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                       />
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Start Date *
-                      </label>
-                      <input
-                        type="text"
-                        name="startDate"
-                        defaultValue={editingItem?.startDate || ''}
-                        placeholder="e.g. Aug 2026"
-                        required
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Status
+                        </label>
+                        <input
+                          type="text"
+                          name="status"
+                          defaultValue={editingItem?.status || 'Verified'}
+                          placeholder="Verified, In Progress, etc."
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Display Order
+                        </label>
+                        <input
+                          type="number"
+                          name="order"
+                          defaultValue={editingItem?.order ?? certifications.length + 1}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        End Date
-                      </label>
-                      <input
-                        type="text"
-                        name="endDate"
-                        defaultValue={editingItem?.endDate || 'Present'}
-                        placeholder="e.g. Present or Sep 2026"
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
+                  </>
+                )}
 
-                  <div>
-                    <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                      Description *
-                    </label>
-                    <textarea
-                      name="description"
-                      rows={3}
-                      defaultValue={editingItem?.description || ''}
-                      required
-                      className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                    />
-                  </div>
+                {/* EDUCATION FORM */}
+                {modalType === 'education' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Degree / Title *
+                        </label>
+                        <input
+                          type="text"
+                          name="title"
+                          defaultValue={editingItem?.title || ''}
+                          required
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Institution *
+                        </label>
+                        <input
+                          type="text"
+                          name="institution"
+                          defaultValue={editingItem?.institution || ''}
+                          required
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Tags (comma separated)
-                      </label>
-                      <input
-                        type="text"
-                        name="tags"
-                        defaultValue={editingItem?.tags?.join(', ') || ''}
-                        placeholder="IOT, CLOUD, DEVOPS"
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Start Year
+                        </label>
+                        <input
+                          type="text"
+                          name="startDate"
+                          defaultValue={editingItem?.startDate || ''}
+                          placeholder="2024"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          End Year
+                        </label>
+                        <input
+                          type="text"
+                          name="endDate"
+                          defaultValue={editingItem?.endDate || 'PRESENT'}
+                          placeholder="PRESENT or 2028"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Theme Color
-                      </label>
-                      <select
-                        name="color"
-                        defaultValue={editingItem?.color || 'primary'}
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      >
-                        <option value="primary">Primary (Burnt Orange)</option>
-                        <option value="secondary">Secondary (Amber / Rust)</option>
-                        <option value="tertiary">Tertiary (Deep Rust)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Display Order
-                      </label>
-                      <input
-                        type="number"
-                        name="order"
-                        defaultValue={editingItem?.order ?? experiences.length + 1}
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
 
-              {/* PROJECT FORM */}
-              {modalType === 'project' && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Project Title *
+                        Description (optional)
                       </label>
-                      <input
-                        type="text"
-                        name="title"
-                        defaultValue={editingItem?.title || ''}
-                        required
+                      <textarea
+                        name="description"
+                        rows={2}
+                        defaultValue={editingItem?.description || ''}
                         className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Status Badge
-                      </label>
-                      <input
-                        type="text"
-                        name="status"
-                        defaultValue={editingItem?.status || 'Active'}
-                        placeholder="Active, Production, etc."
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                      Description *
-                    </label>
-                    <textarea
-                      name="description"
-                      rows={3}
-                      defaultValue={editingItem?.description || ''}
-                      required
-                      className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                    />
-                  </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Tags (comma separated)
+                        </label>
+                        <input
+                          type="text"
+                          name="tags"
+                          defaultValue={editingItem?.tags?.join(', ') || ''}
+                          placeholder="Level 2, Engineering"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Display Order
+                        </label>
+                        <input
+                          type="number"
+                          name="order"
+                          defaultValue={editingItem?.order ?? education.length + 1}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
-                  <div>
-                    <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                      Technologies (comma separated)
-                    </label>
-                    <input
-                      type="text"
-                      name="technologies"
-                      defaultValue={editingItem?.technologies?.join(', ') || ''}
-                      placeholder="Next.js, Node.js, Docker, MongoDB"
-                      className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        GitHub URL
-                      </label>
-                      <input
-                        type="url"
-                        name="githubUrl"
-                        defaultValue={editingItem?.githubUrl || ''}
-                        placeholder="https://github.com/..."
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Live Demo URL
-                      </label>
-                      <input
-                        type="url"
-                        name="liveUrl"
-                        defaultValue={editingItem?.liveUrl || ''}
-                        placeholder="https://..."
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                      Cover Image URL
-                    </label>
-                    <input
-                      type="text"
-                      name="image"
-                      defaultValue={editingItem?.image || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1000&q=80'}
-                      className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-mono text-[11px]"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Accent Bar Color
-                      </label>
-                      <select
-                        name="barColor"
-                        defaultValue={editingItem?.barColor || 'from-primary to-primary'}
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      >
-                        <option value="from-primary to-primary">Primary (Burnt Orange)</option>
-                        <option value="from-secondary to-secondary">Secondary (Amber / Rust)</option>
-                        <option value="from-tertiary to-tertiary">Tertiary (Deep Rust)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Display Order
-                      </label>
-                      <input
-                        type="number"
-                        name="order"
-                        defaultValue={editingItem?.order ?? projects.length + 1}
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* CERTIFICATION FORM */}
-              {modalType === 'certification' && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Certification Title *
-                      </label>
-                      <input
-                        type="text"
-                        name="title"
-                        defaultValue={editingItem?.title || ''}
-                        required
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Organization *
-                      </label>
-                      <input
-                        type="text"
-                        name="organization"
-                        defaultValue={editingItem?.organization || ''}
-                        required
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Credential ID
-                      </label>
-                      <input
-                        type="text"
-                        name="credentialId"
-                        defaultValue={editingItem?.credentialId || ''}
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Material Symbol Icon
-                      </label>
-                      <input
-                        type="text"
-                        name="icon"
-                        defaultValue={editingItem?.icon || 'verified'}
-                        placeholder="verified, shield_lock, settings_ethernet"
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Issue Date
-                      </label>
-                      <input
-                        type="text"
-                        name="issueDate"
-                        defaultValue={editingItem?.issueDate || ''}
-                        placeholder="Dec 2025"
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Expiry Date
-                      </label>
-                      <input
-                        type="text"
-                        name="expiryDate"
-                        defaultValue={editingItem?.expiryDate || ''}
-                        placeholder="Dec 2028 or blank"
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                      Verification / Credly URL
-                    </label>
-                    <input
-                      type="url"
-                      name="verificationUrl"
-                      defaultValue={editingItem?.verificationUrl || ''}
-                      placeholder="https://www.credly.com/..."
-                      className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Status
-                      </label>
-                      <input
-                        type="text"
-                        name="status"
-                        defaultValue={editingItem?.status || 'Verified'}
-                        placeholder="Verified, In Progress, etc."
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Display Order
-                      </label>
-                      <input
-                        type="number"
-                        name="order"
-                        defaultValue={editingItem?.order ?? certifications.length + 1}
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* EDUCATION FORM */}
-              {modalType === 'education' && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Degree / Title *
-                      </label>
-                      <input
-                        type="text"
-                        name="title"
-                        defaultValue={editingItem?.title || ''}
-                        required
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Institution *
-                      </label>
-                      <input
-                        type="text"
-                        name="institution"
-                        defaultValue={editingItem?.institution || ''}
-                        required
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Start Year
-                      </label>
-                      <input
-                        type="text"
-                        name="startDate"
-                        defaultValue={editingItem?.startDate || ''}
-                        placeholder="2024"
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        End Year
-                      </label>
-                      <input
-                        type="text"
-                        name="endDate"
-                        defaultValue={editingItem?.endDate || 'PRESENT'}
-                        placeholder="PRESENT or 2028"
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      name="description"
-                      rows={2}
-                      defaultValue={editingItem?.description || ''}
-                      className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Tags (comma separated)
-                      </label>
-                      <input
-                        type="text"
-                        name="tags"
-                        defaultValue={editingItem?.tags?.join(', ') || ''}
-                        placeholder="Level 2, Engineering"
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Display Order
-                      </label>
-                      <input
-                        type="number"
-                        name="order"
-                        defaultValue={editingItem?.order ?? education.length + 1}
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div className="flex items-center justify-end gap-3 pt-6 border-t border-outline-variant/20">
+              {/* PINNED FOOTER */}
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-outline-variant/20 shrink-0 bg-surface-container-low/95 backdrop-blur-sm">
                 <button
                   type="button"
                   onClick={closeModal}
@@ -2247,8 +2450,9 @@ export default function AdminPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="py-2.5 px-6 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary text-xs font-headline font-bold uppercase tracking-widest shadow-md hover:opacity-90 transition-opacity disabled:opacity-50"
+                  className="py-2.5 px-6 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary text-xs font-headline font-bold uppercase tracking-widest shadow-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
                 >
+                  {isSubmitting && <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>}
                   {isSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
