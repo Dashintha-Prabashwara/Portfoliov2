@@ -24,7 +24,7 @@ const ExperienceSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: [true, 'Description is required'],
+      default: '',
       trim: true,
     },
     tags: {
@@ -39,6 +39,10 @@ const ExperienceSchema = new mongoose.Schema(
     order: {
       type: Number,
       default: 0,
+    },
+    isVisible: {
+      type: Boolean,
+      default: true,
     },
     align: {
       type: String,

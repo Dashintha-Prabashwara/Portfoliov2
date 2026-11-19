@@ -4,6 +4,7 @@ import path from 'path';
 import { checkAdminAuth } from '@/lib/adminAuth';
 import connectToDatabase from '@/lib/mongodb';
 import Cv from '@/models/Cv';
+import Media from '@/models/Media';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +71,60 @@ export async function POST(request) {
       });
     }
 
-    // General or images upload into public/uploads
+    // If uploading Project Banner or image, store binary file directly in MongoDB
+    const isImageUpload =
+      targetType === 'banner' ||
+      targetType === 'image' ||
+      targetType === 'project-banner' ||
+      (file.type && file.type.startsWith('image/'));
+
+    if (isImageUpload) {
+      let mediaId = null;
+      let storedInMongo = false;
+
+      if (process.env.MONGODB_URI) {
+        try {
+          await connectToDatabase();
+          const media = await Media.create({
+            fileName: file.name || 'banner.png',
+            contentType: file.type || 'image/png',
+            fileSize: buffer.length,
+            fileData: buffer,
+          });
+          mediaId = media._id.toString();
+          storedInMongo = true;
+        } catch (dbErr) {
+          console.error('Failed to save image to MongoDB:', dbErr);
+        }
+      }
+
+      // Also save backup copy to public/uploads
+      let diskFilename = '';
+      try {
+        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+        await mkdir(uploadsDir, { recursive: true });
+        const ext = path.extname(file.name || '') || '.png';
+        diskFilename = mediaId ? `${mediaId}${ext}` : `banner_${Date.now()}${ext}`;
+        await writeFile(path.join(uploadsDir, diskFilename), buffer);
+      } catch (fsErr) {
+        console.warn('Could not write image backup to disk:', fsErr);
+      }
+
+      const fileUrl = mediaId ? `/api/media/${mediaId}` : `/uploads/${diskFilename}`;
+
+      return NextResponse.json({
+        success: true,
+        fileUrl,
+        filename: file.name || 'banner.png',
+        fileSize: buffer.length,
+        storedInMongo,
+        message: storedInMongo
+          ? 'Banner image saved directly in MongoDB!'
+          : 'Banner saved locally.',
+      });
+    }
+
+    // General or other files upload into public/uploads
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     await mkdir(uploadsDir, { recursive: true });
 

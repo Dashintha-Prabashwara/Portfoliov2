@@ -27,9 +27,9 @@ export default function Navigation() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-zinc-900/90 backdrop-blur-md border-b border-zinc-800/50">
+    <nav className="fixed top-0 w-full z-50 bg-[#F3EEE3]/90 backdrop-blur-md border-b border-[#111111]/10">
       <div className="flex justify-between items-center px-4 sm:px-6 py-3 sm:py-4 max-w-7xl mx-auto w-full">
-        <Link href="/" className="text-lg sm:text-xl font-bold tracking-tighter text-zinc-100 font-headline hover:text-cyan-400 transition-colors">
+        <Link href="/" className="text-lg sm:text-xl font-bold tracking-tighter text-[#111111] font-headline hover:text-[#D9541E] transition-colors">
           Dashintha
         </Link>
 
@@ -42,8 +42,8 @@ export default function Navigation() {
                 href={link.href}
                 className={`font-headline tracking-tight text-xs sm:text-sm uppercase transition-colors ${
                   active
-                    ? 'text-cyan-400 font-bold border-b-2 border-cyan-400 pb-1'
-                    : 'text-zinc-400 hover:text-zinc-100'
+                    ? 'text-[#D9541E] font-bold border-b-2 border-[#D9541E] pb-1'
+                    : 'text-[#555550] hover:text-[#111111]'
                 }`}
               >
                 {link.label}
@@ -55,7 +55,7 @@ export default function Navigation() {
 
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden text-on-surface hover:text-primary transition-colors"
+          className="md:hidden text-[#111111] hover:text-[#D9541E] transition-colors"
           aria-label="Toggle mobile menu"
           aria-expanded={mobileMenuOpen}
           aria-controls="mobile-navigation"
@@ -68,7 +68,7 @@ export default function Navigation() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div id="mobile-navigation" className="md:hidden bg-zinc-900/95 border-t border-zinc-800/50 px-4 sm:px-6 py-4">
+        <div id="mobile-navigation" className="md:hidden bg-[#F3EEE3]/98 border-t border-[#111111]/10 px-4 sm:px-6 py-4 shadow-lg">
           <div className="flex flex-col gap-4">
             {NAV_LINKS.map((link) => {
               const active = isActive(link.href);
@@ -79,15 +79,15 @@ export default function Navigation() {
                   onClick={closeMobileMenu}
                   className={`font-headline tracking-tight text-sm uppercase transition-colors ${
                     active
-                      ? 'text-cyan-400 font-bold'
-                      : 'text-zinc-400 hover:text-zinc-100'
+                      ? 'text-[#D9541E] font-bold'
+                      : 'text-[#555550] hover:text-[#111111]'
                   }`}
                 >
                   {link.label}
                 </a>
               );
             })}
-            <div className="pt-4 border-t border-zinc-800/50">
+            <div className="pt-4 border-t border-[#111111]/10">
               <CVDownloadButton />
             </div>
           </div>

@@ -75,17 +75,35 @@ function EducationSection({ education }) {
         {/* Education Items */}
         {education.map((edu, index) => {
           const isLeft = index % 2 === 0;
+          const borderClass =
+            edu.color === 'secondary'
+              ? 'border-secondary'
+              : edu.color === 'tertiary'
+              ? 'border-tertiary'
+              : 'border-primary';
+          const barClass =
+            edu.color === 'secondary'
+              ? 'bg-secondary'
+              : edu.color === 'tertiary'
+              ? 'bg-tertiary'
+              : 'bg-primary';
+          const dotClass =
+            edu.color === 'secondary'
+              ? 'bg-secondary shadow-[0_0_15px_rgba(184,65,18,0.5)]'
+              : edu.color === 'tertiary'
+              ? 'bg-tertiary shadow-[0_0_15px_rgba(140,51,11,0.5)]'
+              : 'bg-primary shadow-[0_0_15px_rgba(217,84,30,0.5)]';
 
           return (
             <div key={edu.id} className="relative mb-16 sm:mb-20 md:mb-24 md:flex items-center justify-between">
               <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-2'} mb-6 sm:mb-8 md:mb-0`}>
                 <div
-                  className={`bg-surface-container-low relative p-4 sm:p-6 md:p-8 rounded-lg text-sm sm:text-base border-l-4 border-primary overflow-hidden hover:bg-surface-container transition-all duration-500 hover:translate-y-[-4px] group ${
+                  className={`bg-surface-container-low relative p-4 sm:p-6 md:p-8 rounded-lg text-sm sm:text-base border-l-4 ${borderClass} overflow-hidden hover:bg-surface-container transition-all duration-500 hover:translate-y-[-4px] group ${
                     isLeft ? '' : 'text-right'
                   }`}
                 >
                   {/* Top accent bar animation */}
-                  <div className="absolute top-0 left-0 h-[2px] w-6 group-hover:w-12 bg-primary transition-all duration-500"></div>
+                  <div className={`absolute top-0 left-0 h-[2px] w-6 group-hover:w-12 ${barClass} transition-all duration-500`}></div>
 
                   <span className="font-label text-[10px] text-on-surface-variant mb-2 block tracking-widest">
                     {edu.period}
@@ -106,7 +124,7 @@ function EducationSection({ education }) {
                   </div>
                 </div>
               </div>
-              <div className="absolute left-0 md:left-1/2 w-4 h-4 bg-primary rounded-full transform -translate-x-1/2 hidden md:block shadow-[0_0_15px_rgba(164,230,255,0.6)]"></div>
+              <div className={`absolute left-0 md:left-1/2 w-4 h-4 ${dotClass} rounded-full transform -translate-x-1/2 hidden md:block`}></div>
               <div className={`${isLeft ? 'md:w-[45%]' : 'md:w-[45%] md:order-1'}`}></div>
             </div>
           );
@@ -156,11 +174,11 @@ function CertificationsSection({ certifications }) {
 // ========== CERTIFICATION CARD COMPONENT ==========
 function CertificationCard({ cert }) {
   const colorValues = {
-    primary: '#a4e6ff',
-    secondary: '#d8b9ff',
-    tertiary: '#00f9be',
-    error: '#ffb4ab',
-    warning: '#ffc107',
+    primary: '#D9541E',
+    secondary: '#B84112',
+    tertiary: '#8C330B',
+    error: '#BA1A1A',
+    warning: '#D97706',
   };
 
   const accentColor = colorValues[cert.statusColor] || colorValues.primary;

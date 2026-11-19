@@ -5,7 +5,7 @@ export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 
 // Validate API key at module load
 if (!GEMINI_API_KEY) {
@@ -86,19 +86,37 @@ async function* streamGeminiResponse(
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased to 15s
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${encodeURIComponent(GEMINI_API_KEY)}`,
+    let activeModel = GEMINI_MODEL;
+    let response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:streamGenerateContent?alt=sse&key=${encodeURIComponent(GEMINI_API_KEY)}`,
       {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
       }
     );
+
+    // Automatic fallback if the primary model is overloaded (503) or not found (404)
+    if (!response.ok && (response.status === 503 || response.status === 404) && activeModel !== 'gemini-3.5-flash-lite') {
+      console.warn(`[chat] Primary model ${activeModel} returned ${response.status}. Falling back to gemini-3.5-flash-lite.`);
+      activeModel = 'gemini-3.5-flash-lite';
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:streamGenerateContent?alt=sse&key=${encodeURIComponent(GEMINI_API_KEY)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        }
+      );
+    }
 
     clearTimeout(timeoutId);
 

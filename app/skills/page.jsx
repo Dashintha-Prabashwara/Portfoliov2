@@ -48,7 +48,7 @@ function SkillsBentoGrid() {
           <div className="flex flex-wrap gap-3 sm:gap-4 mt-auto">
             {['Angular', 'React', 'Next.js', 'TypeScript', 'JavaScript', 'CSS/HTML', 'Tailwind CSS'].map((tech) => (
               <div key={tech} className="bg-surface-container-high px-3 sm:px-4 py-2 sm:py-3 rounded-md flex items-center gap-2 sm:gap-3 hover:bg-surface-container-highest transition-all duration-300 border border-outline-variant/10 text-xs sm:text-sm">
-                <span className="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_#00f9be]"></span>
+                <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(217,84,30,0.5)]"></span>
                 <span className="font-label text-xs sm:text-sm uppercase tracking-widest font-bold">{tech}</span>
               </div>
             ))}

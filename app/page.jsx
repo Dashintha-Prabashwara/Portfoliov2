@@ -52,11 +52,11 @@ function HeroSection() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-4 sm:pt-6">
-            <Link href="/projects" className="w-full sm:w-auto bg-gradient-to-br from-primary to-secondary text-on-primary px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-sm sm:text-base tracking-tight hover:shadow-[0_0_20px_rgba(164,230,255,0.3)] transition-all flex items-center justify-center sm:justify-start gap-2">
+            <Link href="/projects" className="w-full sm:w-auto bg-gradient-to-br from-primary to-secondary text-white px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-sm sm:text-base tracking-tight hover:shadow-[0_0_20px_rgba(217,84,30,0.4)] transition-all flex items-center justify-center sm:justify-start gap-2">
               View Projects
               <span className="material-symbols-outlined text-sm">arrow_outward</span>
             </Link>
-            <Link href="/skills" className="w-full sm:w-auto bg-transparent border border-outline-variant/30 hover:bg-surface-container-highest px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-sm sm:text-base tracking-tight transition-all text-on-surface text-center">
+            <Link href="/skills" className="w-full sm:w-auto bg-transparent border-2 border-[#111111] hover:bg-[#111111] hover:text-[#F3EEE3] px-6 sm:px-8 py-3 sm:py-4 rounded-md font-bold text-sm sm:text-base tracking-tight transition-all text-[#111111] text-center">
               About My Stack
             </Link>
           </div>
