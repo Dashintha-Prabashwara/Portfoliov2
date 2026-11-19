@@ -509,26 +509,27 @@ export default function Chatbot() {
         z-index: 62;
         width: 370px;
         height: 560px;
-        background: rgba(19, 22, 30, 0.95);
+        background: #111111;
+        color: #F3EEE3;
         backdrop-filter: blur(20px);
-        border: 1px solid rgba(164, 230, 255, 0.4);
+        border: 1px solid rgba(217, 84, 30, 0.4);
         border-radius: 20px;
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7), 0 0 25px rgba(217, 84, 30, 0.15);
         animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        font-family: 'DM Sans', sans-serif;
+        font-family: 'Inter', sans-serif;
       }
 
       .chat-header {
         padding: 14px 16px;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid rgba(243, 238, 227, 0.1);
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        background: var(--surface);
+        background: #181818;
         flex-shrink: 0;
       }
 
@@ -543,8 +544,8 @@ export default function Chatbot() {
         width: 34px;
         height: 34px;
         border-radius: 50%;
-        background: var(--accent-dim);
-        border: 1px solid var(--border-active);
+        background: rgba(217, 84, 30, 0.18);
+        border: 1px solid rgba(217, 84, 30, 0.4);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -555,18 +556,18 @@ export default function Chatbot() {
       .avatar svg {
         width: 18px;
         height: 18px;
-        color: var(--accent);
+        color: #D9541E;
       }
 
       .status-dot {
         width: 8px;
         height: 8px;
-        background: var(--accent);
+        background: #D9541E;
         border-radius: 50%;
         position: absolute;
         bottom: 0;
         right: 0;
-        border: 2px solid var(--surface);
+        border: 2px solid #181818;
         animation: pulse 2s infinite;
       }
 
@@ -576,31 +577,32 @@ export default function Chatbot() {
       }
 
       .header-name {
-        font-size: 13.5px;
-        font-weight: 500;
-        color: var(--text);
+        font-size: 14px;
+        font-weight: 600;
+        color: #F3EEE3;
       }
 
       .header-sub {
         font-size: 11px;
-        color: var(--accent);
+        color: #D9541E;
         font-family: 'JetBrains Mono', monospace;
       }
 
       .header-badge {
         font-family: 'JetBrains Mono', monospace;
         font-size: 10px;
-        color: var(--accent);
-        background: var(--accent-dim);
-        border: 1px solid var(--border-active);
+        font-weight: 700;
+        color: #D9541E;
+        background: rgba(217, 84, 30, 0.18);
+        border: 1px solid rgba(217, 84, 30, 0.4);
         border-radius: 4px;
-        padding: 2px 6px;
+        padding: 2px 7px;
       }
 
       .close-btn {
         background: none;
         border: none;
-        color: var(--text-muted);
+        color: #9E998F;
         cursor: pointer;
         padding: 4px;
         display: flex;
@@ -610,7 +612,7 @@ export default function Chatbot() {
       }
 
       .close-btn:hover {
-        color: var(--text);
+        color: #F3EEE3;
       }
 
       .close-btn svg {
@@ -633,7 +635,7 @@ export default function Chatbot() {
       }
 
       .messages::-webkit-scrollbar-thumb {
-        background: var(--text-muted);
+        background: #333333;
         border-radius: 2px;
       }
 
@@ -655,35 +657,35 @@ export default function Chatbot() {
       }
 
       .bubble {
-        padding: 9px 13px;
-        border-radius: 13px;
+        padding: 10px 14px;
+        border-radius: 14px;
         font-size: 13.5px;
         line-height: 1.6;
         word-break: break-word;
       }
 
       .msg.user .bubble {
-        background: linear-gradient(135deg, rgba(164, 230, 255, 0.15) 0%, rgba(216, 185, 255, 0.1) 100%);
-        border: 1px solid rgba(164, 230, 255, 0.3);
-        color: var(--text);
+        background: #D9541E;
+        border: 1px solid #D9541E;
+        color: #FFFFFF;
         border-bottom-right-radius: 4px;
-        box-shadow: 0 2px 8px rgba(164, 230, 255, 0.1);
+        box-shadow: 0 3px 10px rgba(217, 84, 30, 0.25);
       }
 
       .msg.bot .bubble {
-        background: linear-gradient(135deg, rgba(19, 22, 30, 0.8) 0%, rgba(26, 30, 40, 0.6) 100%);
-        border: 1px solid rgba(164, 230, 255, 0.2);
-        color: var(--text);
+        background: #1C1C1C;
+        border: 1px solid rgba(243, 238, 227, 0.12);
+        color: #F3EEE3;
         border-bottom-left-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
       }
 
       .msg-time {
         font-size: 10px;
-        color: var(--text-muted);
+        color: #8E8A82;
         font-family: 'JetBrains Mono', monospace;
         padding: 0 4px;
-        text-nowrap;
+        white-space: nowrap;
       }
 
       .msg-actions {
@@ -699,9 +701,9 @@ export default function Chatbot() {
         align-items: center;
         justify-content: center;
         border-radius: 4px;
-        background: rgba(99, 188, 130, 0.12);
-        border: 1px solid rgba(99, 188, 130, 0.3);
-        color: var(--accent);
+        background: rgba(217, 84, 30, 0.14);
+        border: 1px solid rgba(217, 84, 30, 0.35);
+        color: #D9541E;
         font-size: 12px;
         cursor: pointer;
         transition: background 0.15s, border-color 0.15s, transform 0.1s;
@@ -709,8 +711,8 @@ export default function Chatbot() {
       }
 
       .msg-action-icon:hover {
-        background: rgba(99, 188, 130, 0.25);
-        border-color: rgba(99, 188, 130, 0.5);
+        background: rgba(217, 84, 30, 0.28);
+        border-color: rgba(217, 84, 30, 0.6);
       }
 
       .msg-action-icon:active {
@@ -752,25 +754,26 @@ export default function Chatbot() {
         gap: 6px;
         padding: 8px 12px 6px;
         flex-shrink: 0;
-        border-top: 1px solid var(--border);
+        border-top: 1px solid rgba(243, 238, 227, 0.1);
       }
 
       .chip {
         font-size: 11.5px;
         font-family: 'JetBrains Mono', monospace;
-        color: var(--accent);
-        background: var(--accent-dim);
-        border: 1px solid var(--border-active);
+        color: #D9541E;
+        background: rgba(217, 84, 30, 0.14);
+        border: 1px solid rgba(217, 84, 30, 0.35);
         border-radius: 6px;
-        padding: 4px 9px;
+        padding: 4px 10px;
         cursor: pointer;
-        transition: background 0.15s, border-color 0.15s;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
         white-space: nowrap;
       }
 
       .chip:hover {
-        background: rgba(99, 188, 130, 0.2);
-        border-color: rgba(99, 188, 130, 0.5);
+        background: #D9541E;
+        color: #FFFFFF;
+        border-color: #D9541E;
       }
 
       .chip:disabled,
@@ -789,17 +792,17 @@ export default function Chatbot() {
 
       .input-wrap {
         flex: 1;
-        background: var(--surface2);
-        border: 1px solid var(--border);
+        background: #1C1C1C;
+        border: 1px solid rgba(243, 238, 227, 0.15);
         border-radius: 10px;
         display: flex;
         align-items: center;
-        padding: 0 10px;
+        padding: 0 12px;
         transition: border-color 0.2s;
       }
 
       .input-wrap:focus-within {
-        border-color: var(--border-active);
+        border-color: #D9541E;
       }
 
       textarea {
@@ -807,8 +810,8 @@ export default function Chatbot() {
         background: transparent;
         border: none;
         outline: none;
-        color: var(--text);
-        font-family: 'DM Sans', sans-serif;
+        color: #F3EEE3;
+        font-family: 'Inter', sans-serif;
         font-size: 13px;
         resize: none;
         padding: 9px 0;
@@ -818,7 +821,7 @@ export default function Chatbot() {
       }
 
       textarea::placeholder {
-        color: var(--text-muted);
+        color: #8E8A82;
       }
 
       .send-btn {

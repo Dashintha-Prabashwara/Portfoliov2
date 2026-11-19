@@ -71,16 +71,6 @@ function ProjectsGrid({ projects }) {
 
 // ========== PROJECT CARD COMPONENT ==========
 function ProjectCard({ project }) {
-  const getStatusStyles = (color) => {
-    const colorMap = {
-      tertiary: { bg: 'bg-tertiary/10', text: 'text-tertiary', dot: 'bg-tertiary', border: 'border-tertiary/20' },
-      primary: { bg: 'bg-primary/10', text: 'text-primary', dot: 'bg-primary', border: 'border-primary/20' },
-    };
-    return colorMap[color] || colorMap.primary;
-  };
-
-  const statusStyles = project.status ? getStatusStyles(project.statusColor) : null;
-
   return (
     <div className="group relative flex flex-col bg-surface-container-low rounded-xl overflow-hidden transition-all duration-500 hover:translate-y-[-4px]">
       {/* Image Section */}
@@ -93,16 +83,6 @@ function ProjectCard({ project }) {
           height={256}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-surface-container-low via-transparent to-transparent"></div>
-
-        {/* Status Badge */}
-        {project.status && statusStyles && (
-          <div className="absolute top-3 sm:top-4 left-3 sm:left-4">
-            <span className={`${statusStyles.bg} ${statusStyles.text} text-[10px] font-bold tracking-[0.2em] px-3 py-1 rounded-full uppercase flex items-center gap-1.5 border ${statusStyles.border}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${statusStyles.dot}`}></span>
-              {project.status}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Content Section */}
@@ -110,10 +90,18 @@ function ProjectCard({ project }) {
         {/* Accent Bar */}
         <AccentBar barColor={project.barColor} />
 
-        {/* Title */}
-        <h3 className="font-headline text-xl sm:text-2xl md:text-3xl font-bold text-on-surface mb-2 sm:mb-3 tracking-tight">
-          {project.title}
-        </h3>
+        {/* Title & Status Badge */}
+        <div className="flex flex-wrap items-center gap-3 mb-2 sm:mb-3">
+          <h3 className="font-headline text-xl sm:text-2xl md:text-3xl font-bold text-on-surface tracking-tight">
+            {project.title}
+          </h3>
+          {project.status && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-[0.15em] uppercase bg-primary/15 text-primary border border-primary/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              {project.status}
+            </span>
+          )}
+        </div>
 
         {/* Description */}
         <p className="text-on-surface-variant text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 font-light">

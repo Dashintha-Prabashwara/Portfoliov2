@@ -64,8 +64,8 @@ export default function HeroProfileImage() {
         />
       </div>
 
-      {/* 6. Profile Image with Alpha Mask Fade and Gentle Float */}
-      <div className="relative z-10 w-full h-full flex items-center justify-center animate-float-gentle">
+      {/* 6. Profile Image with Alpha Mask Fade */}
+      <div className="relative z-10 w-full h-full flex items-center justify-center">
         <div className="relative w-full h-full profile-mask-fade">
           <Image
             className="profile-photo w-full h-full object-contain"
