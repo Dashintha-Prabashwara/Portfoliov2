@@ -11,10 +11,33 @@ const BAR_COLOR_CYCLE = [
   'from-tertiary to-tertiary',
 ];
 
-// Helper: automatically cycles Primary -> Secondary -> Tertiary ONLY across visible items
+const CERTIFICATION_ICONS = [
+  { id: 'verified', label: 'Verified Badge' },
+  { id: 'workspace_premium', label: 'Premium Award' },
+  { id: 'military_tech', label: 'Achievement Medal' },
+  { id: 'badge', label: 'ID Badge' },
+  { id: 'school', label: 'Academic / Degree' },
+  { id: 'card_membership', label: 'Membership Card' },
+  { id: 'shield_person', label: 'Security & Compliance' },
+  { id: 'cloud_done', label: 'Cloud Certified' },
+  { id: 'developer_board', label: 'Hardware & IoT' },
+  { id: 'terminal', label: 'DevOps & Systems' },
+  { id: 'code', label: 'Software & Code' },
+  { id: 'database', label: 'Database & Data' },
+  { id: 'psychology', label: 'AI & Intelligence' },
+  { id: 'network_check', label: 'Networking & Infra' },
+  { id: 'hub', label: 'Architecture & Hub' },
+];
+
+// Helper: automatically cycles Primary -> Secondary -> Tertiary ONLY across visible items,
+// and automatically places visible items at the top and pushes hidden items down to the bottom.
 const applyVisibleColorCycle = (items = [], type = 'experience') => {
+  const visible = items.filter((item) => item.isVisible !== false);
+  const hidden = items.filter((item) => item.isVisible === false);
+  const sorted = [...visible, ...hidden];
+
   let visibleCount = 0;
-  return items.map((item, idx) => {
+  return sorted.map((item, idx) => {
     const isVisible = item.isVisible !== false;
     let cycleColor = item.color || 'primary';
     let cycleBarColor = item.barColor || 'from-primary to-primary';
@@ -79,10 +102,19 @@ export default function AdminPage() {
   const [dragInfo, setDragInfo] = useState({ type: null, index: null });
   const [dragOverInfo, setDragOverInfo] = useState({ type: null, index: null });
 
+  // Filter & Search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [visibilityFilter, setVisibilityFilter] = useState('all'); // 'all' | 'visible' | 'hidden'
+
   // Project Live Preview / Cover helper states in modal
   const [modalCoverImage, setModalCoverImage] = useState('');
   const [modalLiveUrl, setModalLiveUrl] = useState('');
   const [fetchingPreview, setFetchingPreview] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const bannerFileInputRef = useRef(null);
+
+  // Certification icon chooser state
+  const [selectedCertIcon, setSelectedCertIcon] = useState('verified');
 
   // Drag & drop scrolling refs (for wheel scrolling & edge auto-scroll)
   const isDraggingRef = useRef(false);
@@ -306,6 +338,7 @@ export default function AdminPage() {
     setModalIsVisible(item ? item.isVisible !== false : true); // Default is visible
     setModalCoverImage(item?.image || '');
     setModalLiveUrl(item?.liveUrl || '');
+    setSelectedCertIcon(item?.icon || 'verified');
     setModalOpen(true);
   };
 
@@ -315,6 +348,7 @@ export default function AdminPage() {
     setModalType(null);
     setModalCoverImage('');
     setModalLiveUrl('');
+    setSelectedCertIcon('verified');
   };
 
   const handleFetchLivePreview = async () => {
@@ -324,18 +358,55 @@ export default function AdminPage() {
     }
     setFetchingPreview(true);
     try {
-      const res = await fetch(`/api/preview?url=${encodeURIComponent(modalLiveUrl.trim())}`);
-      const data = await res.json();
-      if (res.ok && data.success && data.previewUrl) {
-        setModalCoverImage(data.previewUrl);
-        showToast('OpenGraph preview image fetched!');
-      } else {
-        showToast('Auto-preview ready via Live Demo URL screenshot');
-      }
+      await fetch(`/api/preview?url=${encodeURIComponent(modalLiveUrl.trim())}`);
+      // Clearing the custom banner activates the live website screenshot preview directly
+      setModalCoverImage('');
+      showToast('Switched to live landing page preview!');
     } catch {
-      showToast('Auto-preview ready via Live Demo URL screenshot');
+      setModalCoverImage('');
+      showToast('Live website preview active via Live Demo URL');
     } finally {
       setFetchingPreview(false);
+    }
+  };
+
+  const handleClearBanner = () => {
+    setModalCoverImage('');
+    showToast('Banner cleared. Project will use live website preview or default fallback.');
+  };
+
+  const handleProjectBannerUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select an image file (PNG, JPG, WebP, etc.)', 'error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'banner');
+
+    setUploadingBanner(true);
+    try {
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success && data.fileUrl) {
+        setModalCoverImage(data.fileUrl);
+        showToast(data.message || 'Banner uploaded and stored in MongoDB!');
+      } else {
+        showToast(data.error || 'Failed to upload image', 'error');
+      }
+    } catch {
+      showToast('Network error uploading banner image', 'error');
+    } finally {
+      setUploadingBanner(false);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -544,6 +615,127 @@ export default function AdminPage() {
     }
     setDragInfo({ type: null, index: null });
     setDragOverInfo({ type: null, index: null });
+  };
+
+  // Filter items by visibility ('all' | 'visible' | 'hidden') and search query
+  const getFilteredItems = (items = [], type = 'experience') => {
+    let result = [...items];
+
+    if (visibilityFilter === 'visible') {
+      result = result.filter((item) => item.isVisible !== false);
+    } else if (visibilityFilter === 'hidden') {
+      result = result.filter((item) => item.isVisible === false);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter((item) => {
+        if (type === 'experience') {
+          return (
+            (item.company || '').toLowerCase().includes(q) ||
+            (item.role || '').toLowerCase().includes(q) ||
+            (item.description || '').toLowerCase().includes(q) ||
+            (item.tags || []).some((t) => t.toLowerCase().includes(q))
+          );
+        }
+        if (type === 'project') {
+          return (
+            (item.title || '').toLowerCase().includes(q) ||
+            (item.description || '').toLowerCase().includes(q) ||
+            (item.status || '').toLowerCase().includes(q) ||
+            (item.technologies || []).some((t) => t.toLowerCase().includes(q))
+          );
+        }
+        if (type === 'certification') {
+          return (
+            (item.title || '').toLowerCase().includes(q) ||
+            (item.organization || '').toLowerCase().includes(q) ||
+            (item.credentialId || '').toLowerCase().includes(q) ||
+            (item.status || '').toLowerCase().includes(q)
+          );
+        }
+        if (type === 'education') {
+          return (
+            (item.title || '').toLowerCase().includes(q) ||
+            (item.institution || '').toLowerCase().includes(q) ||
+            (item.description || '').toLowerCase().includes(q) ||
+            (item.tags || []).some((t) => t.toLowerCase().includes(q))
+          );
+        }
+        return true;
+      });
+    }
+
+    return result;
+  };
+
+  const renderSearchAndFilterBar = (totalItems = [], typeLabel = 'items') => {
+    const totalCount = totalItems.length;
+    const visibleCount = totalItems.filter((i) => i.isVisible !== false).length;
+    const hiddenCount = totalItems.filter((i) => i.isVisible === false).length;
+
+    return (
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
+        {/* Search input */}
+        <div className="relative flex-1">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg select-none">
+            search
+          </span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={`Search ${typeLabel}...`}
+            className="w-full pl-9 pr-8 py-2 bg-surface-container-highest border border-outline-variant/30 rounded-lg text-xs sm:text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary transition-colors"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface p-0.5 rounded"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          )}
+        </div>
+
+        {/* Filter buttons */}
+        <div className="flex items-center gap-1 bg-surface-container-highest p-1 rounded-lg border border-outline-variant/20 shrink-0">
+          <button
+            type="button"
+            onClick={() => setVisibilityFilter('all')}
+            className={`px-3 py-1.5 rounded-md text-xs font-headline font-bold uppercase tracking-wider transition-all ${visibilityFilter === 'all'
+              ? 'bg-primary text-on-primary shadow-sm'
+              : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+          >
+            All ({totalCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setVisibilityFilter('visible')}
+            className={`px-3 py-1.5 rounded-md text-xs font-headline font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${visibilityFilter === 'visible'
+              ? 'bg-primary text-on-primary shadow-sm'
+              : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Visible ({visibleCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setVisibilityFilter('hidden')}
+            className={`px-3 py-1.5 rounded-md text-xs font-headline font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${visibilityFilter === 'hidden'
+              ? 'bg-primary text-on-primary shadow-sm'
+              : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-on-surface-variant/40" />
+            Hidden ({hiddenCount})
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const renderVisibilityBadge = (isVisible = true) => {
@@ -1068,30 +1260,58 @@ export default function AdminPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {experiences.map((exp, idx) => {
-                      const isDragging = dragInfo.type === 'experience' && dragInfo.index === idx;
-                      const isDragOver = dragOverInfo.type === 'experience' && dragOverInfo.index === idx;
-                      const isVisible = exp.isVisible !== false;
+                  <>
+                    {renderSearchAndFilterBar(experiences, 'experiences')}
+
+                    {(() => {
+                      const displayedExperiences = getFilteredItems(experiences, 'experience');
+                      if (displayedExperiences.length === 0) {
+                        return (
+                          <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl bg-surface-container-low/40">
+                            <span className="material-symbols-outlined text-3xl text-on-surface-variant/40 mb-2">search_off</span>
+                            <p className="text-sm font-headline font-bold text-on-surface">No matching experiences found</p>
+                            <p className="text-xs text-on-surface-variant mt-1">
+                              Try adjusting your search query or changing the visibility filter.
+                            </p>
+                            {(searchQuery || visibilityFilter !== 'all') && (
+                              <button
+                                onClick={() => { setSearchQuery(''); setVisibilityFilter('all'); }}
+                                className="mt-3 text-xs font-headline font-bold uppercase tracking-wider text-primary hover:underline"
+                              >
+                                Clear search &amp; filter
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
 
                       return (
-                        <div
-                          key={exp._id || exp.id || idx}
-                          draggable
-                          onDragStart={(e) => onDragStart(e, 'experience', idx)}
-                          onDragEnter={(e) => onDragEnter(e, 'experience', idx)}
-                          onDragOver={onDragOver}
-                          onDragEnd={onDragEnd}
-                          onDrop={(e) => onDrop(e, 'experience', idx)}
-                          className={`border rounded-xl p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-200 cursor-move ${isDragging
-                            ? 'opacity-30 border-dashed border-primary scale-[0.99] bg-surface-container-low'
-                            : isDragOver
-                              ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
-                              : !isVisible
-                                ? 'opacity-65 border-dashed border-outline-variant/40 bg-surface-container-low/60'
-                                : 'bg-surface-container-low border-outline-variant/20 hover:border-outline-variant/50'
-                            }`}
-                        >
+                        <div className="space-y-4">
+                          {displayedExperiences.map((exp) => {
+                            const origIdx = experiences.findIndex((x) => (x._id || x.id) === (exp._id || exp.id));
+                            const idx = origIdx >= 0 ? origIdx : 0;
+                            const isDragging = dragInfo.type === 'experience' && dragInfo.index === idx;
+                            const isDragOver = dragOverInfo.type === 'experience' && dragOverInfo.index === idx;
+                            const isVisible = exp.isVisible !== false;
+
+                            return (
+                              <div
+                                key={exp._id || exp.id || idx}
+                                draggable
+                                onDragStart={(e) => onDragStart(e, 'experience', idx)}
+                                onDragEnter={(e) => onDragEnter(e, 'experience', idx)}
+                                onDragOver={onDragOver}
+                                onDragEnd={onDragEnd}
+                                onDrop={(e) => onDrop(e, 'experience', idx)}
+                                className={`border rounded-xl p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-200 cursor-move ${isDragging
+                                  ? 'opacity-30 border-dashed border-primary scale-[0.99] bg-surface-container-low'
+                                  : isDragOver
+                                    ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
+                                    : !isVisible
+                                      ? 'opacity-65 border-dashed border-outline-variant/40 bg-surface-container-low/60'
+                                      : 'bg-surface-container-low border-outline-variant/20 hover:border-outline-variant/50'
+                                  }`}
+                              >
                           <div className="flex items-start md:items-center gap-3 flex-grow w-full md:w-auto">
                             {/* Drag handle & Move Up/Down buttons */}
                             <div className="flex items-center gap-1 shrink-0 self-start md:self-center">
@@ -1195,7 +1415,10 @@ export default function AdminPage() {
                       );
                     })}
                   </div>
-                )}
+                );
+              })()}
+            </>
+          )}
               </div>
             )}
 
@@ -1235,30 +1458,58 @@ export default function AdminPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {projects.map((proj, idx) => {
-                      const isDragging = dragInfo.type === 'project' && dragInfo.index === idx;
-                      const isDragOver = dragOverInfo.type === 'project' && dragOverInfo.index === idx;
-                      const isVisible = proj.isVisible !== false;
+                  <>
+                    {renderSearchAndFilterBar(projects, 'projects')}
+
+                    {(() => {
+                      const displayedProjects = getFilteredItems(projects, 'project');
+                      if (displayedProjects.length === 0) {
+                        return (
+                          <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl bg-surface-container-low/40">
+                            <span className="material-symbols-outlined text-3xl text-on-surface-variant/40 mb-2">search_off</span>
+                            <p className="text-sm font-headline font-bold text-on-surface">No matching projects found</p>
+                            <p className="text-xs text-on-surface-variant mt-1">
+                              Try adjusting your search query or changing the visibility filter.
+                            </p>
+                            {(searchQuery || visibilityFilter !== 'all') && (
+                              <button
+                                onClick={() => { setSearchQuery(''); setVisibilityFilter('all'); }}
+                                className="mt-3 text-xs font-headline font-bold uppercase tracking-wider text-primary hover:underline"
+                              >
+                                Clear search &amp; filter
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
 
                       return (
-                        <div
-                          key={proj._id || proj.id || idx}
-                          draggable
-                          onDragStart={(e) => onDragStart(e, 'project', idx)}
-                          onDragEnter={(e) => onDragEnter(e, 'project', idx)}
-                          onDragOver={onDragOver}
-                          onDragEnd={onDragEnd}
-                          onDrop={(e) => onDrop(e, 'project', idx)}
-                          className={`border rounded-xl overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-move ${isDragging
-                            ? 'opacity-30 border-dashed border-primary scale-[0.99] bg-surface-container-low'
-                            : isDragOver
-                              ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
-                              : !isVisible
-                                ? 'opacity-65 border-dashed border-outline-variant/40 bg-surface-container-low/60'
-                                : 'bg-surface-container-low border-outline-variant/20 hover:border-outline-variant/50'
-                            }`}
-                        >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {displayedProjects.map((proj) => {
+                            const origIdx = projects.findIndex((x) => (x._id || x.id) === (proj._id || proj.id));
+                            const idx = origIdx >= 0 ? origIdx : 0;
+                            const isDragging = dragInfo.type === 'project' && dragInfo.index === idx;
+                            const isDragOver = dragOverInfo.type === 'project' && dragOverInfo.index === idx;
+                            const isVisible = proj.isVisible !== false;
+
+                            return (
+                              <div
+                                key={proj._id || proj.id || idx}
+                                draggable
+                                onDragStart={(e) => onDragStart(e, 'project', idx)}
+                                onDragEnter={(e) => onDragEnter(e, 'project', idx)}
+                                onDragOver={onDragOver}
+                                onDragEnd={onDragEnd}
+                                onDrop={(e) => onDrop(e, 'project', idx)}
+                                className={`border rounded-xl overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-move ${isDragging
+                                  ? 'opacity-30 border-dashed border-primary scale-[0.99] bg-surface-container-low'
+                                  : isDragOver
+                                    ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
+                                    : !isVisible
+                                      ? 'opacity-65 border-dashed border-outline-variant/40 bg-surface-container-low/60'
+                                      : 'bg-surface-container-low border-outline-variant/20 hover:border-outline-variant/50'
+                                  }`}
+                              >
                           <div className="p-5 sm:p-6 space-y-4">
                             {/* Project Cover / Live Preview Card */}
                             <div className="relative w-full h-36 rounded-lg overflow-hidden bg-surface-container-highest border border-outline-variant/30">
@@ -1269,8 +1520,22 @@ export default function AdminPage() {
                                 loading="lazy"
                               />
                               <div className="absolute top-2 right-2 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-mono text-white/90 border border-white/10 shadow-sm flex items-center gap-1.5">
-                                <span className={`w-1.5 h-1.5 rounded-full ${proj.image ? 'bg-secondary' : proj.liveUrl ? 'bg-primary' : 'bg-on-surface-variant'}`} />
-                                {proj.image ? 'Custom Banner' : proj.liveUrl ? 'Live Preview' : 'Default Placeholder'}
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    proj.image && !proj.image.includes('photo-1517694712202')
+                                      ? 'bg-secondary'
+                                      : proj.liveUrl
+                                      ? 'bg-primary'
+                                      : 'bg-on-surface-variant'
+                                  }`}
+                                />
+                                {proj.image && !proj.image.includes('photo-1517694712202')
+                                  ? proj.image.startsWith('/api/media/')
+                                    ? 'Custom Banner (MongoDB)'
+                                    : 'Custom Banner'
+                                  : proj.liveUrl
+                                  ? 'Landing Page Preview'
+                                  : 'Default Placeholder'}
                               </div>
                             </div>
 
@@ -1396,21 +1661,14 @@ export default function AdminPage() {
                               )}
                             </div>
                           </div>
-
-                          {proj.image && (
-                            <div className="h-32 bg-surface-container-lowest border-t border-outline-variant/10 overflow-hidden">
-                              <img
-                                src={proj.image}
-                                alt={proj.title}
-                                className="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity"
-                              />
-                            </div>
-                          )}
                         </div>
                       );
                     })}
                   </div>
-                )}
+                );
+              })()}
+            </>
+          )}
               </div>
             )}
 
@@ -1441,15 +1699,38 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {certifications.map((cert, idx) => {
-                      const isDragging = dragInfo.type === 'certification' && dragInfo.index === idx;
-                      const isDragOver = dragOverInfo.type === 'certification' && dragOverInfo.index === idx;
-                      const isVisible = cert.isVisible !== false;
+                  {certifications.length === 0 ? (
+                    <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl">
+                      <p className="text-sm text-on-surface-variant">No certifications found in database.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {renderSearchAndFilterBar(certifications, 'certifications')}
 
-                      return (
-                        <div
-                          key={cert._id || cert.id || idx}
+                      {(() => {
+                        const displayedCertifications = getFilteredItems(certifications, 'certification');
+                        if (displayedCertifications.length === 0) {
+                          return (
+                            <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl bg-surface-container-low/40">
+                              <span className="material-symbols-outlined text-3xl text-on-surface-variant/40 mb-2">search_off</span>
+                              <p className="text-sm font-headline font-bold text-on-surface">No matching certifications found</p>
+                              <p className="text-xs text-on-surface-variant mt-1">Try adjusting your search query or changing the visibility filter.</p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {displayedCertifications.map((cert) => {
+                              const origIdx = certifications.findIndex((x) => (x._id || x.id) === (cert._id || cert.id));
+                              const idx = origIdx >= 0 ? origIdx : 0;
+                              const isDragging = dragInfo.type === 'certification' && dragInfo.index === idx;
+                              const isDragOver = dragOverInfo.type === 'certification' && dragOverInfo.index === idx;
+                              const isVisible = cert.isVisible !== false;
+
+                              return (
+                                <div
+                                  key={cert._id || cert.id || idx}
                           draggable
                           onDragStart={(e) => onDragStart(e, 'certification', idx)}
                           onDragEnter={(e) => onDragEnter(e, 'certification', idx)}
@@ -1575,7 +1856,11 @@ export default function AdminPage() {
                       );
                     })}
                   </div>
-                </div>
+                );
+              })()}
+            </>
+          )}
+        </div>
 
                 {/* Education Section */}
                 <div className="space-y-6 pt-6 border-t border-outline-variant/20">
@@ -1601,15 +1886,38 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    {education.map((edu, idx) => {
-                      const isDragging = dragInfo.type === 'education' && dragInfo.index === idx;
-                      const isDragOver = dragOverInfo.type === 'education' && dragOverInfo.index === idx;
-                      const isVisible = edu.isVisible !== false;
+                  {education.length === 0 ? (
+                    <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl">
+                      <p className="text-sm text-on-surface-variant">No education history found in database.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {renderSearchAndFilterBar(education, 'education')}
 
-                      return (
-                        <div
-                          key={edu._id || edu.id || idx}
+                      {(() => {
+                        const displayedEducation = getFilteredItems(education, 'education');
+                        if (displayedEducation.length === 0) {
+                          return (
+                            <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl bg-surface-container-low/40">
+                              <span className="material-symbols-outlined text-3xl text-on-surface-variant/40 mb-2">search_off</span>
+                              <p className="text-sm font-headline font-bold text-on-surface">No matching education items found</p>
+                              <p className="text-xs text-on-surface-variant mt-1">Try adjusting your search query or changing the visibility filter.</p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-4">
+                            {displayedEducation.map((edu) => {
+                              const origIdx = education.findIndex((x) => (x._id || x.id) === (edu._id || edu.id));
+                              const idx = origIdx >= 0 ? origIdx : 0;
+                              const isDragging = dragInfo.type === 'education' && dragInfo.index === idx;
+                              const isDragOver = dragOverInfo.type === 'education' && dragOverInfo.index === idx;
+                              const isVisible = edu.isVisible !== false;
+
+                              return (
+                                <div
+                                  key={edu._id || edu.id || idx}
                           draggable
                           onDragStart={(e) => onDragStart(e, 'education', idx)}
                           onDragEnter={(e) => onDragEnter(e, 'education', idx)}
@@ -1710,7 +2018,11 @@ export default function AdminPage() {
                       );
                     })}
                   </div>
-                </div>
+                );
+              })()}
+            </>
+          )}
+        </div>
               </div>
             )}
 
@@ -2049,15 +2361,21 @@ export default function AdminPage() {
                       </div>
                       <div>
                         <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                          Status Badge
+                          Status Badge *
                         </label>
-                        <input
-                          type="text"
+                        <select
                           name="status"
-                          defaultValue={editingItem?.status || 'Active'}
-                          placeholder="Active, Production, etc."
-                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                        />
+                          defaultValue={
+                            ['Active', 'Production', 'Developed'].find(
+                              (opt) => opt.toLowerCase() === (editingItem?.status || 'Active').toLowerCase()
+                            ) || 'Active'
+                          }
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-medium"
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Production">Production</option>
+                          <option value="Developed">Developed</option>
+                        </select>
                       </div>
                     </div>
 
@@ -2118,54 +2436,81 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    {/* COVER IMAGE & LIVE PREVIEW SYSTEM */}
+                    {/* COVER BANNER & LIVE PREVIEW SYSTEM */}
                     <div className="p-4 rounded-xl bg-surface-container-highest/60 border border-outline-variant/30 space-y-3">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                         <div>
                           <label className="block text-xs font-headline font-bold uppercase tracking-wider text-on-surface">
-                            Cover Image / Preview
+                            Cover Banner &amp; Preview
                           </label>
                           <p className="text-[11px] text-on-surface-variant">
-                            Priority: Custom Banner → Live Site Preview (from Live URL) → Default Fallback
+                            Upload a banner from your computer (stored directly in MongoDB) or use the live site preview.
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            type="file"
+                            ref={bannerFileInputRef}
+                            onChange={handleProjectBannerUpload}
+                            accept="image/*"
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => bannerFileInputRef.current?.click()}
+                            disabled={uploadingBanner}
+                            className="px-3 py-1.5 rounded-lg bg-primary text-xs font-headline font-bold uppercase tracking-wider text-on-primary hover:opacity-90 flex items-center gap-1.5 disabled:opacity-50 transition-opacity shadow-sm cursor-pointer"
+                            title="Upload banner image from local storage into MongoDB"
+                          >
+                            <span className={`material-symbols-outlined text-sm ${uploadingBanner ? 'animate-spin' : ''}`}>
+                              {uploadingBanner ? 'progress_activity' : 'upload_file'}
+                            </span>
+                            {uploadingBanner ? 'Uploading...' : 'Upload Banner'}
+                          </button>
                           {modalCoverImage && (
                             <button
                               type="button"
-                              onClick={() => setModalCoverImage('')}
-                              className="text-[11px] font-mono text-tertiary hover:underline flex items-center gap-1"
-                              title="Clear custom banner to use automatic live website preview"
+                              onClick={handleClearBanner}
+                              className="px-2.5 py-1.5 rounded-lg bg-surface-container-high border border-outline-variant/30 text-[11px] font-mono text-on-surface-variant hover:text-error hover:border-error/40 flex items-center gap-1 transition-colors"
+                              title="Clear banner and use live landing page preview"
                             >
-                              <span className="material-symbols-outlined text-xs">backspace</span>
+                              <span className="material-symbols-outlined text-xs">close</span>
                               Clear Banner
                             </button>
                           )}
-                          <button
-                            type="button"
-                            onClick={handleFetchLivePreview}
-                            disabled={fetchingPreview || !modalLiveUrl}
-                            className="px-2.5 py-1 rounded bg-surface-container-high text-[11px] font-mono text-primary hover:bg-surface-container-highest border border-primary/30 flex items-center gap-1 disabled:opacity-40 transition-colors"
-                          >
-                            <span className={`material-symbols-outlined text-xs ${fetchingPreview ? 'animate-spin' : ''}`}>
-                              {fetchingPreview ? 'progress_activity' : 'refresh'}
-                            </span>
-                            Fetch OG Preview
-                          </button>
+                          {modalLiveUrl && !modalCoverImage && (
+                            <button
+                              type="button"
+                              onClick={handleFetchLivePreview}
+                              disabled={fetchingPreview}
+                              className="px-2.5 py-1.5 rounded-lg bg-surface-container-high border border-outline-variant/30 text-[11px] font-mono text-on-surface-variant hover:text-primary flex items-center gap-1 transition-colors"
+                              title="Refresh live website preview"
+                            >
+                              <span className={`material-symbols-outlined text-xs ${fetchingPreview ? 'animate-spin' : ''}`}>
+                                {fetchingPreview ? 'progress_activity' : 'refresh'}
+                              </span>
+                              Refresh
+                            </button>
+                          )}
                         </div>
                       </div>
 
-                      <input
-                        type="text"
-                        name="image"
-                        value={modalCoverImage}
-                        onChange={(e) => setModalCoverImage(e.target.value)}
-                        placeholder="Leave empty to auto-use Live Preview from Live Demo URL"
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
-                      />
+                      <div className="space-y-1">
+                        <label className="block text-[11px] font-label uppercase tracking-wider text-on-surface-variant/80">
+                          Banner URL / Database Media ID
+                        </label>
+                        <input
+                          type="text"
+                          name="image"
+                          value={modalCoverImage}
+                          onChange={(e) => setModalCoverImage(e.target.value)}
+                          placeholder="Auto-populated when uploading above, or paste an image URL"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                        />
+                      </div>
 
                       {/* Visual Card Preview */}
-                      <div className="relative aspect-[16/9] w-full max-h-44 rounded-lg overflow-hidden border border-outline-variant/40 bg-black/40">
+                      <div className="relative aspect-[16/9] w-full max-h-48 rounded-lg overflow-hidden border border-outline-variant/40 bg-black/40">
                         <img
                           src={getProjectCoverImage({ image: modalCoverImage, liveUrl: modalLiveUrl })}
                           alt="Project Cover Preview"
@@ -2176,11 +2521,21 @@ export default function AdminPage() {
                           }}
                         />
                         <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-md bg-black/80 backdrop-blur-md text-[10px] font-mono text-white/90 border border-white/10 flex items-center gap-1.5 shadow-md">
-                          <span className={`w-1.5 h-1.5 rounded-full ${modalCoverImage ? 'bg-secondary' : modalLiveUrl ? 'bg-primary' : 'bg-on-surface-variant'}`} />
-                          {modalCoverImage
-                            ? 'Priority 1: Custom Banner Image'
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              modalCoverImage && !modalCoverImage.includes('photo-1517694712202')
+                                ? 'bg-secondary'
+                                : modalLiveUrl
+                                ? 'bg-primary'
+                                : 'bg-on-surface-variant'
+                            }`}
+                          />
+                          {modalCoverImage && !modalCoverImage.includes('photo-1517694712202')
+                            ? modalCoverImage.startsWith('/api/media/')
+                              ? 'Custom Banner (Stored in MongoDB)'
+                              : 'Custom Banner (Image URL)'
                             : modalLiveUrl
-                            ? 'Priority 2: Auto Live Website Preview'
+                            ? 'Landing Page Preview (Live Site)'
                             : 'Fallback: Default Placeholder'}
                         </div>
                       </div>
@@ -2246,29 +2601,64 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                          Credential ID
+                    <div>
+                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                        Credential ID
+                      </label>
+                      <input
+                        type="text"
+                        name="credentialId"
+                        defaultValue={editingItem?.credentialId || ''}
+                        placeholder="e.g. UC-88981442-1204"
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-mono"
+                      />
+                    </div>
+
+                    {/* Material Symbol Icon Chooser */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                          Material Symbol Icon *
                         </label>
-                        <input
-                          type="text"
-                          name="credentialId"
-                          defaultValue={editingItem?.credentialId || ''}
-                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-mono"
-                        />
+                        <span className="text-[11px] font-mono text-primary flex items-center gap-1.5 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                          <span className="material-symbols-outlined text-base leading-none">{selectedCertIcon || 'verified'}</span>
+                          <span className="font-bold">{selectedCertIcon || 'verified'}</span>
+                        </span>
                       </div>
-                      <div>
-                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                          Material Symbol Icon
-                        </label>
-                        <input
-                          type="text"
-                          name="icon"
-                          defaultValue={editingItem?.icon || 'verified'}
-                          placeholder="verified, shield_lock, settings_ethernet"
-                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                        />
+
+                      <div className="p-3 rounded-xl bg-surface-container-highest border border-outline-variant/30 space-y-2.5">
+                        <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
+                          {CERTIFICATION_ICONS.map((iconItem) => {
+                            const isSelected = selectedCertIcon === iconItem.id;
+                            return (
+                              <button
+                                key={iconItem.id}
+                                type="button"
+                                onClick={() => setSelectedCertIcon(iconItem.id)}
+                                title={iconItem.label}
+                                className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
+                                  isSelected
+                                    ? 'bg-primary text-on-primary border-primary shadow-md scale-105 ring-2 ring-primary/40'
+                                    : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-container border-outline-variant/20'
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-xl">{iconItem.id}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-2 border-t border-outline-variant/20">
+                          <span className="text-[11px] text-on-surface-variant shrink-0">Custom Icon:</span>
+                          <input
+                            type="text"
+                            name="icon"
+                            value={selectedCertIcon}
+                            onChange={(e) => setSelectedCertIcon(e.target.value.trim().toLowerCase())}
+                            placeholder="verified, workspace_premium, school, terminal..."
+                            className="w-full bg-surface-container-high border border-outline-variant/30 rounded-lg px-2.5 py-1 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -2315,15 +2705,23 @@ export default function AdminPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                          Status
+                          Status *
                         </label>
-                        <input
-                          type="text"
+                        <select
                           name="status"
-                          defaultValue={editingItem?.status || 'Verified'}
-                          placeholder="Verified, In Progress, etc."
-                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                        />
+                          defaultValue={
+                            ['Verified', 'Active', 'Completed', 'In Progress', 'Issued'].find(
+                              (opt) => opt.toLowerCase() === (editingItem?.status || 'Verified').toLowerCase()
+                            ) || 'Verified'
+                          }
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-medium"
+                        >
+                          <option value="Verified">Verified</option>
+                          <option value="Active">Active</option>
+                          <option value="Completed">Completed</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Issued">Issued</option>
+                        </select>
                       </div>
                       <div>
                         <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">

@@ -16,55 +16,22 @@ export async function GET(request) {
       fullUrl = `https://${fullUrl}`;
     }
 
-    // Default screenshot preview URL
-    const screenshotFallback = `https://api.microlink.io?url=${encodeURIComponent(
-      fullUrl
-    )}&screenshot=true&embed=screenshot.url`;
-
+    // Always target the landing page of the site
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 4000);
-
-      const res = await fetch(fullUrl, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-          Accept: 'text/html,application/xhtml+xml',
-        },
-      });
-      clearTimeout(timeout);
-
-      const html = await res.text();
-
-      // Look for og:image or twitter:image
-      const ogMatch =
-        html.match(/<meta[^>]*property=["']og:image(?::url)?["'][^>]*content=["']([^"']+)["']/i) ||
-        html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image(?::url)?["']/i) ||
-        html.match(/<meta[^>]*name=["']twitter:image(?::src)?["'][^>]*content=["']([^"']+)["']/i) ||
-        html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:image(?::src)?["']/i);
-
-      if (ogMatch && ogMatch[1]) {
-        let ogUrl = ogMatch[1].trim();
-        if (ogUrl.startsWith('//')) {
-          ogUrl = `https:${ogUrl}`;
-        } else if (ogUrl.startsWith('/')) {
-          const origin = new URL(fullUrl).origin;
-          ogUrl = `${origin}${ogUrl}`;
-        }
-        return NextResponse.json({
-          success: true,
-          previewUrl: ogUrl,
-          source: 'opengraph',
-        });
-      }
+      const parsed = new URL(fullUrl);
+      fullUrl = parsed.origin;
     } catch {
-      // If fetching fails or times out, fall through to screenshot preview
+      // keep fullUrl
     }
+
+    // Live webpage landing page screenshot preview via WordPress mshots
+    // Free, reliable, and handles client-side rendering without paid account restrictions
+    const screenshotUrl = `https://s0.wp.com/mshots/v1/${encodeURIComponent(fullUrl)}?w=1200`;
 
     return NextResponse.json({
       success: true,
-      previewUrl: screenshotFallback,
+      previewUrl: screenshotUrl,
+      landingPage: fullUrl,
       source: 'screenshot',
     });
   } catch (error) {
