@@ -126,6 +126,9 @@ export default function AdminPage() {
   const [hiddenOrganizations, setHiddenOrganizations] = useState([]);
   const [hiddenHighlights, setHiddenHighlights] = useState([]);
   const [hiddenLanguages, setHiddenLanguages] = useState([]);
+  const [customContributedRepos, setCustomContributedRepos] = useState([]);
+  const [excludedContributedRepos, setExcludedContributedRepos] = useState([]);
+  const [customRepoInput, setCustomRepoInput] = useState('');
 
   // Certification icon chooser state
   const [selectedCertIcon, setSelectedCertIcon] = useState('verified');
@@ -195,6 +198,8 @@ export default function AdminPage() {
       setHiddenOrganizations(githubConfig.hiddenOrganizations || []);
       setHiddenHighlights(githubConfig.hiddenHighlights || []);
       setHiddenLanguages(githubConfig.hiddenLanguages || []);
+      setCustomContributedRepos(githubConfig.customContributedRepos || []);
+      setExcludedContributedRepos(githubConfig.excludedContributedRepos || []);
     }
   }, [githubConfig]);
 
@@ -459,6 +464,8 @@ export default function AdminPage() {
       hiddenOrganizations,
       hiddenHighlights,
       hiddenLanguages,
+      customContributedRepos,
+      excludedContributedRepos,
     };
     const token = formData.get('token');
     if (token && token.trim()) {
@@ -485,6 +492,22 @@ export default function AdminPage() {
     } finally {
       setSavingGithubConfig(false);
     }
+  };
+
+  const handleAddCustomRepo = () => {
+    if (!customRepoInput || !customRepoInput.trim()) return;
+    const clean = customRepoInput.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '');
+    if (customContributedRepos.includes(clean)) {
+      showToast('Repository already in list', 'error');
+      return;
+    }
+    setCustomContributedRepos([...customContributedRepos, clean]);
+    setCustomRepoInput('');
+    showToast(`Added ${clean}. Click Save GitHub Configuration to sync metrics.`);
+  };
+
+  const handleRemoveCustomRepo = (repoHandle) => {
+    setCustomContributedRepos(customContributedRepos.filter((r) => r !== repoHandle));
   };
 
   const handleFetchLivePreview = async () => {
@@ -2723,6 +2746,149 @@ export default function AdminPage() {
                             Languages calculated across active repositories when synced.
                           </p>
                         )}
+                      </div>
+
+                      {/* SUBCOMPONENT: CONTRIBUTED REPOSITORIES & REPO SCOPE */}
+                      <div className="p-4 rounded-xl bg-surface-container-high/30 border border-outline-variant/20 space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-primary text-base">source_environment</span>
+                          <div>
+                            <h4 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
+                              Contributed Projects &amp; Telemetry Scope
+                            </h4>
+                            <p className="text-[11px] text-on-surface-variant">
+                              Total stars, forks, and language analysis strictly include personal repositories plus repositories where you actively committed or submitted pull requests.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* DISCOVERED CONTRIBUTED REPOSITORIES */}
+                        {githubConfig?.cachedStats?.contributedRepos?.length > 0 ? (
+                          <div className="space-y-2 pt-1">
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant block font-bold">
+                              Discovered Contributed Repositories (Commits / Pull Requests):
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              {githubConfig.cachedStats.contributedRepos.map((repo) => {
+                                const fullName = repo.fullName || repo.name;
+                                const isIncluded = !excludedContributedRepos.includes(fullName);
+                                return (
+                                  <div
+                                    key={fullName}
+                                    className={`p-2.5 rounded-lg border transition-all ${
+                                      isIncluded
+                                        ? 'bg-surface-container-low border-outline-variant/30'
+                                        : 'bg-surface-container-lowest/40 border-outline-variant/10 opacity-60'
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="overflow-hidden">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="material-symbols-outlined text-xs text-primary">folder_open</span>
+                                          <a
+                                            href={repo.url || `https://github.com/${fullName}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs font-mono font-bold text-on-surface hover:text-primary truncate block"
+                                          >
+                                            {fullName}
+                                          </a>
+                                        </div>
+                                        <div className="flex items-center gap-3 mt-1.5 text-[10px] font-mono text-on-surface-variant">
+                                          {repo.primaryLanguage && (
+                                            <span className="px-1.5 py-0.5 rounded bg-secondary/10 text-secondary border border-secondary/20 font-bold">
+                                              {repo.primaryLanguage}
+                                            </span>
+                                          )}
+                                          <span className="flex items-center gap-0.5">
+                                            <span className="material-symbols-outlined text-[11px]">star</span>
+                                            {repo.stars || 0}
+                                          </span>
+                                          <span className="flex items-center gap-0.5">
+                                            <span className="material-symbols-outlined text-[11px]">call_split</span>
+                                            {repo.forks || 0}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <label className="flex items-center gap-1.5 text-[10px] font-mono cursor-pointer shrink-0">
+                                        <input
+                                          type="checkbox"
+                                          checked={isIncluded}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              setExcludedContributedRepos(excludedContributedRepos.filter((r) => r !== fullName));
+                                            } else {
+                                              setExcludedContributedRepos([...excludedContributedRepos, fullName]);
+                                            }
+                                          }}
+                                          className="w-4 h-4 accent-primary rounded cursor-pointer"
+                                        />
+                                        <span className={isIncluded ? 'text-primary font-bold' : 'text-on-surface-variant'}>
+                                          {isIncluded ? 'Included' : 'Excluded'}
+                                        </span>
+                                      </label>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-on-surface-variant font-mono">
+                            Contributed repositories will populate when you click &ldquo;Sync All Data &amp; Repos&rdquo;.
+                          </p>
+                        )}
+
+                        {/* CUSTOM CONTRIBUTED REPOSITORIES INPUT */}
+                        <div className="pt-2 border-t border-outline-variant/15 space-y-2">
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-on-surface-variant font-bold">
+                            Add Additional Contributed Repository (e.g. outside organizations):
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={customRepoInput}
+                              onChange={(e) => setCustomRepoInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleAddCustomRepo();
+                                }
+                              }}
+                              placeholder="owner/repo (e.g. dilshanmolligoda/SwiftDrop)"
+                              className="flex-1 bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3 py-2 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAddCustomRepo}
+                              className="px-3.5 py-2 rounded-lg bg-surface-container-highest hover:bg-primary/10 text-on-surface hover:text-primary border border-outline-variant/30 text-xs font-headline font-bold uppercase tracking-wider flex items-center gap-1 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-sm">add</span>
+                              Add Repo
+                            </button>
+                          </div>
+
+                          {customContributedRepos.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {customContributedRepos.map((handle) => (
+                                <span
+                                  key={handle}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container-high border border-outline-variant/30 text-xs font-mono text-on-surface"
+                                >
+                                  <span className="material-symbols-outlined text-xs text-primary">bookmark</span>
+                                  {handle}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveCustomRepo(handle)}
+                                    className="text-on-surface-variant hover:text-error transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-xs">close</span>
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 

@@ -19,8 +19,13 @@ export async function POST(request) {
     const username = config?.username || 'Dashintha-Prabashwara';
     const token = config?.token || process.env.GITHUB_TOKEN || '';
 
+    const options = {
+      customContributedRepos: config?.customContributedRepos || [],
+      excludedContributedRepos: config?.excludedContributedRepos || [],
+    };
+
     // 1. Refresh full profile telemetry
-    const telemetry = await fetchAllGithubTelemetry(username, token);
+    const telemetry = await fetchAllGithubTelemetry(username, token, options);
 
     if (config) {
       config.cachedStats = telemetry;

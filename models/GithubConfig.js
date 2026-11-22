@@ -57,6 +57,15 @@ const GithubConfigSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // Repositories user actively contributed to (manual overrides / additions / exclusions)
+    customContributedRepos: {
+      type: [String],
+      default: [],
+    },
+    excludedContributedRepos: {
+      type: [String],
+      default: [],
+    },
     cachedStats: {
       type: mongoose.Schema.Types.Mixed,
       default: null,

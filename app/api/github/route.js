@@ -29,6 +29,8 @@ export async function GET() {
     const hiddenOrganizations = config?.hiddenOrganizations || [];
     const hiddenHighlights = config?.hiddenHighlights || [];
     const hiddenLanguages = config?.hiddenLanguages || [];
+    const customContributedRepos = config?.customContributedRepos || [];
+    const excludedContributedRepos = config?.excludedContributedRepos || [];
 
     if (!isEnabled) {
       return NextResponse.json({
@@ -50,7 +52,10 @@ export async function GET() {
     if (isStale) {
       try {
         const token = config?.token || process.env.GITHUB_TOKEN || '';
-        telemetry = await fetchAllGithubTelemetry(username, token);
+        telemetry = await fetchAllGithubTelemetry(username, token, {
+          customContributedRepos,
+          excludedContributedRepos,
+        });
 
         // Update cache in database asynchronously
         if (config?._id) {
@@ -122,11 +127,14 @@ export async function GET() {
         hiddenOrganizations,
         hiddenHighlights,
         hiddenLanguages,
+        customContributedRepos,
+        excludedContributedRepos,
       },
       data: {
         profile: telemetry?.profile || null,
         languages: showLanguageStats ? filteredLanguages : [],
         latestRepos: telemetry?.latestRepos || [],
+        contributedRepos: telemetry?.contributedRepos || [],
         organizations: showOrganizations ? filteredOrganizations : [],
         contributions: showContributions ? telemetry?.contributions || null : null,
         achievements: showAchievements ? filteredAchievements : [],

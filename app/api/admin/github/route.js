@@ -81,6 +81,12 @@ export async function PUT(request) {
     if (Array.isArray(body.hiddenLanguages)) {
       updateData.hiddenLanguages = body.hiddenLanguages;
     }
+    if (Array.isArray(body.customContributedRepos)) {
+      updateData.customContributedRepos = body.customContributedRepos;
+    }
+    if (Array.isArray(body.excludedContributedRepos)) {
+      updateData.excludedContributedRepos = body.excludedContributedRepos;
+    }
 
     // If a new token is provided or cleared
     if (body.token !== undefined) {
