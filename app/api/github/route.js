@@ -33,7 +33,8 @@ export async function GET() {
 
     const now = Date.now();
     const lastSynced = config?.lastSyncedAt ? new Date(config.lastSyncedAt).getTime() : 0;
-    const isStale = !config?.cachedStats || now - lastSynced > 30 * 60 * 1000; // 30 minutes cache
+    const isMissingData = !config?.cachedStats?.achievements?.length && !config?.cachedStats?.organizations?.length;
+    const isStale = !config?.cachedStats || now - lastSynced > 30 * 60 * 1000 || isMissingData;
 
     let telemetry = config?.cachedStats;
 

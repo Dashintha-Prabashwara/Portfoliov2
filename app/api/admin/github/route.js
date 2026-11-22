@@ -38,7 +38,7 @@ export async function GET(request) {
         ...config,
         hasEnvToken: !!process.env.GITHUB_TOKEN,
         hasDbToken: !!config.token,
-        tokenPreview: config.token ? `${config.token.slice(0, 4)}...${config.token.slice(-4)}` : '',
+        tokenPreview: effectiveToken ? `${effectiveToken.slice(0, 4)}...${effectiveToken.slice(-4)}` : '',
         rateLimit,
       },
     });
@@ -88,7 +88,7 @@ export async function PUT(request) {
         ...config.toObject(),
         hasEnvToken: !!process.env.GITHUB_TOKEN,
         hasDbToken: !!config.token,
-        tokenPreview: config.token ? `${config.token.slice(0, 4)}...${config.token.slice(-4)}` : '',
+        tokenPreview: effectiveToken ? `${effectiveToken.slice(0, 4)}...${effectiveToken.slice(-4)}` : '',
         rateLimit,
       },
     });

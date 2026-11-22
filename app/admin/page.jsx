@@ -456,6 +456,7 @@ export default function AdminPage() {
       if (res.ok && data.success) {
         setGithubConfig(data.data);
         showToast('GitHub configuration saved successfully!');
+        fetchAllData();
       } else {
         showToast(data.error || 'Failed to save GitHub settings', 'error');
       }
