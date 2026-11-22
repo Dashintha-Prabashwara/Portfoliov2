@@ -57,8 +57,31 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
     return null;
   }
 
-  const { profile, languages = [], organizations = [], contributions, achievements = [] } = telemetry;
+  const {
+    profile,
+    languages = [],
+    organizations = [],
+    contributions,
+    achievements = [],
+    highlights = [],
+  } = telemetry;
   const username = config?.username || profile?.login || 'Dashintha-Prabashwara';
+
+  // Subcomponent filters based on CMS configuration
+  const visibleLanguages = languages.filter(
+    (l) => !(config?.hiddenLanguages || []).includes(l.name)
+  );
+  const visibleOrganizations = organizations.filter(
+    (o) =>
+      !(config?.hiddenOrganizations || []).includes(o.login) &&
+      !(config?.hiddenOrganizations || []).includes(o.name)
+  );
+  const visibleAchievements = achievements.filter(
+    (a) => !(config?.hiddenAchievements || []).includes(a.title)
+  );
+  const visibleHighlights = highlights.filter(
+    (h) => !(config?.hiddenHighlights || []).includes(h.title)
+  );
 
   return (
     <section className="my-16 sm:my-24 relative overflow-hidden">
@@ -240,7 +263,7 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
         )}
 
         {/* Language Breakdown */}
-        {config?.showLanguageStats !== false && languages.length > 0 && (
+        {config?.showLanguageStats !== false && visibleLanguages.length > 0 && (
           <div className="bg-surface-container-lowest/80 border border-outline-variant/20 rounded-xl p-5 sm:p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -249,12 +272,12 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
                   Top Technologies & Languages
                 </h3>
               </div>
-              <span className="text-xs font-mono text-on-surface-variant">Active Repositories</span>
+              <span className="text-xs font-mono text-on-surface-variant">Public &amp; Private Repositories</span>
             </div>
 
             {/* Segmented Distribution Bar */}
             <div className="w-full h-3 rounded-full overflow-hidden flex bg-surface-container-highest mb-4">
-              {languages.map((lang, idx) => {
+              {visibleLanguages.map((lang, idx) => {
                 const colors = ['bg-primary', 'bg-secondary', 'bg-tertiary', 'bg-primary-container', 'bg-outline'];
                 return (
                   <div
@@ -269,7 +292,7 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
 
             {/* Legend Chips */}
             <div className="flex flex-wrap gap-3">
-              {languages.map((lang, idx) => {
+              {visibleLanguages.map((lang, idx) => {
                 const dotColors = ['bg-primary', 'bg-secondary', 'bg-tertiary', 'bg-primary-container', 'bg-outline'];
                 return (
                   <div key={lang.name} className="flex items-center gap-1.5 text-xs font-mono text-on-surface">
@@ -283,91 +306,45 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
           </div>
         )}
 
-        {/* Organizations & Achievements Row */}
-        {(config?.showOrganizations !== false && organizations.length > 0 ||
-          config?.showAchievements !== false && achievements.length > 0) && (
-          <div className={`grid grid-cols-1 ${config?.showOrganizations !== false && organizations.length > 0 && config?.showAchievements !== false && achievements.length > 0 ? 'md:grid-cols-2' : ''} gap-6`}>
-            {/* Organizations */}
-            {config?.showOrganizations !== false && organizations.length > 0 && (
-              <div className={`bg-surface-container-lowest/80 border border-outline-variant/20 rounded-xl p-5 sm:p-6 ${config?.showAchievements === false || achievements.length === 0 ? 'md:col-span-2' : ''}`}>
+        {/* Highlights, Organizations & Achievements Row */}
+        {(config?.showOrganizations !== false && visibleOrganizations.length > 0 ||
+          config?.showAchievements !== false && visibleAchievements.length > 0 ||
+          config?.showHighlights !== false && visibleHighlights.length > 0) && (
+          <div className="space-y-6">
+            {/* Profile Highlights Banner if available */}
+            {config?.showHighlights !== false && visibleHighlights.length > 0 && (
+              <div className="bg-surface-container-lowest/80 border border-outline-variant/20 rounded-xl p-5 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm text-primary">domain</span>
+                    <span className="material-symbols-outlined text-sm text-secondary">workspace_premium</span>
                     <h3 className="font-headline text-sm sm:text-base font-bold text-on-surface uppercase tracking-wider">
-                      Organizations
+                      Profile Highlights
                     </h3>
                   </div>
                   <span className="text-[10px] text-on-surface-variant font-mono">
-                    {organizations.length} {organizations.length === 1 ? 'Membership' : 'Memberships'}
+                    Official Recognition
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {organizations.map((org) => (
-                    <a
-                      key={org.login}
-                      href={org.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex items-center gap-3 p-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all border border-outline-variant/20 hover:border-primary/30"
-                    >
-                      <img
-                        src={org.avatarUrl}
-                        alt={org.name}
-                        className="w-9 h-9 rounded-md object-cover border border-outline-variant/20 shrink-0"
-                      />
-                      <div className="overflow-hidden flex-1">
-                        <div className="font-headline text-xs font-bold text-on-surface truncate group-hover:text-primary transition-colors">
-                          {org.name}
-                        </div>
-                        <span className="text-[10px] text-on-surface-variant font-mono block truncate">
-                          {org.description || 'GitHub Member'}
-                        </span>
-                      </div>
-                      <span className="material-symbols-outlined text-xs text-on-surface-variant/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all">
-                        arrow_outward
-                      </span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Achievements & Highlights */}
-            {config?.showAchievements !== false && achievements.length > 0 && (
-              <div className={`bg-surface-container-lowest/80 border border-outline-variant/20 rounded-xl p-5 sm:p-6 ${config?.showOrganizations === false || organizations.length === 0 ? 'md:col-span-2' : ''}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm text-tertiary">military_tech</span>
-                    <h3 className="font-headline text-sm sm:text-base font-bold text-on-surface uppercase tracking-wider">
-                      Earned Achievements
-                    </h3>
-                  </div>
-                  <span className="text-[10px] text-on-surface-variant font-mono">
-                    Verified Badges
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {achievements.map((ach, idx) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {visibleHighlights.map((hl, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-surface-container-low border border-outline-variant/20 hover:border-tertiary/30 transition-all"
+                      className="flex items-center gap-3 p-3 rounded-lg bg-surface-container-low border border-outline-variant/20 hover:border-secondary/30 transition-all"
                     >
-                      <img
-                        src={ach.iconUrl}
-                        alt={ach.title}
-                        className="w-11 h-11 object-contain shrink-0"
-                      />
+                      <div className="w-9 h-9 rounded-md bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-base">verified</span>
+                      </div>
                       <div className="overflow-hidden">
-                        <div className="font-headline text-xs font-bold text-on-surface flex items-center gap-1.5 flex-wrap">
-                          <span>{ach.title}</span>
-                          {ach.tier && (
-                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-tertiary/10 text-tertiary border border-tertiary/20">
-                              {ach.tier}
+                        <div className="font-headline text-xs font-bold text-on-surface flex items-center gap-1.5">
+                          <span>{hl.title}</span>
+                          {hl.badge && (
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-secondary/15 text-secondary border border-secondary/30">
+                              {hl.badge}
                             </span>
                           )}
                         </div>
                         <p className="text-[10px] text-on-surface-variant font-mono line-clamp-1 mt-0.5">
-                          {ach.description || 'GitHub Achievement'}
+                          {hl.description}
                         </p>
                       </div>
                     </div>
@@ -375,6 +352,98 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
                 </div>
               </div>
             )}
+
+            {/* Organizations and Achievements Grid */}
+            <div className={`grid grid-cols-1 ${config?.showOrganizations !== false && visibleOrganizations.length > 0 && config?.showAchievements !== false && visibleAchievements.length > 0 ? 'md:grid-cols-2' : ''} gap-6`}>
+              {/* Organizations */}
+              {config?.showOrganizations !== false && visibleOrganizations.length > 0 && (
+                <div className={`bg-surface-container-lowest/80 border border-outline-variant/20 rounded-xl p-5 sm:p-6 ${config?.showAchievements === false || visibleAchievements.length === 0 ? 'md:col-span-2' : ''}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm text-primary">domain</span>
+                      <h3 className="font-headline text-sm sm:text-base font-bold text-on-surface uppercase tracking-wider">
+                        Organizations
+                      </h3>
+                    </div>
+                    <span className="text-[10px] text-on-surface-variant font-mono">
+                      {visibleOrganizations.length} {visibleOrganizations.length === 1 ? 'Membership' : 'Memberships'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {visibleOrganizations.map((org) => (
+                      <a
+                        key={org.login}
+                        href={org.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-center gap-3 p-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all border border-outline-variant/20 hover:border-primary/30"
+                      >
+                        <img
+                          src={org.avatarUrl}
+                          alt={org.name}
+                          className="w-9 h-9 rounded-md object-cover border border-outline-variant/20 shrink-0"
+                        />
+                        <div className="overflow-hidden flex-1">
+                          <div className="font-headline text-xs font-bold text-on-surface truncate group-hover:text-primary transition-colors">
+                            {org.name}
+                          </div>
+                          <span className="text-[10px] text-on-surface-variant font-mono block truncate">
+                            {org.description || 'GitHub Member'}
+                          </span>
+                        </div>
+                        <span className="material-symbols-outlined text-xs text-on-surface-variant/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all">
+                          arrow_outward
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Achievements & Badges */}
+              {config?.showAchievements !== false && visibleAchievements.length > 0 && (
+                <div className={`bg-surface-container-lowest/80 border border-outline-variant/20 rounded-xl p-5 sm:p-6 ${config?.showOrganizations === false || visibleOrganizations.length === 0 ? 'md:col-span-2' : ''}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm text-tertiary">military_tech</span>
+                      <h3 className="font-headline text-sm sm:text-base font-bold text-on-surface uppercase tracking-wider">
+                        Earned Achievements
+                      </h3>
+                    </div>
+                    <span className="text-[10px] text-on-surface-variant font-mono">
+                      Verified Badges
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {visibleAchievements.map((ach, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-surface-container-low border border-outline-variant/20 hover:border-tertiary/30 transition-all"
+                      >
+                        <img
+                          src={ach.iconUrl}
+                          alt={ach.title}
+                          className="w-11 h-11 object-contain shrink-0"
+                        />
+                        <div className="overflow-hidden">
+                          <div className="font-headline text-xs font-bold text-on-surface flex items-center gap-1.5 flex-wrap">
+                            <span>{ach.title}</span>
+                            {ach.tier && (
+                              <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-tertiary/10 text-tertiary border border-tertiary/20">
+                                {ach.tier}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-on-surface-variant font-mono line-clamp-1 mt-0.5">
+                            {ach.description || 'GitHub Achievement'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

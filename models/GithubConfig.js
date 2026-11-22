@@ -24,6 +24,10 @@ const GithubConfigSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    showHighlights: {
+      type: Boolean,
+      default: true,
+    },
     showOrganizations: {
       type: Boolean,
       default: true,
@@ -35,6 +39,23 @@ const GithubConfigSchema = new mongoose.Schema(
     showProjectBadges: {
       type: Boolean,
       default: true,
+    },
+    // Subcomponent visibility (lists of hidden titles/keys)
+    hiddenAchievements: {
+      type: [String],
+      default: [],
+    },
+    hiddenOrganizations: {
+      type: [String],
+      default: [],
+    },
+    hiddenHighlights: {
+      type: [String],
+      default: [],
+    },
+    hiddenLanguages: {
+      type: [String],
+      default: [],
     },
     cachedStats: {
       type: mongoose.Schema.Types.Mixed,

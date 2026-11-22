@@ -63,10 +63,24 @@ export async function PUT(request) {
       isEnabled: body.isEnabled !== undefined ? Boolean(body.isEnabled) : true,
       showContributions: body.showContributions !== undefined ? Boolean(body.showContributions) : true,
       showAchievements: body.showAchievements !== undefined ? Boolean(body.showAchievements) : true,
+      showHighlights: body.showHighlights !== undefined ? Boolean(body.showHighlights) : true,
       showOrganizations: body.showOrganizations !== undefined ? Boolean(body.showOrganizations) : true,
       showLanguageStats: body.showLanguageStats !== undefined ? Boolean(body.showLanguageStats) : true,
       showProjectBadges: body.showProjectBadges !== undefined ? Boolean(body.showProjectBadges) : true,
     };
+
+    if (Array.isArray(body.hiddenAchievements)) {
+      updateData.hiddenAchievements = body.hiddenAchievements;
+    }
+    if (Array.isArray(body.hiddenOrganizations)) {
+      updateData.hiddenOrganizations = body.hiddenOrganizations;
+    }
+    if (Array.isArray(body.hiddenHighlights)) {
+      updateData.hiddenHighlights = body.hiddenHighlights;
+    }
+    if (Array.isArray(body.hiddenLanguages)) {
+      updateData.hiddenLanguages = body.hiddenLanguages;
+    }
 
     // If a new token is provided or cleared
     if (body.token !== undefined) {

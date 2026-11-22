@@ -20,9 +20,15 @@ export async function GET() {
     const isEnabled = config?.isEnabled !== false;
     const showContributions = config?.showContributions !== false;
     const showAchievements = config?.showAchievements !== false;
+    const showHighlights = config?.showHighlights !== false;
     const showOrganizations = config?.showOrganizations !== false;
     const showLanguageStats = config?.showLanguageStats !== false;
     const showProjectBadges = config?.showProjectBadges !== false;
+
+    const hiddenAchievements = config?.hiddenAchievements || [];
+    const hiddenOrganizations = config?.hiddenOrganizations || [];
+    const hiddenHighlights = config?.hiddenHighlights || [];
+    const hiddenLanguages = config?.hiddenLanguages || [];
 
     if (!isEnabled) {
       return NextResponse.json({
@@ -33,7 +39,10 @@ export async function GET() {
 
     const now = Date.now();
     const lastSynced = config?.lastSyncedAt ? new Date(config.lastSyncedAt).getTime() : 0;
-    const isMissingData = !config?.cachedStats?.achievements?.length && !config?.cachedStats?.organizations?.length;
+    const isMissingData =
+      !config?.cachedStats?.achievements?.length &&
+      !config?.cachedStats?.organizations?.length &&
+      !config?.cachedStats?.highlights?.length;
     const isStale = !config?.cachedStats || now - lastSynced > 30 * 60 * 1000 || isMissingData;
 
     let telemetry = config?.cachedStats;
@@ -55,9 +64,14 @@ export async function GET() {
             isEnabled,
             showContributions,
             showAchievements,
+            showHighlights,
             showOrganizations,
             showLanguageStats,
             showProjectBadges,
+            hiddenAchievements,
+            hiddenOrganizations,
+            hiddenHighlights,
+            hiddenLanguages,
             cachedStats: telemetry,
             lastSyncedAt: new Date(),
           }).catch((err) => console.error('Failed to create initial GitHub config:', err));
@@ -73,11 +87,26 @@ export async function GET() {
             organizations: [],
             contributions: { totalContributions: 0, weeks: [] },
             achievements: [],
+            highlights: [],
             rateLimit: { limit: 60, remaining: 0 },
           };
         }
       }
     }
+
+    // Apply subcomponent filters
+    const filteredLanguages = (telemetry?.languages || []).filter(
+      (l) => !hiddenLanguages.includes(l.name)
+    );
+    const filteredOrganizations = (telemetry?.organizations || []).filter(
+      (o) => !hiddenOrganizations.includes(o.login) && !hiddenOrganizations.includes(o.name)
+    );
+    const filteredAchievements = (telemetry?.achievements || []).filter(
+      (a) => !hiddenAchievements.includes(a.title)
+    );
+    const filteredHighlights = (telemetry?.highlights || []).filter(
+      (h) => !hiddenHighlights.includes(h.title)
+    );
 
     return NextResponse.json({
       isEnabled: true,
@@ -85,17 +114,23 @@ export async function GET() {
         username,
         showContributions,
         showAchievements,
+        showHighlights,
         showOrganizations,
         showLanguageStats,
         showProjectBadges,
+        hiddenAchievements,
+        hiddenOrganizations,
+        hiddenHighlights,
+        hiddenLanguages,
       },
       data: {
         profile: telemetry?.profile || null,
-        languages: showLanguageStats ? telemetry?.languages || [] : [],
+        languages: showLanguageStats ? filteredLanguages : [],
         latestRepos: telemetry?.latestRepos || [],
-        organizations: showOrganizations ? telemetry?.organizations || [] : [],
+        organizations: showOrganizations ? filteredOrganizations : [],
         contributions: showContributions ? telemetry?.contributions || null : null,
-        achievements: showAchievements ? telemetry?.achievements || [] : [],
+        achievements: showAchievements ? filteredAchievements : [],
+        highlights: showHighlights ? filteredHighlights : [],
         rateLimit: telemetry?.rateLimit || null,
         lastSyncedAt: telemetry?.lastSyncedAt || config?.lastSyncedAt || null,
       },
