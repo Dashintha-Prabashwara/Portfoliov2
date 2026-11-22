@@ -62,6 +62,26 @@ const ProjectSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    githubStars: {
+      type: Number,
+      default: 0,
+    },
+    githubForks: {
+      type: Number,
+      default: 0,
+    },
+    githubLanguage: {
+      type: String,
+      default: '',
+    },
+    githubLastPushed: {
+      type: String,
+      default: '',
+    },
+    githubSyncedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

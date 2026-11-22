@@ -2,6 +2,8 @@ import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import HeroProfileImage from '@/components/HeroProfileImage';
+import GithubTelemetry from '@/components/GithubTelemetry';
+import { getGithubConfigDb } from '@/lib/dbData';
 
 // ========== DATA SECTION ==========
 const techStackData = [
@@ -14,12 +16,19 @@ const techStackData = [
 ];
 
 export default async function Home() {
+  const githubConfig = await getGithubConfigDb();
+
   return (
     <>
       <Navigation />
       <main className="relative pt-20 sm:pt-24 md:pt-24 overflow-hidden">
         <HeroSection />
         <TechStackSection />
+        {githubConfig?.isEnabled !== false && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <GithubTelemetry initialConfig={githubConfig} initialData={githubConfig?.cachedStats} />
+          </div>
+        )}
       </main>
       <Footer />
     </>

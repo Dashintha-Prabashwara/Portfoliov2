@@ -109,9 +109,26 @@ export default function AdminPage() {
   // Project Live Preview / Cover helper states in modal
   const [modalCoverImage, setModalCoverImage] = useState('');
   const [modalLiveUrl, setModalLiveUrl] = useState('');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalDescription, setModalDescription] = useState('');
+  const [modalTechnologies, setModalTechnologies] = useState('');
+  const [modalGithubUrl, setModalGithubUrl] = useState('');
+  const [autofillingRepo, setAutofillingRepo] = useState(false);
   const [fetchingPreview, setFetchingPreview] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const bannerFileInputRef = useRef(null);
+
+  // GitHub Engine state
+  const [githubConfig, setGithubConfig] = useState(null);
+  const [githubSyncing, setGithubSyncing] = useState(false);
+  const [savingGithubConfig, setSavingGithubConfig] = useState(false);
+  const [hiddenAchievements, setHiddenAchievements] = useState([]);
+  const [hiddenOrganizations, setHiddenOrganizations] = useState([]);
+  const [hiddenHighlights, setHiddenHighlights] = useState([]);
+  const [hiddenLanguages, setHiddenLanguages] = useState([]);
+  const [customContributedRepos, setCustomContributedRepos] = useState([]);
+  const [excludedContributedRepos, setExcludedContributedRepos] = useState([]);
+  const [customRepoInput, setCustomRepoInput] = useState('');
 
   // Certification icon chooser state
   const [selectedCertIcon, setSelectedCertIcon] = useState('verified');
@@ -129,12 +146,13 @@ export default function AdminPage() {
   const fetchAllData = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [expRes, projRes, certRes, eduRes, cvRes] = await Promise.all([
+      const [expRes, projRes, certRes, eduRes, cvRes, ghRes] = await Promise.all([
         fetch('/api/admin/experiences'),
         fetch('/api/admin/projects'),
         fetch('/api/admin/certifications'),
         fetch('/api/admin/education'),
         fetch('/api/admin/cv'),
+        fetch('/api/admin/github'),
       ]);
 
       if (expRes.status === 401) {
@@ -142,12 +160,13 @@ export default function AdminPage() {
         return;
       }
 
-      const [expData, projData, certData, eduData, cvResp] = await Promise.all([
+      const [expData, projData, certData, eduData, cvResp, ghResp] = await Promise.all([
         expRes.json(),
         projRes.json(),
         certRes.json(),
         eduRes.json(),
         cvRes.json(),
+        ghRes.json(),
       ]);
 
       setExperiences(applyVisibleColorCycle(expData.data || [], 'experience'));
@@ -155,6 +174,9 @@ export default function AdminPage() {
       setCertifications(applyVisibleColorCycle(certData.data || [], 'certification'));
       setEducation(applyVisibleColorCycle(eduData.data || [], 'education'));
       setCvData(cvResp.data || null);
+      if (ghResp?.data) {
+        setGithubConfig(ghResp.data);
+      }
 
       setDbStatus({
         connected: !expData.error && !projData.error,
@@ -168,6 +190,18 @@ export default function AdminPage() {
       setLoadingData(false);
     }
   }, [showToast]);
+
+  // Synchronize GitHub subcomponent visibility from loaded config
+  useEffect(() => {
+    if (githubConfig) {
+      setHiddenAchievements(githubConfig.hiddenAchievements || []);
+      setHiddenOrganizations(githubConfig.hiddenOrganizations || []);
+      setHiddenHighlights(githubConfig.hiddenHighlights || []);
+      setHiddenLanguages(githubConfig.hiddenLanguages || []);
+      setCustomContributedRepos(githubConfig.customContributedRepos || []);
+      setExcludedContributedRepos(githubConfig.excludedContributedRepos || []);
+    }
+  }, [githubConfig]);
 
   // Check auth on mount
   useEffect(() => {
@@ -338,6 +372,10 @@ export default function AdminPage() {
     setModalIsVisible(item ? item.isVisible !== false : true); // Default is visible
     setModalCoverImage(item?.image || '');
     setModalLiveUrl(item?.liveUrl || '');
+    setModalTitle(item?.title || '');
+    setModalDescription(item?.description || '');
+    setModalTechnologies(item?.technologies?.join(', ') || '');
+    setModalGithubUrl(item?.githubUrl || '');
     setSelectedCertIcon(item?.icon || 'verified');
     setModalOpen(true);
   };
@@ -348,7 +386,128 @@ export default function AdminPage() {
     setModalType(null);
     setModalCoverImage('');
     setModalLiveUrl('');
+    setModalTitle('');
+    setModalDescription('');
+    setModalTechnologies('');
+    setModalGithubUrl('');
     setSelectedCertIcon('verified');
+  };
+
+  const handleAutofillFromGithub = async () => {
+    if (!modalGithubUrl || !modalGithubUrl.trim()) {
+      showToast('Please enter a GitHub URL first', 'error');
+      return;
+    }
+    setAutofillingRepo(true);
+    try {
+      const res = await fetch(`/api/admin/github/fetch-repo?url=${encodeURIComponent(modalGithubUrl.trim())}`);
+      const data = await res.json();
+      if (res.ok && data.success && data.data) {
+        const repo = data.data;
+        if (!modalTitle || modalTitle.trim() === '') {
+          setModalTitle(repo.title || '');
+        }
+        if (repo.description) {
+          setModalDescription(repo.description);
+        }
+        if (Array.isArray(repo.technologies) && repo.technologies.length > 0) {
+          setModalTechnologies(repo.technologies.join(', '));
+        }
+        if (repo.liveUrl && !modalLiveUrl) {
+          setModalLiveUrl(repo.liveUrl);
+        }
+        showToast('Repository details autofilled from GitHub!');
+      } else {
+        showToast(data.error || 'Failed to fetch repository details', 'error');
+      }
+    } catch (err) {
+      console.error('Autofill error:', err);
+      showToast('Error connecting to GitHub API', 'error');
+    } finally {
+      setAutofillingRepo(false);
+    }
+  };
+
+  const handleSyncAllGithub = async () => {
+    setGithubSyncing(true);
+    try {
+      const res = await fetch('/api/admin/github/sync', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(data.message || 'GitHub telemetry & repos synced!');
+        fetchAllData();
+      } else {
+        showToast(data.error || 'Failed to sync with GitHub', 'error');
+      }
+    } catch (err) {
+      console.error('GitHub sync error:', err);
+      showToast('Error connecting to GitHub sync API', 'error');
+    } finally {
+      setGithubSyncing(false);
+    }
+  };
+
+  const handleSaveGithubConfig = async (e) => {
+    e.preventDefault();
+    setSavingGithubConfig(true);
+    const formData = new FormData(e.target);
+    const payload = {
+      username: formData.get('username'),
+      isEnabled: formData.get('isEnabled') === 'on',
+      showContributions: formData.get('showContributions') === 'on',
+      showAchievements: formData.get('showAchievements') === 'on',
+      showHighlights: formData.get('showHighlights') === 'on',
+      showOrganizations: formData.get('showOrganizations') === 'on',
+      showLanguageStats: formData.get('showLanguageStats') === 'on',
+      showProjectBadges: formData.get('showProjectBadges') === 'on',
+      hiddenAchievements,
+      hiddenOrganizations,
+      hiddenHighlights,
+      hiddenLanguages,
+      customContributedRepos,
+      excludedContributedRepos,
+    };
+    const token = formData.get('token');
+    if (token && token.trim()) {
+      payload.token = token.trim();
+    }
+
+    try {
+      const res = await fetch('/api/admin/github', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setGithubConfig(data.data);
+        showToast('GitHub configuration saved successfully!');
+        fetchAllData();
+      } else {
+        showToast(data.error || 'Failed to save GitHub settings', 'error');
+      }
+    } catch (err) {
+      console.error('Save GitHub config error:', err);
+      showToast('Error saving GitHub configuration', 'error');
+    } finally {
+      setSavingGithubConfig(false);
+    }
+  };
+
+  const handleAddCustomRepo = () => {
+    if (!customRepoInput || !customRepoInput.trim()) return;
+    const clean = customRepoInput.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '');
+    if (customContributedRepos.includes(clean)) {
+      showToast('Repository already in list', 'error');
+      return;
+    }
+    setCustomContributedRepos([...customContributedRepos, clean]);
+    setCustomRepoInput('');
+    showToast(`Added ${clean}. Click Save GitHub Configuration to sync metrics.`);
+  };
+
+  const handleRemoveCustomRepo = (repoHandle) => {
+    setCustomContributedRepos(customContributedRepos.filter((r) => r !== repoHandle));
   };
 
   const handleFetchLivePreview = async () => {
@@ -1082,6 +1241,7 @@ export default function AdminPage() {
             { id: 'projects', label: `Projects (${projects.length})`, icon: 'terminal' },
             { id: 'certifications', label: `Certifications & Edu (${certifications.length + education.length})`, icon: 'verified' },
             { id: 'cv', label: 'CV Manager', icon: 'description' },
+            { id: 'github', label: 'GitHub Engine', icon: 'hub' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -2164,6 +2324,587 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+
+            {/* GITHUB ENGINE TAB */}
+            {activeTab === 'github' && (
+              <div className="max-w-4xl space-y-8">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 font-bold uppercase tracking-wider">
+                      Developer Program Integration
+                    </span>
+                    <span className="text-xs font-mono text-on-surface-variant">
+                      API Telemetry &amp; Repo Sync
+                    </span>
+                  </div>
+                  <h2 className="font-headline text-xl sm:text-2xl font-bold text-on-surface">
+                    GitHub Engine &amp; Visibility Controls
+                  </h2>
+                  <p className="text-xs text-on-surface-variant">
+                    Manage real-time telemetry, contribution graphs, organization badges, and automatic project synchronization.
+                  </p>
+                </div>
+
+                {/* Status & Quick Action Card */}
+                <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 sm:p-8 space-y-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-lg bg-surface-container-high/50 border border-outline-variant/20">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary text-base">hub</span>
+                        <span className="text-xs font-headline font-bold text-on-surface">
+                          Target Account: @{githubConfig?.username || 'Dashintha-Prabashwara'}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider ${githubConfig?.hasDbToken || githubConfig?.hasEnvToken ? 'bg-secondary/15 text-secondary border border-secondary/30' : 'bg-surface-container-highest text-on-surface-variant'}`}>
+                          {githubConfig?.hasDbToken || githubConfig?.hasEnvToken ? 'Token Active (5,000/hr)' : 'Public Mode (60/hr)'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-on-surface-variant font-mono">
+                        API Rate Limit: {githubConfig?.rateLimit?.remaining ?? 60} / {githubConfig?.rateLimit?.limit ?? 60} remaining
+                        {githubConfig?.lastSyncedAt && ` • Last Synced: ${new Date(githubConfig.lastSyncedAt).toLocaleTimeString()}`}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSyncAllGithub}
+                      disabled={githubSyncing}
+                      className="py-2.5 px-4 rounded bg-gradient-to-r from-primary to-secondary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 flex items-center gap-2 transition-opacity shadow-md disabled:opacity-50"
+                    >
+                      <span className={`material-symbols-outlined text-sm ${githubSyncing ? 'animate-spin' : ''}`}>
+                        sync
+                      </span>
+                      {githubSyncing ? 'Syncing...' : 'Sync All Data & Repos'}
+                    </button>
+                  </div>
+
+                  {/* Settings & Visibility Form */}
+                  <form onSubmit={handleSaveGithubConfig} className="space-y-6 pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1.5">
+                          GitHub Username *
+                        </label>
+                        <input
+                          type="text"
+                          name="username"
+                          defaultValue={githubConfig?.username || 'Dashintha-Prabashwara'}
+                          required
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1.5">
+                          Personal Access Token / App Token (Optional)
+                        </label>
+                        <input
+                          type="password"
+                          name="token"
+                          placeholder={githubConfig?.tokenPreview ? `Configured: ${githubConfig.tokenPreview}` : 'ghp_... or ghs_...'}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-mono"
+                        />
+                        <p className="text-[10px] text-on-surface-variant/70 mt-1">
+                          Grants 5,000 req/hr rate limit. Read-only permissions are 100% safe for your account and organizations.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Visibility Toggles Section */}
+                    <div className="pt-4 border-t border-outline-variant/20 space-y-6">
+                      <div>
+                        <h3 className="font-headline text-sm font-bold uppercase tracking-wider text-on-surface mb-1">
+                          Main Feature Toggles
+                        </h3>
+                        <p className="text-xs text-on-surface-variant mb-3">
+                          Enable or disable major telemetry components across your portfolio.
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <label className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20 cursor-pointer hover:bg-surface-container-high/70 transition-colors">
+                            <div>
+                              <span className="block text-xs font-headline font-bold text-on-surface">
+                                Telemetry Section
+                              </span>
+                              <span className="text-[11px] text-on-surface-variant">
+                                Master on/off toggle
+                              </span>
+                            </div>
+                            <input
+                              type="checkbox"
+                              name="isEnabled"
+                              defaultChecked={githubConfig?.isEnabled !== false}
+                              className="w-4 h-4 accent-primary rounded cursor-pointer"
+                            />
+                          </label>
+
+                          <label className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20 cursor-pointer hover:bg-surface-container-high/70 transition-colors">
+                            <div>
+                              <span className="block text-xs font-headline font-bold text-on-surface">
+                                Contribution Graph
+                              </span>
+                              <span className="text-[11px] text-on-surface-variant">
+                                52-week activity matrix
+                              </span>
+                            </div>
+                            <input
+                              type="checkbox"
+                              name="showContributions"
+                              defaultChecked={githubConfig?.showContributions !== false}
+                              className="w-4 h-4 accent-primary rounded cursor-pointer"
+                            />
+                          </label>
+
+                          <label className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20 cursor-pointer hover:bg-surface-container-high/70 transition-colors">
+                            <div>
+                              <span className="block text-xs font-headline font-bold text-on-surface">
+                                Project Badges
+                              </span>
+                              <span className="text-[11px] text-on-surface-variant">
+                                Stars, forks on project cards
+                              </span>
+                            </div>
+                            <input
+                              type="checkbox"
+                              name="showProjectBadges"
+                              defaultChecked={githubConfig?.showProjectBadges !== false}
+                              className="w-4 h-4 accent-primary rounded cursor-pointer"
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* SUBCOMPONENT: PROFILE HIGHLIGHTS */}
+                      <div className="p-4 rounded-xl bg-surface-container-high/30 border border-outline-variant/20 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-secondary text-base">workspace_premium</span>
+                            <div>
+                              <h4 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
+                                Profile Highlights
+                              </h4>
+                              <p className="text-[11px] text-on-surface-variant">
+                                Official badges (GitHub Pro, Developer Program Member, etc.)
+                              </p>
+                            </div>
+                          </div>
+                          <label className="flex items-center gap-2 text-xs font-mono cursor-pointer">
+                            <span className="text-on-surface-variant">Enable Section:</span>
+                            <input
+                              type="checkbox"
+                              name="showHighlights"
+                              defaultChecked={githubConfig?.showHighlights !== false}
+                              className="w-4 h-4 accent-secondary rounded cursor-pointer"
+                            />
+                          </label>
+                        </div>
+
+                        {githubConfig?.cachedStats?.highlights?.length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-2">
+                            {githubConfig.cachedStats.highlights.map((hl) => {
+                              const isVisible = !hiddenHighlights.includes(hl.title);
+                              return (
+                                <label
+                                  key={hl.title}
+                                  className="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/20 hover:border-secondary/40 cursor-pointer transition-colors"
+                                >
+                                  <div className="flex items-center gap-2 overflow-hidden">
+                                    <span className="material-symbols-outlined text-secondary text-sm">verified</span>
+                                    <span className="text-xs font-headline font-bold text-on-surface truncate">
+                                      {hl.title}
+                                    </span>
+                                    {hl.badge && (
+                                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-secondary/15 text-secondary border border-secondary/25">
+                                        {hl.badge}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <input
+                                    type="checkbox"
+                                    checked={isVisible}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setHiddenHighlights(hiddenHighlights.filter((t) => t !== hl.title));
+                                      } else {
+                                        setHiddenHighlights([...hiddenHighlights, hl.title]);
+                                      }
+                                    }}
+                                    className="w-4 h-4 accent-secondary rounded cursor-pointer shrink-0 ml-2"
+                                  />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-on-surface-variant font-mono">
+                            No highlights detected. Highlights appear when synced from your GitHub profile.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* SUBCOMPONENT: EARNED ACHIEVEMENTS */}
+                      <div className="p-4 rounded-xl bg-surface-container-high/30 border border-outline-variant/20 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-tertiary text-base">military_tech</span>
+                            <div>
+                              <h4 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
+                                Earned Achievements
+                              </h4>
+                              <p className="text-[11px] text-on-surface-variant">
+                                Verified achievement badges with tiers (Pull Shark, Pair Extraordinaire, etc.)
+                              </p>
+                            </div>
+                          </div>
+                          <label className="flex items-center gap-2 text-xs font-mono cursor-pointer">
+                            <span className="text-on-surface-variant">Enable Section:</span>
+                            <input
+                              type="checkbox"
+                              name="showAchievements"
+                              defaultChecked={githubConfig?.showAchievements !== false}
+                              className="w-4 h-4 accent-primary rounded cursor-pointer"
+                            />
+                          </label>
+                        </div>
+
+                        {githubConfig?.cachedStats?.achievements?.length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-2">
+                            {githubConfig.cachedStats.achievements.map((ach) => {
+                              const isVisible = !hiddenAchievements.includes(ach.title);
+                              return (
+                                <label
+                                  key={ach.title}
+                                  className="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/20 hover:border-tertiary/40 cursor-pointer transition-colors"
+                                >
+                                  <div className="flex items-center gap-2 overflow-hidden">
+                                    <img
+                                      src={ach.iconUrl}
+                                      alt={ach.title}
+                                      className="w-7 h-7 object-contain shrink-0"
+                                    />
+                                    <div className="overflow-hidden">
+                                      <span className="text-xs font-headline font-bold text-on-surface truncate block">
+                                        {ach.title}
+                                      </span>
+                                      {ach.tier && (
+                                        <span className="text-[9px] font-mono text-tertiary font-bold">
+                                          {ach.tier}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <input
+                                    type="checkbox"
+                                    checked={isVisible}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setHiddenAchievements(hiddenAchievements.filter((t) => t !== ach.title));
+                                      } else {
+                                        setHiddenAchievements([...hiddenAchievements, ach.title]);
+                                      }
+                                    }}
+                                    className="w-4 h-4 accent-primary rounded cursor-pointer shrink-0 ml-2"
+                                  />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-on-surface-variant font-mono">
+                            No achievements detected. Click &ldquo;Sync All Data &amp; Repos&rdquo; above to fetch from GitHub.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* SUBCOMPONENT: ORGANIZATIONS */}
+                      <div className="p-4 rounded-xl bg-surface-container-high/30 border border-outline-variant/20 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary text-base">domain</span>
+                            <div>
+                              <h4 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
+                                Organizations
+                              </h4>
+                              <p className="text-[11px] text-on-surface-variant">
+                                Public and private organization memberships
+                              </p>
+                            </div>
+                          </div>
+                          <label className="flex items-center gap-2 text-xs font-mono cursor-pointer">
+                            <span className="text-on-surface-variant">Enable Section:</span>
+                            <input
+                              type="checkbox"
+                              name="showOrganizations"
+                              defaultChecked={githubConfig?.showOrganizations !== false}
+                              className="w-4 h-4 accent-primary rounded cursor-pointer"
+                            />
+                          </label>
+                        </div>
+
+                        {githubConfig?.cachedStats?.organizations?.length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-2">
+                            {githubConfig.cachedStats.organizations.map((org) => {
+                              const key = org.login || org.name;
+                              const isVisible = !hiddenOrganizations.includes(key);
+                              return (
+                                <label
+                                  key={key}
+                                  className="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/20 hover:border-primary/40 cursor-pointer transition-colors"
+                                >
+                                  <div className="flex items-center gap-2 overflow-hidden">
+                                    <img
+                                      src={org.avatarUrl}
+                                      alt={org.name}
+                                      className="w-7 h-7 rounded object-cover border border-outline-variant/20 shrink-0"
+                                    />
+                                    <span className="text-xs font-headline font-bold text-on-surface truncate">
+                                      {org.name}
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="checkbox"
+                                    checked={isVisible}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setHiddenOrganizations(hiddenOrganizations.filter((t) => t !== key));
+                                      } else {
+                                        setHiddenOrganizations([...hiddenOrganizations, key]);
+                                      }
+                                    }}
+                                    className="w-4 h-4 accent-primary rounded cursor-pointer shrink-0 ml-2"
+                                  />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-on-surface-variant font-mono">
+                            No organizations detected. Token authentication loads both public &amp; private memberships.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* SUBCOMPONENT: TECHNOLOGIES & LANGUAGES */}
+                      <div className="p-4 rounded-xl bg-surface-container-high/30 border border-outline-variant/20 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-secondary text-base">code</span>
+                            <div>
+                              <h4 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
+                                Technologies &amp; Languages
+                              </h4>
+                              <p className="text-[11px] text-on-surface-variant">
+                                Calculated across all your public and private repositories
+                              </p>
+                            </div>
+                          </div>
+                          <label className="flex items-center gap-2 text-xs font-mono cursor-pointer">
+                            <span className="text-on-surface-variant">Enable Section:</span>
+                            <input
+                              type="checkbox"
+                              name="showLanguageStats"
+                              defaultChecked={githubConfig?.showLanguageStats !== false}
+                              className="w-4 h-4 accent-secondary rounded cursor-pointer"
+                            />
+                          </label>
+                        </div>
+
+                        {githubConfig?.cachedStats?.languages?.length > 0 ? (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 pt-2">
+                            {githubConfig.cachedStats.languages.map((lang) => {
+                              const isVisible = !hiddenLanguages.includes(lang.name);
+                              return (
+                                <label
+                                  key={lang.name}
+                                  className="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/20 hover:border-secondary/40 cursor-pointer transition-colors"
+                                >
+                                  <div className="flex items-center gap-1.5 overflow-hidden">
+                                    <span className="w-2 h-2 rounded-full bg-secondary shrink-0"></span>
+                                    <span className="text-xs font-mono font-medium text-on-surface truncate">
+                                      {lang.name}
+                                    </span>
+                                    <span className="text-[10px] text-on-surface-variant font-mono">
+                                      ({lang.percentage}%)
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="checkbox"
+                                    checked={isVisible}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setHiddenLanguages(hiddenLanguages.filter((t) => t !== lang.name));
+                                      } else {
+                                        setHiddenLanguages([...hiddenLanguages, lang.name]);
+                                      }
+                                    }}
+                                    className="w-4 h-4 accent-secondary rounded cursor-pointer shrink-0 ml-1.5"
+                                  />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-on-surface-variant font-mono">
+                            Languages calculated across active repositories when synced.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* SUBCOMPONENT: CONTRIBUTED REPOSITORIES & REPO SCOPE */}
+                      <div className="p-4 rounded-xl bg-surface-container-high/30 border border-outline-variant/20 space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-primary text-base">source_environment</span>
+                          <div>
+                            <h4 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
+                              Contributed Projects &amp; Telemetry Scope
+                            </h4>
+                            <p className="text-[11px] text-on-surface-variant">
+                              Total stars, forks, and language analysis strictly include personal repositories plus repositories where you actively committed or submitted pull requests.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* DISCOVERED CONTRIBUTED REPOSITORIES */}
+                        {githubConfig?.cachedStats?.contributedRepos?.length > 0 ? (
+                          <div className="space-y-2 pt-1">
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant block font-bold">
+                              Discovered Contributed Repositories (Commits / Pull Requests):
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              {githubConfig.cachedStats.contributedRepos.map((repo) => {
+                                const fullName = repo.fullName || repo.name;
+                                const isIncluded = !excludedContributedRepos.includes(fullName);
+                                return (
+                                  <div
+                                    key={fullName}
+                                    className={`p-2.5 rounded-lg border transition-all ${
+                                      isIncluded
+                                        ? 'bg-surface-container-low border-outline-variant/30'
+                                        : 'bg-surface-container-lowest/40 border-outline-variant/10 opacity-60'
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="overflow-hidden">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="material-symbols-outlined text-xs text-primary">folder_open</span>
+                                          <a
+                                            href={repo.url || `https://github.com/${fullName}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs font-mono font-bold text-on-surface hover:text-primary truncate block"
+                                          >
+                                            {fullName}
+                                          </a>
+                                        </div>
+                                        <div className="flex items-center gap-3 mt-1.5 text-[10px] font-mono text-on-surface-variant">
+                                          {repo.primaryLanguage && (
+                                            <span className="px-1.5 py-0.5 rounded bg-secondary/10 text-secondary border border-secondary/20 font-bold">
+                                              {repo.primaryLanguage}
+                                            </span>
+                                          )}
+                                          <span className="flex items-center gap-0.5">
+                                            <span className="material-symbols-outlined text-[11px]">star</span>
+                                            {repo.stars || 0}
+                                          </span>
+                                          <span className="flex items-center gap-0.5">
+                                            <span className="material-symbols-outlined text-[11px]">call_split</span>
+                                            {repo.forks || 0}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <label className="flex items-center gap-1.5 text-[10px] font-mono cursor-pointer shrink-0">
+                                        <input
+                                          type="checkbox"
+                                          checked={isIncluded}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              setExcludedContributedRepos(excludedContributedRepos.filter((r) => r !== fullName));
+                                            } else {
+                                              setExcludedContributedRepos([...excludedContributedRepos, fullName]);
+                                            }
+                                          }}
+                                          className="w-4 h-4 accent-primary rounded cursor-pointer"
+                                        />
+                                        <span className={isIncluded ? 'text-primary font-bold' : 'text-on-surface-variant'}>
+                                          {isIncluded ? 'Included' : 'Excluded'}
+                                        </span>
+                                      </label>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-on-surface-variant font-mono">
+                            Contributed repositories will populate when you click &ldquo;Sync All Data &amp; Repos&rdquo;.
+                          </p>
+                        )}
+
+                        {/* CUSTOM CONTRIBUTED REPOSITORIES INPUT */}
+                        <div className="pt-2 border-t border-outline-variant/15 space-y-2">
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-on-surface-variant font-bold">
+                            Add Additional Contributed Repository (e.g. outside organizations):
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={customRepoInput}
+                              onChange={(e) => setCustomRepoInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleAddCustomRepo();
+                                }
+                              }}
+                              placeholder="owner/repo (e.g. dilshanmolligoda/SwiftDrop)"
+                              className="flex-1 bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3 py-2 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAddCustomRepo}
+                              className="px-3.5 py-2 rounded-lg bg-surface-container-highest hover:bg-primary/10 text-on-surface hover:text-primary border border-outline-variant/30 text-xs font-headline font-bold uppercase tracking-wider flex items-center gap-1 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-sm">add</span>
+                              Add Repo
+                            </button>
+                          </div>
+
+                          {customContributedRepos.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {customContributedRepos.map((handle) => (
+                                <span
+                                  key={handle}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container-high border border-outline-variant/30 text-xs font-mono text-on-surface"
+                                >
+                                  <span className="material-symbols-outlined text-xs text-primary">bookmark</span>
+                                  {handle}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveCustomRepo(handle)}
+                                    className="text-on-surface-variant hover:text-error transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-xs">close</span>
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3">
+                      <button
+                        type="submit"
+                        disabled={savingGithubConfig}
+                        className="py-3 px-6 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity shadow-md disabled:opacity-50"
+                      >
+                        {savingGithubConfig ? 'Saving Settings...' : 'Save GitHub Configuration'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -2354,7 +3095,8 @@ export default function AdminPage() {
                         <input
                           type="text"
                           name="title"
-                          defaultValue={editingItem?.title || ''}
+                          value={modalTitle}
+                          onChange={(e) => setModalTitle(e.target.value)}
                           required
                           className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                         />
@@ -2386,7 +3128,8 @@ export default function AdminPage() {
                       <textarea
                         name="description"
                         rows={3}
-                        defaultValue={editingItem?.description || ''}
+                        value={modalDescription}
+                        onChange={(e) => setModalDescription(e.target.value)}
                         placeholder="Role summary, accomplishments, and tech details..."
                         className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                       />
@@ -2399,7 +3142,8 @@ export default function AdminPage() {
                       <input
                         type="text"
                         name="technologies"
-                        defaultValue={editingItem?.technologies?.join(', ') || ''}
+                        value={modalTechnologies}
+                        onChange={(e) => setModalTechnologies(e.target.value)}
                         placeholder="Next.js, Node.js, Docker, MongoDB"
                         className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                       />
@@ -2407,13 +3151,27 @@ export default function AdminPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                          GitHub URL
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                            GitHub URL
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleAutofillFromGithub}
+                            disabled={autofillingRepo}
+                            className="text-[10px] text-primary hover:underline font-mono font-bold flex items-center gap-1"
+                          >
+                            <span className={`material-symbols-outlined text-xs ${autofillingRepo ? 'animate-spin' : ''}`}>
+                              sync
+                            </span>
+                            {autofillingRepo ? 'Autofilling...' : 'Autofill from GitHub'}
+                          </button>
+                        </div>
                         <input
                           type="text"
                           name="githubUrl"
-                          defaultValue={editingItem?.githubUrl || ''}
+                          value={modalGithubUrl}
+                          onChange={(e) => setModalGithubUrl(e.target.value)}
                           placeholder="https://github.com/..."
                           className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                         />
