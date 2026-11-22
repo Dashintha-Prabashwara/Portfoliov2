@@ -2,19 +2,26 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { getProjectsDb } from '@/lib/dbData';
+import GithubTelemetry from '@/components/GithubTelemetry';
+import { getProjectsDb, getGithubConfigDb } from '@/lib/dbData';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function ProjectsPage() {
   let projects = [];
+  let githubConfig = null;
 
   try {
-    projects = await getProjectsDb();
+    const [fetchedProjects, fetchedGithubConfig] = await Promise.all([
+      getProjectsDb(),
+      getGithubConfigDb(),
+    ]);
+    projects = fetchedProjects;
+    githubConfig = fetchedGithubConfig;
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error fetching projects:', error);
+      console.error('Error fetching projects data:', error);
     }
   }
 
@@ -23,7 +30,10 @@ export default async function ProjectsPage() {
       <Navigation />
       <main className="pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <HeroSection />
-        <ProjectsGrid projects={projects} />
+        <ProjectsGrid projects={projects} showProjectBadges={githubConfig?.showProjectBadges !== false} />
+        {githubConfig?.isEnabled !== false && (
+          <GithubTelemetry initialConfig={githubConfig} initialData={githubConfig?.cachedStats} />
+        )}
         <ContactCTASection />
       </main>
       <Footer />
@@ -50,7 +60,7 @@ function HeroSection() {
 }
 
 // ========== PROJECTS GRID SECTION ==========
-function ProjectsGrid({ projects }) {
+function ProjectsGrid({ projects, showProjectBadges = true }) {
   if (projects.length === 0) {
     return (
       <div className="border border-dashed border-outline-variant/30 rounded-xl px-6 py-12 text-center">
@@ -63,14 +73,19 @@ function ProjectsGrid({ projects }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12">
       {projects.map((project) => (
-        <ProjectCard key={project.id} project={project} />
+        <ProjectCard key={project.id} project={project} showProjectBadges={showProjectBadges} />
       ))}
     </div>
   );
 }
 
 // ========== PROJECT CARD COMPONENT ==========
-function ProjectCard({ project }) {
+function ProjectCard({ project, showProjectBadges = true }) {
+  const hasGithubStats =
+    showProjectBadges &&
+    project.githubUrl &&
+    (project.githubStars !== undefined || project.githubForks !== undefined || project.githubLanguage);
+
   return (
     <div className="group relative flex flex-col bg-surface-container-low rounded-xl overflow-hidden transition-all duration-500 hover:translate-y-[-4px]">
       {/* Image Section */}
@@ -103,6 +118,30 @@ function ProjectCard({ project }) {
             </span>
           )}
         </div>
+
+        {/* Live GitHub Repository Metrics Pill */}
+        {hasGithubStats && (
+          <div className="flex flex-wrap items-center gap-3 py-1.5 px-3 rounded-lg bg-surface-container-high/60 border border-outline-variant/30 mb-3 text-[11px] font-mono text-on-surface-variant">
+            <span className="inline-flex items-center gap-1 text-primary">
+              <span className="material-symbols-outlined text-[13px]">terminal</span>
+              Repo Sync
+            </span>
+            {project.githubLanguage && (
+              <span className="inline-flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                {project.githubLanguage}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1">
+              <span className="material-symbols-outlined text-[13px] text-secondary">star</span>
+              {project.githubStars || 0} stars
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="material-symbols-outlined text-[13px] text-tertiary">call_split</span>
+              {project.githubForks || 0} forks
+            </span>
+          </div>
+        )}
 
         {/* Description */}
         {project.description && (

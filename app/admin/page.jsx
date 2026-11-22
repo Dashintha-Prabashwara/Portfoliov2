@@ -109,9 +109,19 @@ export default function AdminPage() {
   // Project Live Preview / Cover helper states in modal
   const [modalCoverImage, setModalCoverImage] = useState('');
   const [modalLiveUrl, setModalLiveUrl] = useState('');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalDescription, setModalDescription] = useState('');
+  const [modalTechnologies, setModalTechnologies] = useState('');
+  const [modalGithubUrl, setModalGithubUrl] = useState('');
+  const [autofillingRepo, setAutofillingRepo] = useState(false);
   const [fetchingPreview, setFetchingPreview] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const bannerFileInputRef = useRef(null);
+
+  // GitHub Engine state
+  const [githubConfig, setGithubConfig] = useState(null);
+  const [githubSyncing, setGithubSyncing] = useState(false);
+  const [savingGithubConfig, setSavingGithubConfig] = useState(false);
 
   // Certification icon chooser state
   const [selectedCertIcon, setSelectedCertIcon] = useState('verified');
@@ -129,12 +139,13 @@ export default function AdminPage() {
   const fetchAllData = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [expRes, projRes, certRes, eduRes, cvRes] = await Promise.all([
+      const [expRes, projRes, certRes, eduRes, cvRes, ghRes] = await Promise.all([
         fetch('/api/admin/experiences'),
         fetch('/api/admin/projects'),
         fetch('/api/admin/certifications'),
         fetch('/api/admin/education'),
         fetch('/api/admin/cv'),
+        fetch('/api/admin/github'),
       ]);
 
       if (expRes.status === 401) {
@@ -142,12 +153,13 @@ export default function AdminPage() {
         return;
       }
 
-      const [expData, projData, certData, eduData, cvResp] = await Promise.all([
+      const [expData, projData, certData, eduData, cvResp, ghResp] = await Promise.all([
         expRes.json(),
         projRes.json(),
         certRes.json(),
         eduRes.json(),
         cvRes.json(),
+        ghRes.json(),
       ]);
 
       setExperiences(applyVisibleColorCycle(expData.data || [], 'experience'));
@@ -155,6 +167,9 @@ export default function AdminPage() {
       setCertifications(applyVisibleColorCycle(certData.data || [], 'certification'));
       setEducation(applyVisibleColorCycle(eduData.data || [], 'education'));
       setCvData(cvResp.data || null);
+      if (ghResp?.data) {
+        setGithubConfig(ghResp.data);
+      }
 
       setDbStatus({
         connected: !expData.error && !projData.error,
@@ -338,6 +353,10 @@ export default function AdminPage() {
     setModalIsVisible(item ? item.isVisible !== false : true); // Default is visible
     setModalCoverImage(item?.image || '');
     setModalLiveUrl(item?.liveUrl || '');
+    setModalTitle(item?.title || '');
+    setModalDescription(item?.description || '');
+    setModalTechnologies(item?.technologies?.join(', ') || '');
+    setModalGithubUrl(item?.githubUrl || '');
     setSelectedCertIcon(item?.icon || 'verified');
     setModalOpen(true);
   };
@@ -348,7 +367,104 @@ export default function AdminPage() {
     setModalType(null);
     setModalCoverImage('');
     setModalLiveUrl('');
+    setModalTitle('');
+    setModalDescription('');
+    setModalTechnologies('');
+    setModalGithubUrl('');
     setSelectedCertIcon('verified');
+  };
+
+  const handleAutofillFromGithub = async () => {
+    if (!modalGithubUrl || !modalGithubUrl.trim()) {
+      showToast('Please enter a GitHub URL first', 'error');
+      return;
+    }
+    setAutofillingRepo(true);
+    try {
+      const res = await fetch(`/api/admin/github/fetch-repo?url=${encodeURIComponent(modalGithubUrl.trim())}`);
+      const data = await res.json();
+      if (res.ok && data.success && data.data) {
+        const repo = data.data;
+        if (!modalTitle || modalTitle.trim() === '') {
+          setModalTitle(repo.title || '');
+        }
+        if (repo.description) {
+          setModalDescription(repo.description);
+        }
+        if (Array.isArray(repo.technologies) && repo.technologies.length > 0) {
+          setModalTechnologies(repo.technologies.join(', '));
+        }
+        if (repo.liveUrl && !modalLiveUrl) {
+          setModalLiveUrl(repo.liveUrl);
+        }
+        showToast('Repository details autofilled from GitHub!');
+      } else {
+        showToast(data.error || 'Failed to fetch repository details', 'error');
+      }
+    } catch (err) {
+      console.error('Autofill error:', err);
+      showToast('Error connecting to GitHub API', 'error');
+    } finally {
+      setAutofillingRepo(false);
+    }
+  };
+
+  const handleSyncAllGithub = async () => {
+    setGithubSyncing(true);
+    try {
+      const res = await fetch('/api/admin/github/sync', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(data.message || 'GitHub telemetry & repos synced!');
+        fetchAllData();
+      } else {
+        showToast(data.error || 'Failed to sync with GitHub', 'error');
+      }
+    } catch (err) {
+      console.error('GitHub sync error:', err);
+      showToast('Error connecting to GitHub sync API', 'error');
+    } finally {
+      setGithubSyncing(false);
+    }
+  };
+
+  const handleSaveGithubConfig = async (e) => {
+    e.preventDefault();
+    setSavingGithubConfig(true);
+    const formData = new FormData(e.target);
+    const payload = {
+      username: formData.get('username'),
+      isEnabled: formData.get('isEnabled') === 'on',
+      showContributions: formData.get('showContributions') === 'on',
+      showAchievements: formData.get('showAchievements') === 'on',
+      showOrganizations: formData.get('showOrganizations') === 'on',
+      showLanguageStats: formData.get('showLanguageStats') === 'on',
+      showProjectBadges: formData.get('showProjectBadges') === 'on',
+    };
+    const token = formData.get('token');
+    if (token && token.trim()) {
+      payload.token = token.trim();
+    }
+
+    try {
+      const res = await fetch('/api/admin/github', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setGithubConfig(data.data);
+        showToast('GitHub configuration saved successfully!');
+      } else {
+        showToast(data.error || 'Failed to save GitHub settings', 'error');
+      }
+    } catch (err) {
+      console.error('Save GitHub config error:', err);
+      showToast('Error saving GitHub configuration', 'error');
+    } finally {
+      setSavingGithubConfig(false);
+    }
   };
 
   const handleFetchLivePreview = async () => {
@@ -1082,6 +1198,7 @@ export default function AdminPage() {
             { id: 'projects', label: `Projects (${projects.length})`, icon: 'terminal' },
             { id: 'certifications', label: `Certifications & Edu (${certifications.length + education.length})`, icon: 'verified' },
             { id: 'cv', label: 'CV Manager', icon: 'description' },
+            { id: 'github', label: 'GitHub Engine', icon: 'hub' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -2164,6 +2281,214 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+
+            {/* GITHUB ENGINE TAB */}
+            {activeTab === 'github' && (
+              <div className="max-w-4xl space-y-8">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 font-bold uppercase tracking-wider">
+                      Developer Program Integration
+                    </span>
+                    <span className="text-xs font-mono text-on-surface-variant">
+                      API Telemetry &amp; Repo Sync
+                    </span>
+                  </div>
+                  <h2 className="font-headline text-xl sm:text-2xl font-bold text-on-surface">
+                    GitHub Engine &amp; Visibility Controls
+                  </h2>
+                  <p className="text-xs text-on-surface-variant">
+                    Manage real-time telemetry, contribution graphs, organization badges, and automatic project synchronization.
+                  </p>
+                </div>
+
+                {/* Status & Quick Action Card */}
+                <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 sm:p-8 space-y-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-lg bg-surface-container-high/50 border border-outline-variant/20">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary text-base">hub</span>
+                        <span className="text-xs font-headline font-bold text-on-surface">
+                          Target Account: @{githubConfig?.username || 'Dashintha-Prabashwara'}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider ${githubConfig?.hasDbToken || githubConfig?.hasEnvToken ? 'bg-secondary/15 text-secondary border border-secondary/30' : 'bg-surface-container-highest text-on-surface-variant'}`}>
+                          {githubConfig?.hasDbToken || githubConfig?.hasEnvToken ? 'Token Active (5,000/hr)' : 'Public Mode (60/hr)'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-on-surface-variant font-mono">
+                        API Rate Limit: {githubConfig?.rateLimit?.remaining ?? 60} / {githubConfig?.rateLimit?.limit ?? 60} remaining
+                        {githubConfig?.lastSyncedAt && ` • Last Synced: ${new Date(githubConfig.lastSyncedAt).toLocaleTimeString()}`}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSyncAllGithub}
+                      disabled={githubSyncing}
+                      className="py-2.5 px-4 rounded bg-gradient-to-r from-primary to-secondary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 flex items-center gap-2 transition-opacity shadow-md disabled:opacity-50"
+                    >
+                      <span className={`material-symbols-outlined text-sm ${githubSyncing ? 'animate-spin' : ''}`}>
+                        sync
+                      </span>
+                      {githubSyncing ? 'Syncing...' : 'Sync All Data & Repos'}
+                    </button>
+                  </div>
+
+                  {/* Settings & Visibility Form */}
+                  <form onSubmit={handleSaveGithubConfig} className="space-y-6 pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1.5">
+                          GitHub Username *
+                        </label>
+                        <input
+                          type="text"
+                          name="username"
+                          defaultValue={githubConfig?.username || 'Dashintha-Prabashwara'}
+                          required
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1.5">
+                          Personal Access Token / App Token (Optional)
+                        </label>
+                        <input
+                          type="password"
+                          name="token"
+                          placeholder={githubConfig?.tokenPreview ? `Configured: ${githubConfig.tokenPreview}` : 'ghp_... or ghs_...'}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-4 py-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-mono"
+                        />
+                        <p className="text-[10px] text-on-surface-variant/70 mt-1">
+                          Grants 5,000 req/hr rate limit. Read-only permissions are 100% safe for your account and organizations.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Visibility Toggles Section */}
+                    <div className="pt-4 border-t border-outline-variant/20">
+                      <h3 className="font-headline text-sm font-bold uppercase tracking-wider text-on-surface mb-3">
+                        Feature Visibility Toggles
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20 cursor-pointer hover:bg-surface-container-high/70 transition-colors">
+                          <div>
+                            <span className="block text-xs font-headline font-bold text-on-surface">
+                              Telemetry Section
+                            </span>
+                            <span className="text-[11px] text-on-surface-variant">
+                              Display GitHub telemetry on portfolio
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            name="isEnabled"
+                            defaultChecked={githubConfig?.isEnabled !== false}
+                            className="w-4 h-4 accent-primary rounded cursor-pointer"
+                          />
+                        </label>
+
+                        <label className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20 cursor-pointer hover:bg-surface-container-high/70 transition-colors">
+                          <div>
+                            <span className="block text-xs font-headline font-bold text-on-surface">
+                              Contribution Activity Graph
+                            </span>
+                            <span className="text-[11px] text-on-surface-variant">
+                              Display annual commit activity matrix
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            name="showContributions"
+                            defaultChecked={githubConfig?.showContributions !== false}
+                            className="w-4 h-4 accent-primary rounded cursor-pointer"
+                          />
+                        </label>
+
+                        <label className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20 cursor-pointer hover:bg-surface-container-high/70 transition-colors">
+                          <div>
+                            <span className="block text-xs font-headline font-bold text-on-surface">
+                              Earned Achievements
+                            </span>
+                            <span className="text-[11px] text-on-surface-variant">
+                              Display verified GitHub achievement badges
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            name="showAchievements"
+                            defaultChecked={githubConfig?.showAchievements !== false}
+                            className="w-4 h-4 accent-primary rounded cursor-pointer"
+                          />
+                        </label>
+
+                        <label className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20 cursor-pointer hover:bg-surface-container-high/70 transition-colors">
+                          <div>
+                            <span className="block text-xs font-headline font-bold text-on-surface">
+                              Organizations
+                            </span>
+                            <span className="text-[11px] text-on-surface-variant">
+                              Show public organization memberships
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            name="showOrganizations"
+                            defaultChecked={githubConfig?.showOrganizations !== false}
+                            className="w-4 h-4 accent-primary rounded cursor-pointer"
+                          />
+                        </label>
+
+                        <label className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20 cursor-pointer hover:bg-surface-container-high/70 transition-colors">
+                          <div>
+                            <span className="block text-xs font-headline font-bold text-on-surface">
+                              Language Distribution
+                            </span>
+                            <span className="text-[11px] text-on-surface-variant">
+                              Show top programming languages bar
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            name="showLanguageStats"
+                            defaultChecked={githubConfig?.showLanguageStats !== false}
+                            className="w-4 h-4 accent-primary rounded cursor-pointer"
+                          />
+                        </label>
+
+                        <label className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20 cursor-pointer hover:bg-surface-container-high/70 transition-colors">
+                          <div>
+                            <span className="block text-xs font-headline font-bold text-on-surface">
+                              Project Showcase Badges
+                            </span>
+                            <span className="text-[11px] text-on-surface-variant">
+                              Show live stars, forks on project cards
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            name="showProjectBadges"
+                            defaultChecked={githubConfig?.showProjectBadges !== false}
+                            className="w-4 h-4 accent-primary rounded cursor-pointer"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="pt-3">
+                      <button
+                        type="submit"
+                        disabled={savingGithubConfig}
+                        className="py-3 px-6 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity shadow-md disabled:opacity-50"
+                      >
+                        {savingGithubConfig ? 'Saving Settings...' : 'Save GitHub Configuration'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -2354,7 +2679,8 @@ export default function AdminPage() {
                         <input
                           type="text"
                           name="title"
-                          defaultValue={editingItem?.title || ''}
+                          value={modalTitle}
+                          onChange={(e) => setModalTitle(e.target.value)}
                           required
                           className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                         />
@@ -2386,7 +2712,8 @@ export default function AdminPage() {
                       <textarea
                         name="description"
                         rows={3}
-                        defaultValue={editingItem?.description || ''}
+                        value={modalDescription}
+                        onChange={(e) => setModalDescription(e.target.value)}
                         placeholder="Role summary, accomplishments, and tech details..."
                         className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                       />
@@ -2399,7 +2726,8 @@ export default function AdminPage() {
                       <input
                         type="text"
                         name="technologies"
-                        defaultValue={editingItem?.technologies?.join(', ') || ''}
+                        value={modalTechnologies}
+                        onChange={(e) => setModalTechnologies(e.target.value)}
                         placeholder="Next.js, Node.js, Docker, MongoDB"
                         className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                       />
@@ -2407,13 +2735,27 @@ export default function AdminPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                          GitHub URL
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                            GitHub URL
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleAutofillFromGithub}
+                            disabled={autofillingRepo}
+                            className="text-[10px] text-primary hover:underline font-mono font-bold flex items-center gap-1"
+                          >
+                            <span className={`material-symbols-outlined text-xs ${autofillingRepo ? 'animate-spin' : ''}`}>
+                              sync
+                            </span>
+                            {autofillingRepo ? 'Autofilling...' : 'Autofill from GitHub'}
+                          </button>
+                        </div>
                         <input
                           type="text"
                           name="githubUrl"
-                          defaultValue={editingItem?.githubUrl || ''}
+                          value={modalGithubUrl}
+                          onChange={(e) => setModalGithubUrl(e.target.value)}
                           placeholder="https://github.com/..."
                           className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                         />
