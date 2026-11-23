@@ -2512,11 +2512,6 @@ export default function AdminPage() {
                                     <span className="text-xs font-headline font-bold text-on-surface truncate">
                                       {hl.title}
                                     </span>
-                                    {hl.badge && (
-                                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-secondary/15 text-secondary border border-secondary/25">
-                                        {hl.badge}
-                                      </span>
-                                    )}
                                   </div>
                                   <input
                                     type="checkbox"

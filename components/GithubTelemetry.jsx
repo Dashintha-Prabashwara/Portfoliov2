@@ -301,13 +301,8 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
                           <span className="material-symbols-outlined text-base">verified</span>
                         </div>
                         <div className="overflow-hidden">
-                          <div className="font-headline text-xs font-bold text-on-surface flex items-center gap-1.5">
-                            <span>{hl.title}</span>
-                            {hl.badge && (
-                              <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-secondary/15 text-secondary border border-secondary/30">
-                                {hl.badge}
-                              </span>
-                            )}
+                          <div className="font-headline text-xs font-bold text-on-surface">
+                            {hl.title}
                           </div>
                           <p className="text-[10px] text-on-surface-variant font-mono line-clamp-1 mt-0.5">
                             {hl.description}
