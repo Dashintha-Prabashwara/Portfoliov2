@@ -219,8 +219,16 @@ function ContactCTASection() {
           </Link>
         </div>
         <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 shrink-0 flex items-center justify-center">
-          <div className="w-full h-full border border-outline-variant/30 rounded-full flex items-center justify-center relative z-10 bg-[radial-gradient(circle_at_center,rgba(217,84,30,0.18)_0%,rgba(217,84,30,0.06)_45%,transparent_72%)]">
-            <span className="material-symbols-outlined text-6xl sm:text-8xl text-primary/70 drop-shadow-[0_0_20px_rgba(217,84,30,0.35)]">
+          <div className="w-full h-full border border-outline-variant/30 rounded-full flex items-center justify-center relative z-10 overflow-hidden">
+            {/* Animated spreading radial glow emanating from center */}
+            <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_center,rgba(217,84,30,0.32)_0%,rgba(217,84,30,0.12)_45%,transparent_75%)] animate-spread-glow pointer-events-none" />
+            
+            {/* Concentric spreading ripple rings */}
+            <div className="absolute inset-2 rounded-full border border-primary/25 animate-ripple-ring pointer-events-none" />
+            <div className="absolute inset-2 rounded-full border border-primary/20 animate-ripple-ring pointer-events-none [animation-delay:1.75s]" />
+
+            {/* Center cloud_done icon with warm aura */}
+            <span className="material-symbols-outlined text-6xl sm:text-8xl text-primary drop-shadow-[0_0_24px_rgba(217,84,30,0.5)] relative z-20 transition-transform duration-500 hover:scale-110">
               cloud_done
             </span>
           </div>

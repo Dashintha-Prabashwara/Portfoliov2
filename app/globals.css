@@ -131,6 +131,44 @@
     animation: radarPing 4s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 
+  .animate-spread-glow {
+    animation: spreadRadialGlow 3.5s ease-in-out infinite;
+  }
+
+  .animate-ripple-ring {
+    animation: rippleRing 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+  }
+
+  @keyframes spreadRadialGlow {
+    0% {
+      opacity: 0.35;
+      transform: scale(0.65);
+    }
+    50% {
+      opacity: 0.85;
+      transform: scale(1.05);
+    }
+    100% {
+      opacity: 0.35;
+      transform: scale(0.65);
+    }
+  }
+
+  @keyframes rippleRing {
+    0% {
+      transform: scale(0.35);
+      opacity: 0.7;
+    }
+    60% {
+      transform: scale(0.95);
+      opacity: 0.25;
+    }
+    100% {
+      transform: scale(1.05);
+      opacity: 0;
+    }
+  }
+
   @keyframes orbitSpinClockwise {
     from {
       transform: rotate(0deg);
@@ -203,7 +241,9 @@
     .animate-orbit-slow,
     .animate-pulse-glow,
     .animate-float-gentle,
-    .animate-radar-ping {
+    .animate-radar-ping,
+    .animate-spread-glow,
+    .animate-ripple-ring {
       animation: none;
     }
   }
