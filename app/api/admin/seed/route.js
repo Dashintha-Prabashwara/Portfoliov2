@@ -4,6 +4,7 @@ import Experience from '@/models/Experience';
 import Project from '@/models/Project';
 import Education from '@/models/Education';
 import Certification from '@/models/Certification';
+import BlogPost from '@/models/BlogPost';
 import Cv from '@/models/Cv';
 import { checkAdminAuth } from '@/lib/adminAuth';
 import seedData from '@/lib/seedData.json';
@@ -27,6 +28,7 @@ export async function POST(request) {
         Project.deleteMany({}),
         Education.deleteMany({}),
         Certification.deleteMany({}),
+        BlogPost.deleteMany({}),
         Cv.deleteMany({}),
       ]);
     }
@@ -36,6 +38,7 @@ export async function POST(request) {
       projects: 0,
       education: 0,
       certifications: 0,
+      blogs: 0,
       cv: 0,
     };
 
@@ -101,6 +104,25 @@ export async function POST(request) {
       }));
       const res = await Certification.insertMany(certDocs);
       seededCounts.certifications = res.length;
+    }
+
+    if (seedData.blogs?.length) {
+      const blogDocs = seedData.blogs.map((item, idx) => ({
+        title: item.title,
+        slug: item.slug || item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+        excerpt: item.excerpt,
+        content: item.content || item.excerpt,
+        category: item.category || 'DevOps & CI/CD',
+        tags: item.tags || [],
+        readTime: item.readTime || '5 min read',
+        author: item.author || 'Dashintha Jayawardana',
+        color: item.color || 'primary',
+        order: idx + 1,
+        isVisible: item.isVisible !== false,
+        publishedAt: item.publishedAt ? new Date(item.publishedAt) : new Date(),
+      }));
+      const res = await BlogPost.insertMany(blogDocs);
+      seededCounts.blogs = res.length;
     }
 
     let initialBuffer = null;

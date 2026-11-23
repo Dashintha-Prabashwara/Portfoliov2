@@ -11,13 +11,8 @@ const NAV_LINKS = [
   { href: '/experience', label: 'Experience', id: 'experience' },
   { href: '/projects', label: 'Projects', id: 'projects' },
   { href: '/github', label: 'GitHub', id: 'github' },
+  { href: '/blog', label: 'Blog', id: 'blog' },
   { href: '/certifications', label: 'Certifications', id: 'certifications' },
-  {
-    href: process.env.NEXT_PUBLIC_BLOG_URL || 'https://blog.dashijay.dev',
-    label: 'Blog',
-    id: 'blog',
-    external: true,
-  },
   { href: '/contact', label: 'Contact', id: 'contact' },
 ];
 
@@ -43,20 +38,28 @@ export default function Navigation() {
         <div className="hidden md:flex items-center gap-6 lg:gap-8">
           {NAV_LINKS.map((link) => {
             const active = isActive(link.href);
+            const className = `font-headline tracking-tight text-xs sm:text-sm uppercase transition-colors ${
+              active
+                ? 'text-[#D9541E] font-bold border-b-2 border-[#D9541E] pb-1'
+                : 'text-[#555550] hover:text-[#111111]'
+            }`;
+            if (link.external) {
+              return (
+                <a
+                  key={link.id}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={className}
+                >
+                  {link.label}
+                </a>
+              );
+            }
             return (
-              <a
-                key={link.id}
-                href={link.href}
-                target={link.external ? '_blank' : undefined}
-                rel={link.external ? 'noopener noreferrer' : undefined}
-                className={`font-headline tracking-tight text-xs sm:text-sm uppercase transition-colors ${
-                  active
-                    ? 'text-[#D9541E] font-bold border-b-2 border-[#D9541E] pb-1'
-                    : 'text-[#555550] hover:text-[#111111]'
-                }`}
-              >
+              <Link key={link.id} href={link.href} className={className}>
                 {link.label}
-              </a>
+              </Link>
             );
           })}
           <CVDownloadButton />
@@ -81,21 +84,34 @@ export default function Navigation() {
           <div className="flex flex-col gap-4">
             {NAV_LINKS.map((link) => {
               const active = isActive(link.href);
+              const className = `font-headline tracking-tight text-sm uppercase transition-colors ${
+                active
+                  ? 'text-[#D9541E] font-bold'
+                  : 'text-[#555550] hover:text-[#111111]'
+              }`;
+              if (link.external) {
+                return (
+                  <a
+                    key={link.id}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={closeMobileMenu}
+                    className={className}
+                  >
+                    {link.label}
+                  </a>
+                );
+              }
               return (
-                <a
+                <Link
                   key={link.id}
                   href={link.href}
-                  target={link.external ? '_blank' : undefined}
-                  rel={link.external ? 'noopener noreferrer' : undefined}
                   onClick={closeMobileMenu}
-                  className={`font-headline tracking-tight text-sm uppercase transition-colors ${
-                    active
-                      ? 'text-[#D9541E] font-bold'
-                      : 'text-[#555550] hover:text-[#111111]'
-                  }`}
+                  className={className}
                 >
                   {link.label}
-                </a>
+                </Link>
               );
             })}
             <div className="pt-4 border-t border-[#111111]/10">

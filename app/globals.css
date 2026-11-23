@@ -139,6 +139,21 @@
     animation: rippleRing 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
   }
 
+  .animate-slide-in-left {
+    animation: slideInFromLeft 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes slideInFromLeft {
+    0% {
+      opacity: 0;
+      transform: translateX(-36px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
   @keyframes spreadRadialGlow {
     0% {
       opacity: 0.35;

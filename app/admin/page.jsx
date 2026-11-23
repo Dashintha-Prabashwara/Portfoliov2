@@ -63,6 +63,8 @@ const applyVisibleColorCycle = (items = [], type = 'experience') => {
       updated.statusColor = cycleColor;
     } else if (type === 'education') {
       updated.color = cycleColor;
+    } else if (type === 'blog') {
+      updated.color = cycleColor;
     }
 
     return updated;
@@ -85,6 +87,7 @@ export default function AdminPage() {
   const [projects, setProjects] = useState([]);
   const [certifications, setCertifications] = useState([]);
   const [education, setEducation] = useState([]);
+  const [blogs, setBlogs] = useState([]);
   const [cvData, setCvData] = useState(null);
   const [dbStatus, setDbStatus] = useState({ connected: false, checked: false, error: null });
 
@@ -146,13 +149,14 @@ export default function AdminPage() {
   const fetchAllData = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [expRes, projRes, certRes, eduRes, cvRes, ghRes] = await Promise.all([
+      const [expRes, projRes, certRes, eduRes, cvRes, ghRes, blogRes] = await Promise.all([
         fetch('/api/admin/experiences'),
         fetch('/api/admin/projects'),
         fetch('/api/admin/certifications'),
         fetch('/api/admin/education'),
         fetch('/api/admin/cv'),
         fetch('/api/admin/github'),
+        fetch('/api/admin/blogs'),
       ]);
 
       if (expRes.status === 401) {
@@ -160,19 +164,21 @@ export default function AdminPage() {
         return;
       }
 
-      const [expData, projData, certData, eduData, cvResp, ghResp] = await Promise.all([
+      const [expData, projData, certData, eduData, cvResp, ghResp, blogData] = await Promise.all([
         expRes.json(),
         projRes.json(),
         certRes.json(),
         eduRes.json(),
         cvRes.json(),
         ghRes.json(),
+        blogRes.json(),
       ]);
 
       setExperiences(applyVisibleColorCycle(expData.data || [], 'experience'));
       setProjects(applyVisibleColorCycle(projData.data || [], 'project'));
       setCertifications(applyVisibleColorCycle(certData.data || [], 'certification'));
       setEducation(applyVisibleColorCycle(eduData.data || [], 'education'));
+      setBlogs(applyVisibleColorCycle(blogData.data || [], 'blog'));
       setCvData(cvResp.data || null);
       if (ghResp?.data) {
         setGithubConfig(ghResp.data);
@@ -623,6 +629,10 @@ export default function AdminPage() {
       list = [...education];
       setList = setEducation;
       endpoint = '/api/admin/education';
+    } else if (type === 'blog') {
+      list = [...blogs];
+      setList = setBlogs;
+      endpoint = '/api/admin/blogs';
     } else {
       return;
     }
@@ -683,6 +693,10 @@ export default function AdminPage() {
       list = [...education];
       setList = setEducation;
       endpoint = '/api/admin/education';
+    } else if (type === 'blog') {
+      list = [...blogs];
+      setList = setBlogs;
+      endpoint = '/api/admin/blogs';
     } else {
       return;
     }
@@ -818,6 +832,15 @@ export default function AdminPage() {
             (item.title || '').toLowerCase().includes(q) ||
             (item.institution || '').toLowerCase().includes(q) ||
             (item.description || '').toLowerCase().includes(q) ||
+            (item.tags || []).some((t) => t.toLowerCase().includes(q))
+          );
+        }
+        if (type === 'blog') {
+          return (
+            (item.title || '').toLowerCase().includes(q) ||
+            (item.excerpt || '').toLowerCase().includes(q) ||
+            (item.category || '').toLowerCase().includes(q) ||
+            (item.author || '').toLowerCase().includes(q) ||
             (item.tags || []).some((t) => t.toLowerCase().includes(q))
           );
         }
@@ -1239,6 +1262,7 @@ export default function AdminPage() {
             { id: 'overview', label: 'Overview', icon: 'dashboard' },
             { id: 'experiences', label: `Experiences (${experiences.length})`, icon: 'work' },
             { id: 'projects', label: `Projects (${projects.length})`, icon: 'terminal' },
+            { id: 'blogs', label: `Blog Posts (${blogs.length})`, icon: 'article' },
             { id: 'certifications', label: `Certifications & Edu (${certifications.length + education.length})`, icon: 'verified' },
             { id: 'cv', label: 'CV Manager', icon: 'description' },
             { id: 'github', label: 'GitHub Engine', icon: 'hub' },
@@ -1321,6 +1345,24 @@ export default function AdminPage() {
                       className="mt-4 text-xs text-tertiary font-bold inline-flex items-center gap-1 hover:underline"
                     >
                       Manage Credentials →
+                    </button>
+                  </div>
+
+                  <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 relative overflow-hidden group hover:border-primary/40 transition-colors">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
+                      <span className="material-symbols-outlined">article</span>
+                    </div>
+                    <span className="text-3xl font-bold font-headline text-on-surface">
+                      {blogs.length}
+                    </span>
+                    <p className="text-xs uppercase tracking-widest text-on-surface-variant mt-1">
+                      Articles Published
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('blogs')}
+                      className="mt-4 text-xs text-primary font-bold inline-flex items-center gap-1 hover:underline"
+                    >
+                      Manage Articles →
                     </button>
                   </div>
 
@@ -1852,6 +1894,207 @@ export default function AdminPage() {
               })()}
             </>
           )}
+              </div>
+            )}
+
+            {/* BLOG POSTS TAB */}
+            {activeTab === 'blogs' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="font-headline text-xl sm:text-2xl font-bold">Blog Posts &amp; Articles</h2>
+                    <p className="text-xs text-on-surface-variant">
+                      Manage technical articles and stories displayed on the /blog page
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-[11px] font-mono text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-lg border border-outline-variant/20 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm text-primary">drag_indicator</span>
+                      Drag &amp; drop to reorder • Primary → Secondary → Tertiary
+                    </span>
+                    <button
+                      onClick={() => openModal('blog')}
+                      className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                      Add Blog Post
+                    </button>
+                  </div>
+                </div>
+
+                {blogs.length === 0 ? (
+                  <div className="p-12 text-center border border-dashed border-outline-variant/30 rounded-xl">
+                    <p className="text-sm text-on-surface-variant mb-4">No blog posts found in database.</p>
+                    <button
+                      onClick={() => handleSeedData(false)}
+                      className="text-xs text-primary font-bold hover:underline"
+                    >
+                      Click here to seed sample technical articles
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {renderSearchAndFilterBar(blogs, 'blogs')}
+
+                    {(() => {
+                      const displayedBlogs = getFilteredItems(blogs, 'blog');
+                      if (displayedBlogs.length === 0) {
+                        return (
+                          <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl bg-surface-container-low/40">
+                            <span className="material-symbols-outlined text-3xl text-on-surface-variant/40 mb-2">search_off</span>
+                            <p className="text-sm font-headline font-bold text-on-surface">No matching blog posts found</p>
+                            <p className="text-xs text-on-surface-variant mt-1">
+                              Try adjusting your search query or changing the visibility filter.
+                            </p>
+                            {(searchQuery || visibilityFilter !== 'all') && (
+                              <button
+                                onClick={() => { setSearchQuery(''); setVisibilityFilter('all'); }}
+                                className="mt-3 text-xs font-headline font-bold uppercase tracking-wider text-primary hover:underline"
+                              >
+                                Clear search &amp; filter
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-4">
+                          {displayedBlogs.map((blog) => {
+                            const origIdx = blogs.findIndex((x) => (x._id || x.id) === (blog._id || blog.id));
+                            const idx = origIdx >= 0 ? origIdx : 0;
+                            const isDragging = dragInfo.type === 'blog' && dragInfo.index === idx;
+                            const isDragOver = dragOverInfo.type === 'blog' && dragOverInfo.index === idx;
+                            const isVisible = blog.isVisible !== false;
+
+                            return (
+                              <div
+                                key={blog._id || blog.id || idx}
+                                draggable
+                                onDragStart={(e) => {
+                                  e.dataTransfer.setData('text/plain', String(idx));
+                                  setDragInfo({ type: 'blog', index: idx });
+                                  isDraggingRef.current = true;
+                                }}
+                                onDragEnd={() => {
+                                  setDragInfo({ type: null, index: null });
+                                  setDragOverInfo({ type: null, index: null });
+                                  isDraggingRef.current = false;
+                                  autoScrollSpeedRef.current = 0;
+                                }}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  if (dragOverInfo.index !== idx) {
+                                    setDragOverInfo({ type: 'blog', index: idx });
+                                  }
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  if (dragInfo.type === 'blog' && dragInfo.index !== null) {
+                                    handleReorder('blog', dragInfo.index, idx);
+                                  }
+                                  setDragInfo({ type: null, index: null });
+                                  setDragOverInfo({ type: null, index: null });
+                                  isDraggingRef.current = false;
+                                  autoScrollSpeedRef.current = 0;
+                                }}
+                                className={`p-4 sm:p-5 rounded-xl border transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                                  !isVisible
+                                    ? 'bg-surface-container-low/40 border-dashed border-outline-variant/30 opacity-70'
+                                    : 'bg-surface-container-low border-outline-variant/20 hover:border-primary/40'
+                                } ${isDragging ? 'opacity-40 scale-[0.98]' : ''} ${
+                                  isDragOver ? 'border-primary ring-2 ring-primary/20 scale-[1.01]' : ''
+                                }`}
+                              >
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                  <div className="flex items-start gap-3">
+                                    <span
+                                      className="material-symbols-outlined text-on-surface-variant/40 hover:text-primary transition-colors cursor-grab active:cursor-grabbing shrink-0 select-none mt-1"
+                                      title="Drag to reorder"
+                                    >
+                                      drag_indicator
+                                    </span>
+                                    <div>
+                                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                        <h3 className="font-headline font-bold text-base sm:text-lg text-on-surface">
+                                          {blog.title}
+                                        </h3>
+                                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/25 font-bold">
+                                          {blog.category || 'Article'}
+                                        </span>
+                                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/20">
+                                          {blog.readTime || '5 min read'}
+                                        </span>
+                                        {blog.color && (
+                                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/20">
+                                            {blog.color}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-on-surface-variant line-clamp-2 max-w-3xl mb-2">
+                                        {blog.excerpt}
+                                      </p>
+                                      {Array.isArray(blog.tags) && blog.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {blog.tags.map((t) => (
+                                            <span
+                                              key={t}
+                                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-container-high/60 text-on-surface-variant border border-outline-variant/20"
+                                            >
+                                              #{t}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                                    {/* Toggle Visibility Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleVisibility('blog', blog)}
+                                      className={`p-2 rounded-lg transition-colors border ${
+                                        isVisible
+                                          ? 'text-primary bg-primary/10 border-primary/30 hover:bg-primary/20'
+                                          : 'text-on-surface-variant/50 bg-surface-container-high border-outline-variant/20 hover:text-on-surface'
+                                      }`}
+                                      title={isVisible ? 'Hide from /blog page' : 'Make visible on /blog page'}
+                                    >
+                                      <span className="material-symbols-outlined text-lg">
+                                        {isVisible ? 'visibility' : 'visibility_off'}
+                                      </span>
+                                    </button>
+
+                                    {/* Edit Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => openModal('blog', blog)}
+                                      className="p-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface border border-outline-variant/30 transition-colors"
+                                      title="Edit blog post"
+                                    >
+                                      <span className="material-symbols-outlined text-lg">edit</span>
+                                    </button>
+
+                                    {/* Delete Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDelete('blog', blog._id || blog.id)}
+                                      className="p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-colors"
+                                      title="Delete blog post"
+                                    >
+                                      <span className="material-symbols-outlined text-lg">delete</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
               </div>
             )}
 
@@ -3636,6 +3879,131 @@ export default function AdminPage() {
                           className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                         />
                       </div>
+                    </div>
+                  </>
+                )}
+
+                {/* BLOG POST FORM */}
+                {modalType === 'blog' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Article Title *
+                        </label>
+                        <input
+                          type="text"
+                          name="title"
+                          defaultValue={editingItem?.title || ''}
+                          required
+                          placeholder="e.g., Scaling Next.js on Kubernetes"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Category
+                        </label>
+                        <input
+                          type="text"
+                          name="category"
+                          defaultValue={editingItem?.category || 'DevOps & CI/CD'}
+                          placeholder="e.g., DevOps & CI/CD, Cloud & Database"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Read Time
+                        </label>
+                        <input
+                          type="text"
+                          name="readTime"
+                          defaultValue={editingItem?.readTime || '5 min read'}
+                          placeholder="e.g., 6 min read"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Author
+                        </label>
+                        <input
+                          type="text"
+                          name="author"
+                          defaultValue={editingItem?.author || 'Dashintha Jayawardana'}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                        Short Excerpt / Summary *
+                      </label>
+                      <textarea
+                        name="excerpt"
+                        rows={2}
+                        defaultValue={editingItem?.excerpt || ''}
+                        required
+                        placeholder="Concise overview displayed on the blog card..."
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                        Article Content (Markdown supported)
+                      </label>
+                      <textarea
+                        name="content"
+                        rows={8}
+                        defaultValue={editingItem?.content || ''}
+                        placeholder="Write the full technical article here with # Headings, - Lists, and paragraphs..."
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface font-mono focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Tags (comma separated)
+                        </label>
+                        <input
+                          type="text"
+                          name="tags"
+                          defaultValue={editingItem?.tags?.join(', ') || ''}
+                          placeholder="Docker, Kubernetes, AWS"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Display Order
+                        </label>
+                        <input
+                          type="number"
+                          name="order"
+                          defaultValue={editingItem?.order ?? blogs.length + 1}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                        External URL (optional)
+                      </label>
+                      <input
+                        type="url"
+                        name="externalUrl"
+                        defaultValue={editingItem?.externalUrl || ''}
+                        placeholder="https://medium.com/@... or leave blank for internal reading modal"
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                      />
                     </div>
                   </>
                 )}
