@@ -1539,6 +1539,19 @@ export default function AdminPage() {
                                   </span>
                                 ))}
                               </div>
+
+                              {exp.blogUrl && (
+                                <div className="pt-1">
+                                  <a
+                                    href={exp.blogUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold"
+                                  >
+                                    Blog Article <span className="material-symbols-outlined text-xs">article</span>
+                                  </a>
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -1817,6 +1830,16 @@ export default function AdminPage() {
                                   className="text-on-surface-variant hover:text-on-surface inline-flex items-center gap-1 font-semibold"
                                 >
                                   GitHub <span className="material-symbols-outlined text-xs">code</span>
+                                </a>
+                              )}
+                              {proj.blogUrl && (
+                                <a
+                                  href={proj.blogUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-tertiary hover:underline inline-flex items-center gap-1 font-semibold"
+                                >
+                                  Blog Story <span className="material-symbols-outlined text-xs">article</span>
                                 </a>
                               )}
                             </div>
@@ -3038,6 +3061,19 @@ export default function AdminPage() {
                       />
                     </div>
 
+                    <div>
+                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                        Dedicated Blog Story URL (optional)
+                      </label>
+                      <input
+                        type="url"
+                        name="blogUrl"
+                        defaultValue={editingItem?.blogUrl || ''}
+                        placeholder="https://blog.dashijay.dev/post.php?id=..."
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
@@ -3185,6 +3221,21 @@ export default function AdminPage() {
                           value={modalLiveUrl}
                           onChange={(e) => setModalLiveUrl(e.target.value)}
                           placeholder="https://your-site.com"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                            Dedicated Blog Story URL (optional)
+                          </label>
+                          <span className="text-[10px] text-tertiary font-mono font-bold">Deep-dive article</span>
+                        </div>
+                        <input
+                          type="url"
+                          name="blogUrl"
+                          defaultValue={editingItem?.blogUrl || ''}
+                          placeholder="https://blog.dashijay.dev/post.php?id=..."
                           className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                         />
                       </div>

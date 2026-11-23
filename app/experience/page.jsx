@@ -137,6 +137,19 @@ export default function Experience() {
                         {exp.description && (
                           <p className="text-on-surface-variant text-xs sm:text-sm leading-relaxed mb-4">{exp.description}</p>
                         )}
+                        {exp.blogUrl && (
+                          <div className={`mb-4 ${isLeft ? '' : 'flex justify-end'}`}>
+                            <a
+                              href={exp.blogUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                            >
+                              <span className="material-symbols-outlined text-sm">article</span>
+                              <span>Read Experience Story</span>
+                            </a>
+                          </div>
+                        )}
                         <div className={`flex flex-wrap gap-2 ${isLeft ? '' : 'justify-end'}`}>
                           {exp.tags.map((tag) => (
                             <span key={tag} className="bg-surface-container-high px-2 sm:px-3 py-1 text-[10px] font-label text-on-surface flex items-center gap-1">

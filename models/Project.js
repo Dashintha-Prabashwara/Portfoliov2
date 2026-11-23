@@ -31,6 +31,11 @@ const ProjectSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    blogUrl: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     status: {
       type: String,
       default: 'Active',

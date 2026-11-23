@@ -168,6 +168,17 @@ function ProjectCard({ project, showProjectBadges = true }) {
               View Project
             </a>
           )}
+          {project.blogUrl && (
+            <a
+              href={project.blogUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:text-on-surface transition-colors flex items-center justify-center sm:justify-start gap-1.5 text-xs font-bold uppercase tracking-widest px-4 sm:px-0"
+            >
+              <span className="material-symbols-outlined text-lg">article</span>
+              Story
+            </a>
+          )}
           {project.githubUrl && (
             <a
               href={project.githubUrl}

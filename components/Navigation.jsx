@@ -12,6 +12,12 @@ const NAV_LINKS = [
   { href: '/projects', label: 'Projects', id: 'projects' },
   { href: '/github', label: 'GitHub', id: 'github' },
   { href: '/certifications', label: 'Certifications', id: 'certifications' },
+  {
+    href: process.env.NEXT_PUBLIC_BLOG_URL || 'https://blog.dashijay.dev',
+    label: 'Blog',
+    id: 'blog',
+    external: true,
+  },
   { href: '/contact', label: 'Contact', id: 'contact' },
 ];
 
@@ -41,6 +47,8 @@ export default function Navigation() {
               <a
                 key={link.id}
                 href={link.href}
+                target={link.external ? '_blank' : undefined}
+                rel={link.external ? 'noopener noreferrer' : undefined}
                 className={`font-headline tracking-tight text-xs sm:text-sm uppercase transition-colors ${
                   active
                     ? 'text-[#D9541E] font-bold border-b-2 border-[#D9541E] pb-1'
@@ -77,6 +85,8 @@ export default function Navigation() {
                 <a
                   key={link.id}
                   href={link.href}
+                  target={link.external ? '_blank' : undefined}
+                  rel={link.external ? 'noopener noreferrer' : undefined}
                   onClick={closeMobileMenu}
                   className={`font-headline tracking-tight text-sm uppercase transition-colors ${
                     active
