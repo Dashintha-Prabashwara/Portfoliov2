@@ -63,7 +63,6 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
     achievements = [],
     highlights = [],
   } = telemetry;
-  const username = config?.username || profile?.login || 'Dashintha-Prabashwara';
 
   // Subcomponent filters based on CMS configuration
   const visibleLanguages = languages.filter(
@@ -82,39 +81,8 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
   );
 
   return (
-    <section className="my-16 sm:my-24 relative overflow-hidden">
+    <section className="mb-16 sm:mb-24 relative overflow-hidden">
       <div className="border border-outline-variant/30 bg-surface-container-low/70 backdrop-blur-sm rounded-2xl p-6 sm:p-10 transition-all hover:border-outline-variant/60">
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-8 border-b border-outline-variant/20 mb-8">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-[0.15em] uppercase bg-primary/10 text-primary border border-primary/25">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                Live GitHub Sync
-              </span>
-              <span className="text-on-surface-variant text-xs font-mono">
-                @{username}
-              </span>
-            </div>
-            <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-on-surface">
-              Engineering Telemetry
-            </h2>
-          </div>
-
-          <a
-            href={profile?.htmlUrl || `https://github.com/${username}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-high border border-outline-variant/30 hover:border-primary/40 text-on-surface text-xs font-bold uppercase tracking-wider transition-all"
-          >
-            <span className="material-symbols-outlined text-sm text-primary">terminal</span>
-            GitHub Profile
-            <span className="material-symbols-outlined text-xs transition-transform group-hover:translate-x-0.5">
-              arrow_outward
-            </span>
-          </a>
-        </div>
-
         {/* Metric Cards Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
           <div className="bg-surface-container-lowest/80 border border-outline-variant/20 rounded-xl p-4 sm:p-5">

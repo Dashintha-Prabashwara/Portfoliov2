@@ -210,16 +210,19 @@ function ContactCTASection() {
           <p className="text-on-surface-variant font-light mb-6 sm:mb-8 text-sm sm:text-base">
             Let's discuss how we can build resilient systems and beautiful user experiences for your next project.
           </p>
-          <Link href="/contact" className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-on-surface text-surface rounded-md font-bold text-xs sm:text-sm uppercase tracking-widest transition-all hover:pr-12 w-full md:w-auto">
-            Get In Touch
-            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">
-              arrow_forward
-            </span>
+          <Link
+            href="/contact"
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 text-on-surface font-headline text-xs font-bold uppercase tracking-wider transition-all shadow-sm"
+          >
+            <span>Get in Touch</span>
+            <span className="material-symbols-outlined text-sm text-primary">mail</span>
           </Link>
         </div>
-        <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 shrink-0">
-          <div className="w-full h-full border border-outline-variant/30 rounded-full flex items-center justify-center relative z-10">
-            <span className="material-symbols-outlined text-6xl sm:text-8xl text-primary/50">cloud_done</span>
+        <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 shrink-0 flex items-center justify-center">
+          <div className="w-full h-full border border-outline-variant/30 rounded-full flex items-center justify-center relative z-10 bg-[radial-gradient(circle_at_center,rgba(217,84,30,0.18)_0%,rgba(217,84,30,0.06)_45%,transparent_72%)]">
+            <span className="material-symbols-outlined text-6xl sm:text-8xl text-primary/70 drop-shadow-[0_0_20px_rgba(217,84,30,0.35)]">
+              cloud_done
+            </span>
           </div>
         </div>
       </div>
