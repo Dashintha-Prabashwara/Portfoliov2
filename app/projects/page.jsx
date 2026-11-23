@@ -2,7 +2,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import GithubTelemetry from '@/components/GithubTelemetry';
 import { getProjectsDb, getGithubConfigDb } from '@/lib/dbData';
 
 export const dynamic = 'force-dynamic';
@@ -31,9 +30,6 @@ export default async function ProjectsPage() {
       <main className="pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <HeroSection />
         <ProjectsGrid projects={projects} showProjectBadges={githubConfig?.showProjectBadges !== false} />
-        {githubConfig?.isEnabled !== false && (
-          <GithubTelemetry initialConfig={githubConfig} initialData={githubConfig?.cachedStats} />
-        )}
         <ContactCTASection />
       </main>
       <Footer />

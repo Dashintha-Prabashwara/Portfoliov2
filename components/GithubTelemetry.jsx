@@ -13,7 +13,7 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch('/api/github');
+        const res = await fetch('/api/github', { cache: 'no-store' });
         const json = await res.json();
         if (json.isEnabled === false) {
           setConfig({ isEnabled: false });
@@ -25,16 +25,14 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
         }
       } catch (err) {
         console.error('Failed to load GitHub telemetry:', err);
-        setError('Unable to fetch live telemetry');
+        if (!initialData) setError('Unable to fetch live telemetry');
       } finally {
         setLoading(false);
       }
     }
 
-    if (!initialData) {
-      loadData();
-    }
-  }, [initialData]);
+    loadData();
+  }, []);
 
   if (config?.isEnabled === false) {
     return null;
@@ -96,9 +94,6 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
               </span>
               <span className="text-on-surface-variant text-xs font-mono">
                 @{username}
-              </span>
-              <span className="text-[10px] font-mono text-on-surface-variant/70 border-l border-outline-variant/30 pl-2">
-                Auto-syncs every 2 hours
               </span>
             </div>
             <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-on-surface">
