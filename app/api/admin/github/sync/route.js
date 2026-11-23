@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import GithubConfig from '@/models/GithubConfig';
-import Project from '@/models/Project';
 import { checkAdminAuth } from '@/lib/adminAuth';
-import { fetchAllGithubTelemetry, fetchRepoDetails } from '@/lib/github';
+import { runGithubFullSync } from '@/lib/githubSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,71 +11,17 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
-    let config = await GithubConfig.findOne({});
-    const username = config?.username || 'Dashintha-Prabashwara';
-    const token = config?.token || process.env.GITHUB_TOKEN || '';
-
-    const options = {
-      customContributedRepos: config?.customContributedRepos || [],
-      excludedContributedRepos: config?.excludedContributedRepos || [],
-    };
-
-    // 1. Refresh full profile telemetry
-    const telemetry = await fetchAllGithubTelemetry(username, token, options);
-
-    if (config) {
-      config.cachedStats = telemetry;
-      config.lastSyncedAt = new Date();
-      await config.save();
-    } else {
-      config = await GithubConfig.create({
-        username,
-        cachedStats: telemetry,
-        lastSyncedAt: new Date(),
-      });
-    }
-
-    // 2. Sync all projects that have a GitHub URL
-    const projects = await Project.find({ githubUrl: { $exists: true, $ne: '' } });
-    const syncResults = [];
-
-    for (const project of projects) {
-      try {
-        const repoData = await fetchRepoDetails(project.githubUrl, token);
-        project.githubStars = repoData.stars || 0;
-        project.githubForks = repoData.forks || 0;
-        project.githubLanguage = repoData.language || project.githubLanguage || '';
-        project.githubLastPushed = repoData.lastPushed || '';
-        project.githubSyncedAt = new Date();
-        await project.save();
-
-        syncResults.push({
-          id: project._id,
-          title: project.title,
-          stars: project.githubStars,
-          forks: project.githubForks,
-          status: 'synced',
-        });
-      } catch (err) {
-        console.warn(`Failed syncing repo for ${project.title}:`, err.message);
-        syncResults.push({
-          id: project._id,
-          title: project.title,
-          status: 'failed',
-          error: err.message,
-        });
-      }
-    }
+    const result = await runGithubFullSync(true); // force = true for manual admin click
 
     return NextResponse.json({
       success: true,
-      message: `Refreshed GitHub profile metrics and synced ${syncResults.filter((r) => r.status === 'synced').length} projects`,
-      telemetry,
-      projectsSynced: syncResults,
+      message: `Refreshed GitHub profile metrics and synced ${result.projectsSynced.filter((r) => r.status === 'synced').length} projects`,
+      telemetry: result.telemetry,
+      projectsSynced: result.projectsSynced,
+      lastSyncedAt: result.lastSyncedAt,
     });
   } catch (error) {
-    console.error('Error in GitHub sync endpoint:', error);
+    console.error('GitHub sync route error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

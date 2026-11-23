@@ -89,13 +89,16 @@ export default function GithubTelemetry({ initialData = null, initialConfig = nu
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-8 border-b border-outline-variant/20 mb-8">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-[0.15em] uppercase bg-primary/10 text-primary border border-primary/25">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
                 Live GitHub Sync
               </span>
               <span className="text-on-surface-variant text-xs font-mono">
                 @{username}
+              </span>
+              <span className="text-[10px] font-mono text-on-surface-variant/70 border-l border-outline-variant/30 pl-2">
+                Auto-syncs every 2 hours
               </span>
             </div>
             <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-on-surface">

@@ -2361,6 +2361,7 @@ export default function AdminPage() {
                       <p className="text-xs text-on-surface-variant font-mono">
                         API Rate Limit: {githubConfig?.rateLimit?.remaining ?? 60} / {githubConfig?.rateLimit?.limit ?? 60} remaining
                         {githubConfig?.lastSyncedAt && ` • Last Synced: ${new Date(githubConfig.lastSyncedAt).toLocaleTimeString()}`}
+                        <span className="text-primary/80 font-bold ml-1.5">• Auto-syncs every 2 hours</span>
                       </p>
                     </div>
 

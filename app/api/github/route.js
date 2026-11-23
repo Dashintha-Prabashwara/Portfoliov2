@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import GithubConfig from '@/models/GithubConfig';
-import { fetchAllGithubTelemetry } from '@/lib/github';
+import { runGithubFullSync, SYNC_INTERVAL_MS } from '@/lib/githubSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,45 +45,20 @@ export async function GET() {
       !config?.cachedStats?.achievements?.length &&
       !config?.cachedStats?.organizations?.length &&
       !config?.cachedStats?.highlights?.length;
-    const isStale = !config?.cachedStats || now - lastSynced > 30 * 60 * 1000 || isMissingData;
+
+    // Auto-update every 2 hours (SYNC_INTERVAL_MS) or if data is missing
+    const isStale = !config?.cachedStats || now - lastSynced >= SYNC_INTERVAL_MS || isMissingData;
 
     let telemetry = config?.cachedStats;
 
     if (isStale) {
       try {
-        const token = config?.token || process.env.GITHUB_TOKEN || '';
-        telemetry = await fetchAllGithubTelemetry(username, token, {
-          customContributedRepos,
-          excludedContributedRepos,
-        });
-
-        // Update cache in database asynchronously
-        if (config?._id) {
-          GithubConfig.findByIdAndUpdate(config._id, {
-            cachedStats: telemetry,
-            lastSyncedAt: new Date(),
-          }).catch((err) => console.error('Failed to update GitHub cache:', err));
-        } else {
-          GithubConfig.create({
-            username,
-            isEnabled,
-            showContributions,
-            showAchievements,
-            showHighlights,
-            showOrganizations,
-            showLanguageStats,
-            showProjectBadges,
-            hiddenAchievements,
-            hiddenOrganizations,
-            hiddenHighlights,
-            hiddenLanguages,
-            cachedStats: telemetry,
-            lastSyncedAt: new Date(),
-          }).catch((err) => console.error('Failed to create initial GitHub config:', err));
+        const syncResult = await runGithubFullSync(false);
+        if (syncResult.synced && syncResult.telemetry) {
+          telemetry = syncResult.telemetry;
         }
       } catch (fetchError) {
-        console.error('Failed fetching fresh GitHub telemetry:', fetchError.message);
-        // If fetch fails and no cached telemetry, fall back to minimal payload
+        console.error('Auto-sync failed in /api/github:', fetchError.message);
         if (!telemetry) {
           telemetry = {
             profile: { login: username, name: username, publicRepos: 0, totalStars: 0, totalForks: 0 },
