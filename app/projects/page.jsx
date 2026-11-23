@@ -2,7 +2,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import GithubTelemetry from '@/components/GithubTelemetry';
 import { getProjectsDb, getGithubConfigDb } from '@/lib/dbData';
 
 export const dynamic = 'force-dynamic';
@@ -31,9 +30,6 @@ export default async function ProjectsPage() {
       <main className="pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <HeroSection />
         <ProjectsGrid projects={projects} showProjectBadges={githubConfig?.showProjectBadges !== false} />
-        {githubConfig?.isEnabled !== false && (
-          <GithubTelemetry initialConfig={githubConfig} initialData={githubConfig?.cachedStats} />
-        )}
         <ContactCTASection />
       </main>
       <Footer />
@@ -214,16 +210,27 @@ function ContactCTASection() {
           <p className="text-on-surface-variant font-light mb-6 sm:mb-8 text-sm sm:text-base">
             Let's discuss how we can build resilient systems and beautiful user experiences for your next project.
           </p>
-          <Link href="/contact" className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-on-surface text-surface rounded-md font-bold text-xs sm:text-sm uppercase tracking-widest transition-all hover:pr-12 w-full md:w-auto">
-            Get In Touch
-            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">
-              arrow_forward
-            </span>
+          <Link
+            href="/contact"
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 text-on-surface font-headline text-xs font-bold uppercase tracking-wider transition-all shadow-sm"
+          >
+            <span>Get in Touch</span>
+            <span className="material-symbols-outlined text-sm text-primary">mail</span>
           </Link>
         </div>
-        <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 shrink-0">
-          <div className="w-full h-full border border-outline-variant/30 rounded-full flex items-center justify-center relative z-10">
-            <span className="material-symbols-outlined text-6xl sm:text-8xl text-primary/50">cloud_done</span>
+        <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 shrink-0 flex items-center justify-center">
+          <div className="w-full h-full border border-outline-variant/30 rounded-full flex items-center justify-center relative z-10 overflow-hidden">
+            {/* Animated spreading radial glow emanating from center */}
+            <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_center,rgba(217,84,30,0.32)_0%,rgba(217,84,30,0.12)_45%,transparent_75%)] animate-spread-glow pointer-events-none" />
+            
+            {/* Concentric spreading ripple rings */}
+            <div className="absolute inset-2 rounded-full border border-primary/25 animate-ripple-ring pointer-events-none" />
+            <div className="absolute inset-2 rounded-full border border-primary/20 animate-ripple-ring pointer-events-none [animation-delay:1.75s]" />
+
+            {/* Center cloud_done icon with warm aura */}
+            <span className="material-symbols-outlined text-6xl sm:text-8xl text-primary drop-shadow-[0_0_24px_rgba(217,84,30,0.5)] relative z-20 transition-transform duration-500 hover:scale-110">
+              cloud_done
+            </span>
           </div>
         </div>
       </div>

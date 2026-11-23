@@ -2361,6 +2361,7 @@ export default function AdminPage() {
                       <p className="text-xs text-on-surface-variant font-mono">
                         API Rate Limit: {githubConfig?.rateLimit?.remaining ?? 60} / {githubConfig?.rateLimit?.limit ?? 60} remaining
                         {githubConfig?.lastSyncedAt && ` • Last Synced: ${new Date(githubConfig.lastSyncedAt).toLocaleTimeString()}`}
+                        <span className="text-primary/80 font-bold ml-1.5">• Auto-syncs every 2 hours</span>
                       </p>
                     </div>
 
@@ -2511,11 +2512,6 @@ export default function AdminPage() {
                                     <span className="text-xs font-headline font-bold text-on-surface truncate">
                                       {hl.title}
                                     </span>
-                                    {hl.badge && (
-                                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-secondary/15 text-secondary border border-secondary/25">
-                                        {hl.badge}
-                                      </span>
-                                    )}
                                   </div>
                                   <input
                                     type="checkbox"
