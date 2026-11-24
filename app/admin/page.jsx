@@ -88,6 +88,11 @@ export default function AdminPage() {
   const [certifications, setCertifications] = useState([]);
   const [education, setEducation] = useState([]);
   const [blogs, setBlogs] = useState([]);
+  const [blogCategories, setBlogCategories] = useState([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [uploadingBlogCover, setUploadingBlogCover] = useState(false);
+  const blogCoverFileInputRef = useRef(null);
   const [cvData, setCvData] = useState(null);
   const [dbStatus, setDbStatus] = useState({ connected: false, checked: false, error: null });
 
@@ -129,8 +134,6 @@ export default function AdminPage() {
   const [hiddenOrganizations, setHiddenOrganizations] = useState([]);
   const [hiddenHighlights, setHiddenHighlights] = useState([]);
 
-  // Blog database sync state
-  const [syncingBlogs, setSyncingBlogs] = useState(false);
   const [hiddenLanguages, setHiddenLanguages] = useState([]);
   const [customContributedRepos, setCustomContributedRepos] = useState([]);
   const [excludedContributedRepos, setExcludedContributedRepos] = useState([]);
@@ -152,7 +155,7 @@ export default function AdminPage() {
   const fetchAllData = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [expRes, projRes, certRes, eduRes, cvRes, ghRes, blogRes] = await Promise.all([
+      const [expRes, projRes, certRes, eduRes, cvRes, ghRes, blogRes, catRes] = await Promise.all([
         fetch('/api/admin/experiences'),
         fetch('/api/admin/projects'),
         fetch('/api/admin/certifications'),
@@ -160,6 +163,7 @@ export default function AdminPage() {
         fetch('/api/admin/cv'),
         fetch('/api/admin/github'),
         fetch('/api/admin/blogs'),
+        fetch('/api/admin/blogs/categories'),
       ]);
 
       if (expRes.status === 401) {
@@ -167,7 +171,7 @@ export default function AdminPage() {
         return;
       }
 
-      const [expData, projData, certData, eduData, cvResp, ghResp, blogData] = await Promise.all([
+      const [expData, projData, certData, eduData, cvResp, ghResp, blogData, catData] = await Promise.all([
         expRes.json(),
         projRes.json(),
         certRes.json(),
@@ -175,6 +179,7 @@ export default function AdminPage() {
         cvRes.json(),
         ghRes.json(),
         blogRes.json(),
+        catRes.json(),
       ]);
 
       setExperiences(applyVisibleColorCycle(expData.data || [], 'experience'));
@@ -182,6 +187,7 @@ export default function AdminPage() {
       setCertifications(applyVisibleColorCycle(certData.data || [], 'certification'));
       setEducation(applyVisibleColorCycle(eduData.data || [], 'education'));
       setBlogs(applyVisibleColorCycle(blogData.data || [], 'blog'));
+      setBlogCategories(catData.data || []);
       setCvData(cvResp.data || null);
       if (ghResp?.data) {
         setGithubConfig(ghResp.data);
@@ -374,34 +380,12 @@ export default function AdminPage() {
     }
   };
 
-  const handleSyncBlogsFromDb = async () => {
-    setSyncingBlogs(true);
-    try {
-      const res = await fetch('/api/admin/blogs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'sync' }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setBlogs(applyVisibleColorCycle(data.data || [], 'blog'));
-        showToast(data.message || 'Blogs synchronized with blog database', 'success');
-      } else {
-        showToast(data.error || 'Failed to sync blogs from database', 'error');
-      }
-    } catch {
-      showToast('Network error while syncing blogs', 'error');
-    } finally {
-      setSyncingBlogs(false);
-    }
-  };
-
   // Open modal for Create or Edit
   const openModal = (type, item = null) => {
     setModalType(type);
     setEditingItem(item);
     setModalIsVisible(item ? item.isVisible !== false : true); // Default is visible
-    setModalCoverImage(item?.image || '');
+    setModalCoverImage(item?.coverImage || item?.image_url || item?.image || '');
     setModalLiveUrl(item?.liveUrl || '');
     setModalTitle(item?.title || '');
     setModalDescription(item?.description || '');
@@ -597,6 +581,139 @@ export default function AdminPage() {
     } finally {
       setUploadingBanner(false);
       if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleBlogCoverUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WebP, etc.)', 'error');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size exceeds 5MB limit', 'error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploadingBlogCover(true);
+    try {
+      const res = await fetch('/api/admin/blogs/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success && data.fileUrl) {
+        setModalCoverImage(data.fileUrl);
+        showToast('Cover image uploaded and converted for TiDB Cloud!');
+      } else {
+        showToast(data.error || 'Failed to upload cover image', 'error');
+      }
+    } catch {
+      showToast('Network error uploading blog cover image', 'error');
+    } finally {
+      setUploadingBlogCover(false);
+      if (blogCoverFileInputRef.current) blogCoverFileInputRef.current.value = '';
+    }
+  };
+
+  const handleClearBlogCover = () => {
+    setModalCoverImage('');
+    showToast('Cover image cleared');
+  };
+
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    try {
+      const res = await fetch('/api/admin/blogs/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCategoryName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Category created in TiDB Cloud!');
+        setNewCategoryName('');
+        const catRes = await fetch('/api/admin/blogs/categories');
+        const catData = await catRes.json();
+        setBlogCategories(catData.data || []);
+      } else {
+        showToast(data.error || 'Failed to create category', 'error');
+      }
+    } catch {
+      showToast('Error creating category', 'error');
+    }
+  };
+
+  const handleToggleCategoryVisibility = async (cat) => {
+    try {
+      const currentVis = cat.is_visible !== 0 && cat.is_visible !== false;
+      const res = await fetch('/api/admin/blogs/categories', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: cat.id, isVisible: !currentVis }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Category visibility updated!');
+        const catRes = await fetch('/api/admin/blogs/categories');
+        const catData = await catRes.json();
+        setBlogCategories(catData.data || []);
+      } else {
+        showToast(data.error || 'Failed to update category', 'error');
+      }
+    } catch {
+      showToast('Error updating category', 'error');
+    }
+  };
+
+  const handleUpdateCategoryName = async (cat) => {
+    const updatedName = window.prompt('Enter new category name:', cat.name);
+    if (!updatedName || updatedName.trim() === '' || updatedName.trim() === cat.name) return;
+    try {
+      const res = await fetch('/api/admin/blogs/categories', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: cat.id, name: updatedName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Category renamed successfully!');
+        const catRes = await fetch('/api/admin/blogs/categories');
+        const catData = await catRes.json();
+        setBlogCategories(catData.data || []);
+      } else {
+        showToast(data.error || 'Failed to rename category', 'error');
+      }
+    } catch {
+      showToast('Error renaming category', 'error');
+    }
+  };
+
+  const handleDeleteCategory = async (catId) => {
+    if (!window.confirm('Are you sure you want to delete this category?')) return;
+    try {
+      const res = await fetch(`/api/admin/blogs/categories?id=${catId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Category deleted successfully!');
+        const catRes = await fetch('/api/admin/blogs/categories');
+        const catData = await catRes.json();
+        setBlogCategories(catData.data || []);
+      } else {
+        showToast(data.error || 'Failed to delete category', 'error');
+      }
+    } catch {
+      showToast('Error deleting category', 'error');
     }
   };
 
@@ -861,11 +978,19 @@ export default function AdminPage() {
           );
         }
         if (type === 'blog') {
+          const linkedExp = item.linkedExperienceId
+            ? experiences.find((e) => (e._id || e.id) === item.linkedExperienceId)?.company || ''
+            : '';
+          const linkedProj = item.linkedProjectId
+            ? projects.find((p) => (p._id || p.id) === item.linkedProjectId)?.title || ''
+            : '';
           return (
             (item.title || '').toLowerCase().includes(q) ||
             (item.excerpt || '').toLowerCase().includes(q) ||
             (item.category || '').toLowerCase().includes(q) ||
             (item.author || '').toLowerCase().includes(q) ||
+            linkedExp.toLowerCase().includes(q) ||
+            linkedProj.toLowerCase().includes(q) ||
             (item.tags || []).some((t) => t.toLowerCase().includes(q))
           );
         }
@@ -1024,12 +1149,18 @@ export default function AdminPage() {
       payload.isVisible = modalIsVisible;
     }
 
-    const isEdit = !!editingItem?._id;
+    if (modalType === 'project') {
+      payload.image = modalCoverImage;
+    } else if (modalType === 'blog') {
+      payload.coverImage = modalCoverImage;
+    }
+
+    const isEdit = !!(editingItem?._id || editingItem?.id);
     const url = `/api/admin/${modalType === 'education' ? 'education' : modalType + 's'}`;
     const method = isEdit ? 'PUT' : 'POST';
 
     if (isEdit) {
-      payload.id = editingItem._id;
+      payload.id = editingItem._id || editingItem.id;
     }
 
     try {
@@ -1933,22 +2064,25 @@ export default function AdminPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryManager(!showCategoryManager)}
+                      className={`py-2 px-3.5 rounded-lg border text-xs font-headline font-bold uppercase tracking-wider flex items-center gap-2 transition-all ${
+                        showCategoryManager
+                          ? 'bg-secondary text-on-secondary border-secondary shadow-sm'
+                          : 'bg-surface-container-high border-outline-variant/30 text-on-surface hover:border-secondary/50'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-sm">category</span>
+                      {showCategoryManager ? 'Close Categories' : 'Manage Categories'}
+                      <span className="text-[10px] px-1.5 py-0.5 bg-black/20 rounded-full font-mono font-bold">
+                        {blogCategories.length}
+                      </span>
+                    </button>
                     <span className="text-[11px] font-mono text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-lg border border-outline-variant/20 flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-sm text-primary">drag_indicator</span>
                       Drag &amp; drop to reorder • Primary → Secondary → Tertiary
                     </span>
-                    <button
-                      type="button"
-                      disabled={syncingBlogs}
-                      onClick={handleSyncBlogsFromDb}
-                      className="py-2.5 px-4 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 text-on-surface font-headline text-xs font-bold uppercase tracking-widest shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
-                      title="Fetch latest posts from TiDB Cloud blog database"
-                    >
-                      <span className={`material-symbols-outlined text-sm text-primary ${syncingBlogs ? 'animate-spin' : ''}`}>
-                        sync
-                      </span>
-                      {syncingBlogs ? 'Syncing...' : 'Sync Blog DB'}
-                    </button>
                     <button
                       onClick={() => openModal('blog')}
                       className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
@@ -1959,22 +2093,113 @@ export default function AdminPage() {
                   </div>
                 </div>
 
+                {/* CATEGORY MANAGER PANEL */}
+                {showCategoryManager && (
+                  <div className="p-5 rounded-2xl bg-surface-container border border-secondary/30 shadow-md space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/20 pb-3">
+                      <div>
+                        <h3 className="font-headline font-bold text-sm sm:text-base text-on-surface flex items-center gap-2">
+                          <span className="material-symbols-outlined text-secondary text-lg">category</span>
+                          Blog Categories (TiDB Cloud MySQL)
+                        </h3>
+                        <p className="text-[11px] text-on-surface-variant">
+                          Add, rename, toggle visibility or delete categories used to filter and organize portfolio blogs.
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 self-start sm:self-auto">
+                        Table: blog_category
+                      </span>
+                    </div>
+
+                    {/* Add Category Form */}
+                    <form onSubmit={handleAddCategory} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="New category name (e.g., Security, Artificial Intelligence)..."
+                        className="flex-1 bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-secondary"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newCategoryName.trim()}
+                        className="py-2 px-4 rounded-lg bg-secondary text-on-secondary text-xs font-bold font-headline uppercase tracking-wider disabled:opacity-50 flex items-center gap-1.5 shrink-0 hover:opacity-90 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined text-sm">add_circle</span>
+                        Add Category
+                      </button>
+                    </form>
+
+                    {/* Categories List */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+                      {blogCategories.map((cat) => {
+                        const isCatVisible = cat.is_visible !== 0 && cat.is_visible !== false;
+                        return (
+                          <div
+                            key={cat.id}
+                            className={`p-3 rounded-xl border flex items-center justify-between gap-2 transition-all ${
+                              isCatVisible
+                                ? 'bg-surface-container-high/80 border-outline-variant/30'
+                                : 'bg-surface-container-low/50 border-dashed border-outline-variant/20 opacity-60'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <span className="font-semibold text-xs text-on-surface block truncate" title={cat.name}>
+                                {cat.name}
+                              </span>
+                              <span className={`text-[10px] font-mono ${isCatVisible ? 'text-primary' : 'text-on-surface-variant'}`}>
+                                {isCatVisible ? '● Visible' : '○ Hidden'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleCategoryVisibility(cat)}
+                                className={`p-1.5 rounded-lg border transition-colors ${
+                                  isCatVisible
+                                    ? 'text-primary bg-primary/10 border-primary/25 hover:bg-primary/20'
+                                    : 'text-on-surface-variant/50 bg-surface-container-highest border-outline-variant/20 hover:text-on-surface'
+                                }`}
+                                title={isCatVisible ? 'Hide category' : 'Make category visible'}
+                              >
+                                <span className="material-symbols-outlined text-sm">
+                                  {isCatVisible ? 'visibility' : 'visibility_off'}
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateCategoryName(cat)}
+                                className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest border border-outline-variant/20 transition-colors"
+                                title="Rename category"
+                              >
+                                <span className="material-symbols-outlined text-sm">edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCategory(cat.id)}
+                                className="p-1.5 rounded-lg text-error hover:bg-error/10 border border-error/20 transition-colors"
+                                title="Delete category"
+                              >
+                                <span className="material-symbols-outlined text-sm">delete</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {blogs.length === 0 ? (
                   <div className="p-12 text-center border border-dashed border-outline-variant/30 rounded-xl space-y-3">
                     <p className="text-sm text-on-surface-variant">No blog posts found in database.</p>
                     <div className="flex items-center justify-center gap-4">
                       <button
-                        onClick={handleSyncBlogsFromDb}
+                        onClick={() => openModal('blog')}
                         className="py-2 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold font-headline uppercase tracking-wider flex items-center gap-1.5"
                       >
-                        <span className="material-symbols-outlined text-sm">sync</span>
-                        Fetch from Blog Database
-                      </button>
-                      <button
-                        onClick={() => handleSeedData(false)}
-                        className="text-xs text-on-surface-variant hover:text-primary font-medium underline"
-                      >
-                        or seed sample articles
+                        <span className="material-symbols-outlined text-sm">add</span>
+                        Add First Blog Post
                       </button>
                     </div>
                   </div>
@@ -2071,6 +2296,27 @@ export default function AdminPage() {
                                         <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/20">
                                           {blog.readTime || '5 min read'}
                                         </span>
+                                        {blog.linkedExperienceId && (() => {
+                                          const exp = experiences.find((e) => (e._id || e.id) === blog.linkedExperienceId);
+                                          const label = exp ? `${exp.role} - ${exp.company}` : 'Linked';
+                                          return (
+                                            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 font-bold flex items-center gap-1">
+                                              <span className="material-symbols-outlined text-[12px]">work</span>
+                                              Exp: {label}
+                                            </span>
+                                          );
+                                        })()}
+                                        {blog.linkedProjectId && (
+                                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-tertiary/15 text-tertiary border border-tertiary/30 font-bold flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-[12px]">rocket_launch</span>
+                                            Project: {projects.find((p) => (p._id || p.id) === blog.linkedProjectId)?.title || 'Linked'}
+                                          </span>
+                                        )}
+                                        {!blog.linkedExperienceId && !blog.linkedProjectId && (
+                                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant/80 border border-outline-variant/20">
+                                            Normal Blog
+                                          </span>
+                                        )}
                                         {blog.color && (
                                           <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/20">
                                             {blog.color}
@@ -3351,14 +3597,36 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Dedicated Blog Story URL (optional)
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                          Linked Blog Story (optional)
+                        </label>
+                        <span className="text-[10px] text-primary font-mono">Portfolio Blog Section</span>
+                      </div>
+                      {blogs.length > 0 && (
+                        <div className="mb-2">
+                          <select
+                            onChange={(e) => {
+                              const input = document.getElementById('exp-blog-url-input');
+                              if (input && e.target.value) input.value = e.target.value;
+                            }}
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary mb-1.5"
+                          >
+                            <option value="">-- Quick Link: Choose from Portfolio Blogs --</option>
+                            {blogs.map((b) => (
+                              <option key={b.id || b._id} value={`/blog/${b.id || b._id}`}>
+                                {b.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                       <input
-                        type="url"
+                        id="exp-blog-url-input"
+                        type="text"
                         name="blogUrl"
                         defaultValue={editingItem?.blogUrl || ''}
-                        placeholder="https://blog.dashijay.dev/post.php?id=..."
+                        placeholder="e.g. /blog/30001"
                         className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                       />
                     </div>
@@ -3516,15 +3784,34 @@ export default function AdminPage() {
                       <div className="sm:col-span-2">
                         <div className="flex items-center justify-between mb-1">
                           <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
-                            Dedicated Blog Story URL (optional)
+                            Project Case Study / Blog Story URL
                           </label>
-                          <span className="text-[10px] text-tertiary font-mono font-bold">Deep-dive article</span>
+                          <span className="text-[10px] text-tertiary font-mono font-bold">Portfolio Blog Section</span>
                         </div>
+                        {blogs.length > 0 && (
+                          <div className="mb-2">
+                            <select
+                              onChange={(e) => {
+                                const input = document.getElementById('proj-blog-url-input');
+                                if (input && e.target.value) input.value = e.target.value;
+                              }}
+                              className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary mb-1.5"
+                            >
+                              <option value="">-- Quick Link: Choose from Portfolio Blogs --</option>
+                              {blogs.map((b) => (
+                                <option key={b.id || b._id} value={`/blog/${b.id || b._id}`}>
+                                  {b.title}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                         <input
-                          type="url"
+                          id="proj-blog-url-input"
+                          type="text"
                           name="blogUrl"
                           defaultValue={editingItem?.blogUrl || ''}
-                          placeholder="https://blog.dashijay.dev/post.php?id=..."
+                          placeholder="e.g. /blog/30001"
                           className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                         />
                       </div>
@@ -3947,16 +4234,36 @@ export default function AdminPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                          Category
-                        </label>
-                        <input
-                          type="text"
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                            Category *
+                          </label>
+                          <span className="text-[10px] text-secondary font-mono">CMS Managed</span>
+                        </div>
+                        <select
                           name="category"
-                          defaultValue={editingItem?.category || 'DevOps & CI/CD'}
-                          placeholder="e.g., DevOps & CI/CD, Cloud & Database"
+                          defaultValue={editingItem?.category || (blogCategories[0]?.name || 'DevOps & CI/CD')}
                           className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                        />
+                        >
+                          {editingItem?.category && !blogCategories.some((c) => c.name === editingItem.category) && (
+                            <option value={editingItem.category}>{editingItem.category} (Current)</option>
+                          )}
+                          {blogCategories.map((c) => (
+                            <option key={c.id} value={c.name}>
+                              {c.name} {c.is_visible === 0 ? '(Hidden)' : ''}
+                            </option>
+                          ))}
+                          {blogCategories.length === 0 && (
+                            <>
+                              <option value="DevOps & CI/CD">DevOps & CI/CD</option>
+                              <option value="Cloud & Database">Cloud & Database</option>
+                              <option value="Architecture">Architecture</option>
+                              <option value="DevSecOps">DevSecOps</option>
+                              <option value="IoT & Embedded">IoT & Embedded</option>
+                              <option value="Design">Design</option>
+                            </>
+                          )}
+                        </select>
                       </div>
                     </div>
 
@@ -4039,17 +4346,130 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        External URL (optional)
-                      </label>
-                      <input
-                        type="url"
-                        name="externalUrl"
-                        defaultValue={editingItem?.externalUrl || ''}
-                        placeholder="https://medium.com/@... or leave blank for internal reading modal"
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                      />
+                    {/* BLOG COVER IMAGE (LOCAL COMPUTER UPLOAD & TIDB CLOUD STORAGE) */}
+                    <div className="p-4 rounded-xl bg-surface-container-highest/60 border border-outline-variant/30 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                        <div>
+                          <label className="block text-xs font-headline font-bold uppercase tracking-wider text-on-surface">
+                            Cover Image (Stored in TiDB Cloud)
+                          </label>
+                          <p className="text-[11px] text-on-surface-variant">
+                            Upload directly from local computer (saved as TiDB MEDIUMTEXT, zero MongoDB storage used) or paste an image URL.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <input
+                            type="file"
+                            ref={blogCoverFileInputRef}
+                            onChange={handleBlogCoverUpload}
+                            accept="image/*"
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => blogCoverFileInputRef.current?.click()}
+                            disabled={uploadingBlogCover}
+                            className="px-3 py-1.5 rounded-lg bg-secondary/15 hover:bg-secondary/25 border border-secondary/30 text-xs font-headline font-bold uppercase tracking-wider text-secondary flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                          >
+                            <span className={`material-symbols-outlined text-sm ${uploadingBlogCover ? 'animate-spin' : ''}`}>
+                              {uploadingBlogCover ? 'progress_activity' : 'upload_file'}
+                            </span>
+                            {uploadingBlogCover ? 'Uploading...' : 'Upload from Computer'}
+                          </button>
+                          {modalCoverImage && (
+                            <button
+                              type="button"
+                              onClick={handleClearBlogCover}
+                              className="px-2.5 py-1.5 rounded-lg bg-surface-container-high border border-outline-variant/30 text-[11px] font-mono text-on-surface-variant hover:text-error hover:border-error/40 flex items-center gap-1 transition-colors"
+                              title="Clear cover image"
+                            >
+                              <span className="material-symbols-outlined text-xs">close</span>
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <input
+                          type="text"
+                          name="coverImage"
+                          value={modalCoverImage}
+                          onChange={(e) => setModalCoverImage(e.target.value)}
+                          placeholder="Auto-populated when uploading from computer, or paste image URL"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                        />
+                      </div>
+
+                      {modalCoverImage && (
+                        <div className="relative aspect-[16/9] w-full max-h-48 rounded-lg overflow-hidden border border-outline-variant/40 bg-black/40">
+                          <img
+                            src={modalCoverImage}
+                            alt="Blog Cover Preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1000&q=80';
+                            }}
+                          />
+                          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-black/70 text-white backdrop-blur-sm border border-white/10 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
+                            {modalCoverImage.startsWith('data:') ? 'Local Image (Stored in TiDB Cloud)' : 'External Image URL'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* LINK TO EXPERIENCE OR PROJECT */}
+                    <div className="p-4 rounded-xl bg-surface-container-highest/60 border border-outline-variant/30 space-y-4">
+                      <div>
+                        <span className="text-xs font-headline font-bold uppercase tracking-wider text-on-surface block mb-1">
+                          Link Blog to Experience or Project
+                        </span>
+                        <p className="text-[11px] text-on-surface-variant">
+                          Link this blog to a work experience or project story, or select None to keep it as a normal blog.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1 flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-sm text-secondary">work</span>
+                            <span>Link to Experience</span>
+                          </label>
+                          <select
+                            name="linkedExperienceId"
+                            defaultValue={editingItem?.linkedExperienceId || 'none'}
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                          >
+                            <option value="none">None (Normal Blog / Unlinked)</option>
+                            {experiences.map((exp) => (
+                              <option key={exp._id || exp.id} value={exp._id || exp.id}>
+                                {exp.role} - {exp.company}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1 flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-sm text-tertiary">rocket_launch</span>
+                            <span>Link to Project</span>
+                          </label>
+                          <select
+                            name="linkedProjectId"
+                            defaultValue={editingItem?.linkedProjectId || 'none'}
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                          >
+                            <option value="none">None (Normal Blog / Unlinked)</option>
+                            {projects.map((proj) => (
+                              <option key={proj._id || proj.id} value={proj._id || proj.id}>
+                                {proj.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
                     </div>
                   </>
                 )}

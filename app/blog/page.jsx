@@ -2,6 +2,7 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import BlogView from '@/components/BlogView';
 import { getBlogsDb } from '@/lib/dbData';
+import { fetchCategoriesFromTiDB } from '@/lib/tidb';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -14,8 +15,12 @@ export const metadata = {
 
 export default async function BlogPage() {
   let blogs = [];
+  let categories = [];
   try {
-    blogs = await getBlogsDb();
+    [blogs, categories] = await Promise.all([
+      getBlogsDb(),
+      fetchCategoriesFromTiDB({ includeHidden: false }),
+    ]);
   } catch (err) {
     if (process.env.NODE_ENV === 'development') {
       console.error('Error fetching blogs in BlogPage:', err);
@@ -45,7 +50,7 @@ export default async function BlogPage() {
         </header>
 
         {/* Client Interactive Blog Section with Search, Filters, and Left-to-Right Animated Cards */}
-        <BlogView initialBlogs={blogs} />
+        <BlogView initialBlogs={blogs} initialCategories={categories} />
       </main>
       <Footer />
     </>

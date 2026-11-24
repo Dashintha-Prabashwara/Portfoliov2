@@ -1,31 +1,24 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import BlogPost from '@/models/BlogPost';
-import mongoose from 'mongoose';
+import { getBlogByIdFromTiDB } from '@/lib/tidb';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request, { params }) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-
-    let query = {};
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      query = { $or: [{ _id: id }, { slug: id }] };
-    } else {
-      query = { slug: id };
+    if (!id) {
+      return NextResponse.json({ error: 'Blog ID is required' }, { status: 400 });
     }
 
-    const blog = await BlogPost.findOne({ ...query, isVisible: { $ne: false } }).lean();
+    const blog = await getBlogByIdFromTiDB(id);
 
-    if (!blog) {
+    if (!blog || !blog.isVisible) {
       return NextResponse.json({ error: 'Blog post not found' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, data: blog });
   } catch (error) {
-    console.error('Error fetching single blog post:', error);
+    console.error('Error fetching single blog post from TiDB:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

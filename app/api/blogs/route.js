@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
 import { getBlogsDb } from '@/lib/dbData';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +9,6 @@ export async function GET(request) {
     const search = searchParams.get('search')?.trim().toLowerCase() || '';
     const category = searchParams.get('category')?.trim() || '';
 
-    await connectToDatabase();
     let blogs = await getBlogsDb(false);
 
     if (category && category.toLowerCase() !== 'all') {

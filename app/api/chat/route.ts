@@ -129,7 +129,7 @@ async function* streamGeminiResponse(
       } else if (response.status === 404) {
         yield `Error: Gemini model unavailable: ${msg}`;
       } else if (response.status === 429) {
-        yield 'Error: Too many requests — please wait a moment';
+        yield 'Error: Too many requests - please wait a moment';
       } else {
         yield `Error: ${msg}`;
       }

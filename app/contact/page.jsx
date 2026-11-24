@@ -114,7 +114,7 @@ function ContactHero() {
           </div>
           <div className="flex justify-between gap-6 border-b border-outline-variant/20 pb-3">
             <span className="text-on-surface-variant">Response</span>
-            <span className="font-headline font-bold text-right">Within 1–2 days</span>
+            <span className="font-headline font-bold text-right">Within 1-2 days</span>
           </div>
           <div className="flex justify-between gap-6">
             <span className="text-on-surface-variant">Direct line</span>
