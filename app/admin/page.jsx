@@ -128,6 +128,9 @@ export default function AdminPage() {
   const [hiddenAchievements, setHiddenAchievements] = useState([]);
   const [hiddenOrganizations, setHiddenOrganizations] = useState([]);
   const [hiddenHighlights, setHiddenHighlights] = useState([]);
+
+  // Blog database sync state
+  const [syncingBlogs, setSyncingBlogs] = useState(false);
   const [hiddenLanguages, setHiddenLanguages] = useState([]);
   const [customContributedRepos, setCustomContributedRepos] = useState([]);
   const [excludedContributedRepos, setExcludedContributedRepos] = useState([]);
@@ -368,6 +371,28 @@ export default function AdminPage() {
       showToast('Seed request failed', 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSyncBlogsFromDb = async () => {
+    setSyncingBlogs(true);
+    try {
+      const res = await fetch('/api/admin/blogs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setBlogs(applyVisibleColorCycle(data.data || [], 'blog'));
+        showToast(data.message || 'Blogs synchronized with blog database', 'success');
+      } else {
+        showToast(data.error || 'Failed to sync blogs from database', 'error');
+      }
+    } catch {
+      showToast('Network error while syncing blogs', 'error');
+    } finally {
+      setSyncingBlogs(false);
     }
   };
 
@@ -1913,6 +1938,18 @@ export default function AdminPage() {
                       Drag &amp; drop to reorder • Primary → Secondary → Tertiary
                     </span>
                     <button
+                      type="button"
+                      disabled={syncingBlogs}
+                      onClick={handleSyncBlogsFromDb}
+                      className="py-2.5 px-4 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 text-on-surface font-headline text-xs font-bold uppercase tracking-widest shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
+                      title="Fetch latest posts from TiDB Cloud blog database"
+                    >
+                      <span className={`material-symbols-outlined text-sm text-primary ${syncingBlogs ? 'animate-spin' : ''}`}>
+                        sync
+                      </span>
+                      {syncingBlogs ? 'Syncing...' : 'Sync Blog DB'}
+                    </button>
+                    <button
                       onClick={() => openModal('blog')}
                       className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
                     >
@@ -1923,14 +1960,23 @@ export default function AdminPage() {
                 </div>
 
                 {blogs.length === 0 ? (
-                  <div className="p-12 text-center border border-dashed border-outline-variant/30 rounded-xl">
-                    <p className="text-sm text-on-surface-variant mb-4">No blog posts found in database.</p>
-                    <button
-                      onClick={() => handleSeedData(false)}
-                      className="text-xs text-primary font-bold hover:underline"
-                    >
-                      Click here to seed sample technical articles
-                    </button>
+                  <div className="p-12 text-center border border-dashed border-outline-variant/30 rounded-xl space-y-3">
+                    <p className="text-sm text-on-surface-variant">No blog posts found in database.</p>
+                    <div className="flex items-center justify-center gap-4">
+                      <button
+                        onClick={handleSyncBlogsFromDb}
+                        className="py-2 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold font-headline uppercase tracking-wider flex items-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-sm">sync</span>
+                        Fetch from Blog Database
+                      </button>
+                      <button
+                        onClick={() => handleSeedData(false)}
+                        className="text-xs text-on-surface-variant hover:text-primary font-medium underline"
+                      >
+                        or seed sample articles
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import BlogPost from '@/models/BlogPost';
 import { checkAdminAuth } from '@/lib/adminAuth';
+import { syncBlogsFromTiDB } from '@/lib/dbData';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,14 @@ export async function GET(request) {
     }
 
     await connectToDatabase();
+
+    // Auto-sync new posts from TiDB Cloud blog database
+    try {
+      await syncBlogsFromTiDB();
+    } catch (syncErr) {
+      console.warn('Non-fatal: TiDB sync error in admin GET blogs:', syncErr.message);
+    }
+
     const blogs = await BlogPost.find({}).sort({ order: 1, publishedAt: -1 }).lean();
 
     return NextResponse.json({ success: true, data: blogs });
@@ -31,6 +40,18 @@ export async function POST(request) {
 
     await connectToDatabase();
     const body = await request.json();
+
+    // Handle manual sync action from CMS
+    if (body.action === 'sync') {
+      const syncResult = await syncBlogsFromTiDB();
+      const blogs = await BlogPost.find({}).sort({ order: 1, publishedAt: -1 }).lean();
+      return NextResponse.json({
+        success: true,
+        message: `Synced ${syncResult.synced || 0} new posts from blog database`,
+        data: blogs,
+        syncResult,
+      });
+    }
 
     if (!body.title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });

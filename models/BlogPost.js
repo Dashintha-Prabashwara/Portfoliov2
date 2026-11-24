@@ -64,6 +64,15 @@ const BlogPostSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    blogPostId: {
+      type: Number,
+      index: true,
+      sparse: true,
+    },
+    syncSource: {
+      type: String,
+      default: 'tidb',
+    },
     isVisible: {
       type: Boolean,
       default: true,
