@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { getProjectCoverImage } from '@/lib/projectImage';
+import { renderMarkdownToHtml, parseMarkdownWithFrontmatter } from '@/lib/markdown';
 
 const COLOR_CYCLE = ['primary', 'secondary', 'tertiary'];
 const BAR_COLOR_CYCLE = [
@@ -93,6 +94,10 @@ export default function AdminPage() {
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [uploadingBlogCover, setUploadingBlogCover] = useState(false);
   const blogCoverFileInputRef = useRef(null);
+  const [modalBlogContent, setModalBlogContent] = useState('');
+  const [mdFileName, setMdFileName] = useState('');
+  const [blogContentTab, setBlogContentTab] = useState('write'); // 'write' | 'preview'
+  const mdFileInputRef = useRef(null);
   const [cvData, setCvData] = useState(null);
   const [dbStatus, setDbStatus] = useState({ connected: false, checked: false, error: null });
 
@@ -392,6 +397,9 @@ export default function AdminPage() {
     setModalTechnologies(item?.technologies?.join(', ') || '');
     setModalGithubUrl(item?.githubUrl || '');
     setSelectedCertIcon(item?.icon || 'verified');
+    setModalBlogContent(item?.content || '');
+    setMdFileName('');
+    setBlogContentTab('write');
     setModalOpen(true);
   };
 
@@ -406,6 +414,9 @@ export default function AdminPage() {
     setModalTechnologies('');
     setModalGithubUrl('');
     setSelectedCertIcon('verified');
+    setModalBlogContent('');
+    setMdFileName('');
+    setBlogContentTab('write');
   };
 
   const handleAutofillFromGithub = async () => {
@@ -628,6 +639,47 @@ export default function AdminPage() {
     showToast('Cover image cleared');
   };
 
+  const handleMdFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileName = file.name;
+    const isMd =
+      fileName.endsWith('.md') ||
+      fileName.endsWith('.markdown') ||
+      fileName.endsWith('.txt');
+    if (!isMd) {
+      showToast('Please upload a .md, .markdown, or .txt file', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result;
+      if (typeof text === 'string') {
+        const { frontmatter, content } = parseMarkdownWithFrontmatter(text);
+        setModalBlogContent(content);
+        setMdFileName(fileName);
+
+        let details = [];
+        if (frontmatter.title) details.push(`Title: "${frontmatter.title}"`);
+        if (frontmatter.category) details.push(`Category: "${frontmatter.category}"`);
+
+        showToast(
+          details.length > 0
+            ? `Extracted ${fileName} (${content.length} chars, ${details.join(', ')})`
+            : `Extracted ${fileName} (${content.length} chars) successfully!`
+        );
+      }
+    };
+    reader.onerror = () => {
+      showToast('Failed to read markdown file', 'error');
+    };
+    reader.readAsText(file);
+
+    if (e.target) e.target.value = '';
+  };
+
   const handleAddCategory = async (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
@@ -654,7 +706,10 @@ export default function AdminPage() {
 
   const handleToggleCategoryVisibility = async (cat) => {
     try {
-      const currentVis = cat.is_visible !== 0 && cat.is_visible !== false;
+      const currentVis =
+        cat.isVisible !== undefined
+          ? Boolean(cat.isVisible)
+          : cat.is_visible !== 0 && cat.is_visible !== false;
       const res = await fetch('/api/admin/blogs/categories', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -662,7 +717,7 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast('Category visibility updated!');
+        showToast(`Category visibility set to ${!currentVis ? 'Visible' : 'Hidden'}!`);
         const catRes = await fetch('/api/admin/blogs/categories');
         const catData = await catRes.json();
         setBlogCategories(catData.data || []);
@@ -1153,6 +1208,7 @@ export default function AdminPage() {
       payload.image = modalCoverImage;
     } else if (modalType === 'blog') {
       payload.coverImage = modalCoverImage;
+      payload.content = modalBlogContent;
     }
 
     const isEdit = !!(editingItem?._id || editingItem?.id);
@@ -2133,7 +2189,10 @@ export default function AdminPage() {
                     {/* Categories List */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
                       {blogCategories.map((cat) => {
-                        const isCatVisible = cat.is_visible !== 0 && cat.is_visible !== false;
+                        const isCatVisible =
+                          cat.isVisible !== undefined
+                            ? Boolean(cat.isVisible)
+                            : cat.is_visible !== 0 && cat.is_visible !== false;
                         return (
                           <div
                             key={cat.id}
@@ -4248,11 +4307,17 @@ export default function AdminPage() {
                           {editingItem?.category && !blogCategories.some((c) => c.name === editingItem.category) && (
                             <option value={editingItem.category}>{editingItem.category} (Current)</option>
                           )}
-                          {blogCategories.map((c) => (
-                            <option key={c.id} value={c.name}>
-                              {c.name} {c.is_visible === 0 ? '(Hidden)' : ''}
-                            </option>
-                          ))}
+                          {blogCategories.map((c) => {
+                            const isCatVisible =
+                              c.isVisible !== undefined
+                                ? Boolean(c.isVisible)
+                                : c.is_visible !== 0 && c.is_visible !== false;
+                            return (
+                              <option key={c.id} value={c.name}>
+                                {c.name} {!isCatVisible ? '(Hidden)' : ''}
+                              </option>
+                            );
+                          })}
                           {blogCategories.length === 0 && (
                             <>
                               <option value="DevOps & CI/CD">DevOps & CI/CD</option>
@@ -4307,17 +4372,108 @@ export default function AdminPage() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                        Article Content (Markdown supported)
-                      </label>
-                      <textarea
-                        name="content"
-                        rows={8}
-                        defaultValue={editingItem?.content || ''}
-                        placeholder="Write the full technical article here with # Headings, - Lists, and paragraphs..."
-                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface font-mono focus:outline-none focus:border-primary"
-                      />
+                    <div className="space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                          Article Content (Markdown supported) *
+                        </label>
+
+                        {/* Upload .md File & Tab Controls */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            type="file"
+                            ref={mdFileInputRef}
+                            onChange={handleMdFileUpload}
+                            accept=".md,.markdown,.txt,text/markdown,text/plain"
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => mdFileInputRef.current?.click()}
+                            className="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 text-xs font-headline font-bold uppercase tracking-wider text-primary flex items-center gap-1.5 transition-colors shadow-sm"
+                            title="Upload and extract markdown file from computer"
+                          >
+                            <span className="material-symbols-outlined text-sm">upload_file</span>
+                            Upload .md File
+                          </button>
+
+                          {mdFileName && (
+                            <span className="text-[11px] font-mono text-secondary bg-secondary/10 border border-secondary/30 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[12px]">description</span>
+                              <span className="max-w-[120px] truncate">{mdFileName}</span>
+                              <button
+                                type="button"
+                                onClick={() => setMdFileName('')}
+                                className="text-secondary/70 hover:text-secondary ml-1"
+                                title="Dismiss filename"
+                              >
+                                <span className="material-symbols-outlined text-[11px]">close</span>
+                              </button>
+                            </span>
+                          )}
+
+                          {/* Write vs Preview Toggle */}
+                          <div className="inline-flex rounded-lg border border-outline-variant/30 p-0.5 bg-surface-container-highest">
+                            <button
+                              type="button"
+                              onClick={() => setBlogContentTab('write')}
+                              className={`px-2.5 py-0.5 rounded-md text-[11px] font-headline font-bold uppercase tracking-wider transition-colors ${
+                                blogContentTab === 'write'
+                                  ? 'bg-surface-container text-on-surface shadow-sm'
+                                  : 'text-on-surface-variant hover:text-on-surface'
+                              }`}
+                            >
+                              Write
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBlogContentTab('preview')}
+                              className={`px-2.5 py-0.5 rounded-md text-[11px] font-headline font-bold uppercase tracking-wider transition-colors ${
+                                blogContentTab === 'preview'
+                                  ? 'bg-surface-container text-on-surface shadow-sm'
+                                  : 'text-on-surface-variant hover:text-on-surface'
+                              }`}
+                            >
+                              Preview
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {blogContentTab === 'write' ? (
+                        <div>
+                          <textarea
+                            name="content"
+                            rows={9}
+                            value={modalBlogContent}
+                            onChange={(e) => setModalBlogContent(e.target.value)}
+                            placeholder="Write the full technical article here with # Headings, - Lists, code blocks, or upload a .md file above..."
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface font-mono focus:outline-none focus:border-primary leading-relaxed"
+                          />
+                          <div className="flex items-center justify-between text-[11px] font-mono text-on-surface-variant/70 mt-1">
+                            <span>Markdown supported (# headings, - lists, ``` code blocks)</span>
+                            <span>
+                              {modalBlogContent.length} chars •{' '}
+                              {modalBlogContent.trim() ? modalBlogContent.trim().split(/\s+/).length : 0} words
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full min-h-[220px] max-h-[380px] overflow-y-auto bg-surface-container-highest/60 border border-outline-variant/30 rounded-lg p-4 custom-scrollbar">
+                          {modalBlogContent.trim() ? (
+                            <div
+                              className="blog-content max-w-none text-on-surface font-light leading-relaxed space-y-3"
+                              dangerouslySetInnerHTML={{
+                                __html: renderMarkdownToHtml(modalBlogContent),
+                              }}
+                            />
+                          ) : (
+                            <div className="py-12 text-center text-xs text-on-surface-variant font-mono">
+                              No content yet. Type in the &apos;Write&apos; tab or click &apos;Upload .md File&apos; above.
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

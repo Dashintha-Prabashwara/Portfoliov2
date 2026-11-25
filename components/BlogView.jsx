@@ -9,6 +9,12 @@ export default function BlogView({ initialBlogs = [], initialCategories = [] }) 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
+  // Set of allowed categories (only visible ones from TiDB)
+  const visibleCategoryNames = useMemo(() => {
+    if (!categories || categories.length === 0) return null;
+    return new Set(categories.map((c) => c.name?.toLowerCase().trim()));
+  }, [categories]);
+
   // Categories list from CMS or dynamic fallback
   const categoriesList = useMemo(() => {
     if (categories && categories.length > 0) {
@@ -21,9 +27,19 @@ export default function BlogView({ initialBlogs = [], initialCategories = [] }) 
     return ['All', ...Array.from(set)];
   }, [categories, blogs]);
 
+  // Blogs that belong to visible categories
+  const eligibleBlogs = useMemo(() => {
+    return blogs.filter((blog) => {
+      if (visibleCategoryNames && blog.category) {
+        return visibleCategoryNames.has(blog.category.toLowerCase().trim());
+      }
+      return true;
+    });
+  }, [blogs, visibleCategoryNames]);
+
   // Filtered and searched blogs
   const filteredBlogs = useMemo(() => {
-    return blogs.filter((blog) => {
+    return eligibleBlogs.filter((blog) => {
       const matchesCategory =
         selectedCategory === 'All' ||
         (blog.category && blog.category.toLowerCase() === selectedCategory.toLowerCase());
@@ -51,7 +67,7 @@ export default function BlogView({ initialBlogs = [], initialCategories = [] }) 
         projMatch
       );
     });
-  }, [blogs, selectedCategory, searchQuery]);
+  }, [eligibleBlogs, selectedCategory, searchQuery]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Recent';
@@ -113,8 +129,8 @@ export default function BlogView({ initialBlogs = [], initialCategories = [] }) 
               const isSelected = selectedCategory.toLowerCase() === category.toLowerCase();
               const count =
                 category === 'All'
-                  ? blogs.length
-                  : blogs.filter((b) => b.category?.toLowerCase() === category.toLowerCase()).length;
+                  ? eligibleBlogs.length
+                  : eligibleBlogs.filter((b) => b.category?.toLowerCase() === category.toLowerCase()).length;
 
               return (
                 <button
@@ -218,36 +234,6 @@ export default function BlogView({ initialBlogs = [], initialCategories = [] }) 
                   {blog.excerpt}
                 </p>
 
-                {/* Down Position: Linked Experience or Project Badge with Small Icon */}
-                {(blog.linkedExperienceId || blog.linkedProjectId) && (
-                  <div className="mb-3.5">
-                    {blog.linkedExperienceId && (
-                      <Link
-                        href="/experience"
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-secondary/10 text-secondary border border-secondary/25 hover:bg-secondary/20 transition-colors max-w-full"
-                        title={blog.linkedExperienceTitle || 'Work Experience'}
-                      >
-                        <span className="material-symbols-outlined text-[12px] shrink-0 text-secondary">
-                          work
-                        </span>
-                        <span className="truncate">{blog.linkedExperienceTitle || 'Experience'}</span>
-                      </Link>
-                    )}
-                    {blog.linkedProjectId && (
-                      <Link
-                        href="/projects"
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-tertiary/10 text-tertiary border border-tertiary/25 hover:bg-tertiary/20 transition-colors max-w-full"
-                        title={blog.linkedProjectTitle || 'Project Story'}
-                      >
-                        <span className="material-symbols-outlined text-[12px] shrink-0 text-tertiary">
-                          rocket_launch
-                        </span>
-                        <span className="truncate">{blog.linkedProjectTitle || 'Project'}</span>
-                      </Link>
-                    )}
-                  </div>
-                )}
-
                 {/* Tags */}
                 {Array.isArray(blog.tags) && blog.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-5">
@@ -262,23 +248,51 @@ export default function BlogView({ initialBlogs = [], initialCategories = [] }) 
                   </div>
                 )}
 
-                {/* Card Action: Loads to Seperate Tab (target="_blank") */}
-                <div className="pt-4 border-t border-outline-variant/15 flex items-center justify-between mt-auto">
-                  <Link
-                    href={`/blog/${blog.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-headline font-bold uppercase tracking-wider text-primary hover:text-primary/80 transition-colors group-hover:underline"
-                  >
-                    <span>Read Article</span>
-                    <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">
-                      arrow_forward
-                    </span>
-                  </Link>
+                {/* Card Action & Footer */}
+                <div className="pt-4 border-t border-outline-variant/15 flex flex-col gap-2 mt-auto">
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={`/blog/${blog.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-headline font-bold uppercase tracking-wider text-primary hover:text-primary/80 transition-colors group-hover:underline"
+                    >
+                      <span>Read Article</span>
+                      <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">
+                        arrow_forward
+                      </span>
+                    </Link>
 
-                  <span className="text-[11px] font-mono text-on-surface-variant/70">
-                    {blog.author || 'Dashintha Jayawardana'}
-                  </span>
+                    <span className="text-[11px] font-mono text-on-surface-variant/70">
+                      {blog.author || 'Dashintha Jayawardana'}
+                    </span>
+                  </div>
+
+                  {/* Plain text linked experience or project in bottom position */}
+                  {(blog.linkedExperienceId || blog.linkedProjectId) && (
+                    <div className="flex flex-col gap-1">
+                      {blog.linkedExperienceId && (
+                        <Link
+                          href="/experience"
+                          className="text-[11px] font-mono text-on-surface-variant/70 hover:text-primary transition-colors truncate block"
+                          title={blog.linkedExperienceTitle || 'Work Experience'}
+                        >
+                          <span>exp: </span>
+                          <span className="hover:underline">{blog.linkedExperienceTitle || 'Experience'}</span>
+                        </Link>
+                      )}
+                      {blog.linkedProjectId && (
+                        <Link
+                          href="/projects"
+                          className="text-[11px] font-mono text-on-surface-variant/70 hover:text-primary transition-colors truncate block"
+                          title={blog.linkedProjectTitle || 'Project Story'}
+                        >
+                          <span>project: </span>
+                          <span className="hover:underline">{blog.linkedProjectTitle || 'Project'}</span>
+                        </Link>
+                      )}
+                    </div>
+                  )}
                 </div>
               </article>
             );

@@ -2,8 +2,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { getBlogByIdFromTiDB } from '@/lib/tidb';
+import { getBlogByIdFromTiDB, fetchCategoriesFromTiDB } from '@/lib/tidb';
 import { getExperiencesDb, getProjectsDb } from '@/lib/dbData';
+import { renderMarkdownToHtml } from '@/lib/markdown';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -18,6 +19,20 @@ export async function generateMetadata({ params }) {
     };
   }
 
+  try {
+    const visibleCategories = await fetchCategoriesFromTiDB({ includeHidden: false });
+    if (visibleCategories.length > 0 && blog.category) {
+      const isCatVis = visibleCategories.some(
+        (c) => c.name.toLowerCase().trim() === blog.category.toLowerCase().trim()
+      );
+      if (!isCatVis) {
+        return {
+          title: 'Article Not Found | Dashintha Jayawardana',
+        };
+      }
+    }
+  } catch {}
+
   return {
     title: `${blog.title} | Dashintha Jayawardana`,
     description: blog.excerpt || blog.title,
@@ -31,6 +46,18 @@ export default async function SingleBlogPage({ params }) {
   if (!blog || !blog.isVisible) {
     notFound();
   }
+
+  try {
+    const visibleCategories = await fetchCategoriesFromTiDB({ includeHidden: false });
+    if (visibleCategories.length > 0 && blog.category) {
+      const isCatVis = visibleCategories.some(
+        (c) => c.name.toLowerCase().trim() === blog.category.toLowerCase().trim()
+      );
+      if (!isCatVis) {
+        notFound();
+      }
+    }
+  } catch {}
 
   // Resolve linked experience and project
   let experiences = [];
@@ -67,6 +94,8 @@ export default async function SingleBlogPage({ params }) {
       return 'Recent';
     }
   };
+
+  const renderedContent = renderMarkdownToHtml(blog.content || blog.excerpt || '');
 
   return (
     <>
@@ -152,58 +181,10 @@ export default async function SingleBlogPage({ params }) {
         )}
 
         {/* Article Body */}
-        <article className="prose prose-sm sm:prose lg:prose-lg max-w-none text-on-surface font-light leading-relaxed space-y-6">
-          {(blog.content || blog.excerpt)
-            .split('\n\n')
-            .map((paragraph, pIdx) => {
-              const trimmed = paragraph.trim();
-              if (!trimmed) return null;
-              if (trimmed.startsWith('# ')) {
-                return (
-                  <h2 key={pIdx} className="font-headline text-2xl sm:text-3xl font-bold text-on-surface mt-10 mb-4 tracking-tight">
-                    {trimmed.replace(/^#\s+/, '')}
-                  </h2>
-                );
-              }
-              if (trimmed.startsWith('## ')) {
-                return (
-                  <h3 key={pIdx} className="font-headline text-xl sm:text-2xl font-bold text-on-surface mt-8 mb-3 tracking-tight">
-                    {trimmed.replace(/^##\s+/, '')}
-                  </h3>
-                );
-              }
-              if (trimmed.startsWith('### ')) {
-                return (
-                  <h4 key={pIdx} className="font-headline text-lg sm:text-xl font-bold text-on-surface mt-6 mb-2">
-                    {trimmed.replace(/^###\s+/, '')}
-                  </h4>
-                );
-              }
-              if (trimmed.startsWith('```')) {
-                const codeContent = trimmed.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
-                return (
-                  <pre key={pIdx} className="p-4 sm:p-5 rounded-xl bg-surface-container-lowest border border-outline-variant/30 text-xs sm:text-sm font-mono overflow-x-auto text-primary/95 shadow-inner">
-                    <code>{codeContent}</code>
-                  </pre>
-                );
-              }
-              if (trimmed.startsWith('- ')) {
-                const items = trimmed.split('\n- ');
-                return (
-                  <ul key={pIdx} className="list-disc pl-6 space-y-2 text-sm sm:text-base text-on-surface-variant">
-                    {items.map((item, iIdx) => (
-                      <li key={iIdx}>{item.replace(/^- /, '')}</li>
-                    ))}
-                  </ul>
-                );
-              }
-              return (
-                <p key={pIdx} className="text-sm sm:text-base text-on-surface leading-relaxed">
-                  {trimmed}
-                </p>
-              );
-            })}
-        </article>
+        <article
+          className="blog-content max-w-none text-on-surface font-light leading-relaxed space-y-4"
+          dangerouslySetInnerHTML={{ __html: renderedContent }}
+        />
 
         {/* Tags */}
         {Array.isArray(blog.tags) && blog.tags.length > 0 && (
