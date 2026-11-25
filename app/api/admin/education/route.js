@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Education from '@/models/Education';
 import { checkAdminAuth } from '@/lib/adminAuth';
+import seedData from '@/lib/seedData.json';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,33 @@ export async function GET(request) {
     }
 
     await connectToDatabase();
-    const education = await Education.find({}).sort({ order: 1, createdAt: -1 });
+    let education = await Education.find({}).sort({ order: 1, createdAt: -1 });
 
-    return NextResponse.json({ success: true, data: education });
+    if (education.length === 0 && seedData.education?.length) {
+      await Education.insertMany(
+        seedData.education.map((item, idx) => ({
+          title: item.title,
+          institution: item.institution,
+          description: item.description || '',
+          tags: item.tags || [],
+          startDate: item.startDate || '',
+          endDate: item.endDate || 'PRESENT',
+          order: idx + 1,
+        }))
+      );
+      education = await Education.find({}).sort({ order: 1, createdAt: -1 });
+    }
+
+    return NextResponse.json(
+      { success: true, data: education },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching admin education:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

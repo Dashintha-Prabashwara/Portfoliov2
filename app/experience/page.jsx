@@ -7,17 +7,23 @@ import { useEffect, useState } from 'react';
 
 export default function Experience() {
   const [experiences, setExperiences] = useState([]);
+  const [leadership, setLeadership] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchExperiences() {
+    async function fetchData() {
       try {
-        const response = await fetch('/api/experience', { cache: 'no-store' });
-        const data = await response.json();
-        setExperiences(data);
+        const [expRes, leadRes] = await Promise.all([
+          fetch('/api/experience', { cache: 'no-store' }),
+          fetch('/api/leadership', { cache: 'no-store' }),
+        ]);
+        const expData = await expRes.json();
+        const leadData = await leadRes.json();
+        if (Array.isArray(expData)) setExperiences(expData);
+        if (Array.isArray(leadData)) setLeadership(leadData);
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
-          console.error('Error fetching experiences:', error);
+          console.error('Error fetching experience/leadership data:', error);
         }
       } finally {
         setLoading(false);
@@ -25,48 +31,8 @@ export default function Experience() {
       }
     }
 
-    fetchExperiences();
+    fetchData();
   }, []);
-
-  // Leadership data remains static for now
-  const leadership = [
-    {
-      icon: 'admin_panel_settings',
-      title: 'Project Co-Chairperson - SkillSprint',
-      description:
-        'Co-Chairperson for Web3Ceylon - Colombo Edition seminar series, featuring industry speakers on blockchain and Web3 technologies. Empowered students to explore real-world applications of decentralized solutions.',
-      period: 'August - September 2025',
-      category: 'Web3 Initiative',
-      color: 'primary',
-    },
-    {
-      icon: 'trending_up',
-      title: 'Project Co-Chairperson - Data Storm 6.0',
-      description:
-        'Co-Chairperson for inter-university data analytics competition with webinars and masterclasses. Delivered industry mentoring for real-world problem-solving using cutting-edge data technologies.',
-      period: 'March - June 2025',
-      category: 'Data Competition',
-      color: 'secondary',
-    },
-    {
-      icon: 'code',
-      title: 'Project Co-Chairperson - Devthon 2.0',
-      description:
-        'Spearheaded three-phase web competition (Ideathon, Designathon, Devthon). Guided students through ideation, UI/UX design, and full-stack development with hands-on skill building.',
-      period: 'January - April 2025',
-      category: 'Web Competition',
-      color: 'tertiary',
-    },
-    {
-      icon: 'school',
-      title: 'Project Co-Chairperson - Mora TechConnect',
-      description:
-        'Led 12-month IT educational initiative with bi-weekly sessions on emerging technologies. Delivered webinars via YouTube and culminated in hands-on robotics workshop for practical learning.',
-      period: 'July 2024 - February 2025',
-      category: 'Tech Education',
-      color: 'primary',
-    },
-  ];
 
   return (
     <>
@@ -78,7 +44,7 @@ export default function Experience() {
             Building <span className="text-primary italic">Infrastructure</span> and Learning Along the Way.
           </h1>
           <p className="font-body text-on-surface-variant text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl leading-relaxed">
-            My background spans IoT research, full-stack development, and working on various technical initiatives. I'm continuously learning about deployment, automation, and how to build better systems.
+            My background spans IoT research, full-stack development, and working on various technical initiatives. I&apos;m continuously learning about deployment, automation, and how to build better systems.
           </p>
         </section>
 
@@ -189,10 +155,10 @@ export default function Experience() {
               <span className="font-label text-primary text-xs tracking-[0.2em] uppercase block mb-4">
                 Community &amp; Learning
               </span>
-              <h2 className="font-headline text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">Teaching &amp; Mentoring</h2>
+              <h2 className="font-headline text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">Leadership &amp; Knowledge Sharing</h2>
             </div>
             <div className="font-body text-on-surface-variant text-xs sm:text-sm italic border-l border-outline-variant/30 pl-4">
-              I've been fortunate to help others learn and grow through various initiatives.
+              I&apos;ve been fortunate to help others learn and grow through various initiatives.
             </div>
           </div>
 
@@ -256,7 +222,7 @@ export default function Experience() {
                 format_quote
               </span>
               <h3 className="font-headline text-2xl sm:text-3xl md:text-5xl font-bold italic mb-6 sm:mb-8 max-w-3xl">
-                &ldquo;Good mentors help you learn from their experience so you don&rsquo;t have to make all the same mistakes. I want to be that person for others.&rdquo;
+                &ldquo;I believe knowledge becomes more valuable when shared, and leadership becomes more meaningful when it helps others grow.&rdquo;
               </h3>
               <div className="flex items-center gap-4">
                 <div className="h-[1px] w-12 bg-primary"></div>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Experience from '@/models/Experience';
 import { checkAdminAuth } from '@/lib/adminAuth';
+import seedData from '@/lib/seedData.json';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,35 @@ export async function GET(request) {
     }
 
     await connectToDatabase();
-    const experiences = await Experience.find({}).sort({ order: 1, createdAt: -1 });
+    let experiences = await Experience.find({}).sort({ order: 1, createdAt: -1 });
 
-    return NextResponse.json({ success: true, data: experiences });
+    if (experiences.length === 0 && seedData.experiences?.length) {
+      await Experience.insertMany(
+        seedData.experiences.map((item, idx) => ({
+          company: item.company,
+          role: item.role,
+          startDate: item.startDate,
+          endDate: item.endDate || 'Present',
+          description: item.description,
+          tags: item.tags || [],
+          color: item.color || 'primary',
+          align: item.align || 'auto',
+          order: idx + 1,
+        }))
+      );
+      experiences = await Experience.find({}).sort({ order: 1, createdAt: -1 });
+    }
+
+    return NextResponse.json(
+      { success: true, data: experiences },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching admin experiences:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

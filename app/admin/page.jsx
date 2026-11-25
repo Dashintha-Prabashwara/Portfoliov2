@@ -30,6 +30,50 @@ const CERTIFICATION_ICONS = [
   { id: 'hub', label: 'Architecture & Hub' },
 ];
 
+const SKILL_ICONS = [
+  { id: 'terminal', label: 'Terminal / CLI / DevOps' },
+  { id: 'code', label: 'Code / Software Engineering' },
+  { id: 'cloud_done', label: 'Cloud / AWS / Serverless' },
+  { id: 'cloud', label: 'Cloud Computing' },
+  { id: 'database', label: 'Database / Relational & NoSQL' },
+  { id: 'storage', label: 'Storage & Distributed Systems' },
+  { id: 'psychology', label: 'AI & Machine Learning' },
+  { id: 'developer_board', label: 'Hardware / IoT / Embedded' },
+  { id: 'memory', label: 'Systems & Microcontrollers' },
+  { id: 'devices', label: 'Web & Frontend / Responsive' },
+  { id: 'laptop_mac', label: 'Full-Stack Development' },
+  { id: 'api', label: 'APIs & Web Services' },
+  { id: 'hub', label: 'Architecture & Microservices' },
+  { id: 'security', label: 'Security & DevSecOps' },
+  { id: 'build', label: 'Tools & Engineering' },
+  { id: 'settings', label: 'Configuration & Infrastructure' },
+  { id: 'dns', label: 'Networking & DNS' },
+  { id: 'layers', label: 'Full Stack & Frameworks' },
+  { id: 'speed', label: 'Performance & Optimization' },
+  { id: 'widgets', label: 'UI Components & Design Systems' },
+];
+
+const LEADERSHIP_ICONS = [
+  { id: 'admin_panel_settings', label: 'Chairperson / Governance' },
+  { id: 'trending_up', label: 'Data Competition / Analytics' },
+  { id: 'code', label: 'Hackathon / Web Competition' },
+  { id: 'school', label: 'Education / Mentoring' },
+  { id: 'groups', label: 'Team Leadership / Community' },
+  { id: 'group', label: 'Student Body / Committee' },
+  { id: 'workspace_premium', label: 'Award / Excellence' },
+  { id: 'military_tech', label: 'Competition & Medal' },
+  { id: 'verified_user', label: 'Initiative & Trust' },
+  { id: 'campaign', label: 'Outreach & Awareness' },
+  { id: 'co_present', label: 'Speaker & Presenter' },
+  { id: 'handshake', label: 'Partnerships & Outreach' },
+  { id: 'event', label: 'Event Organizing / Summit' },
+  { id: 'lightbulb', label: 'Innovation & Ideation' },
+  { id: 'diversity_3', label: 'Collaboration & Networking' },
+  { id: 'volunteer_activism', label: 'Volunteering & Community Service' },
+  { id: 'forum', label: 'Panel Discussion & Forum' },
+  { id: 'star', label: 'Key Achievement / Milestone' },
+];
+
 // Helper: automatically cycles Primary -> Secondary -> Tertiary ONLY across visible items,
 // and automatically places visible items at the top and pushes hidden items down to the bottom.
 const applyVisibleColorCycle = (items = [], type = 'experience') => {
@@ -66,6 +110,8 @@ const applyVisibleColorCycle = (items = [], type = 'experience') => {
       updated.color = cycleColor;
     } else if (type === 'blog') {
       updated.color = cycleColor;
+    } else if (type === 'skill' || type === 'leadership') {
+      updated.color = cycleColor;
     }
 
     return updated;
@@ -85,6 +131,8 @@ export default function AdminPage() {
 
   // Data states
   const [experiences, setExperiences] = useState([]);
+  const [leadership, setLeadership] = useState([]);
+  const [skills, setSkills] = useState([]);
   const [projects, setProjects] = useState([]);
   const [certifications, setCertifications] = useState([]);
   const [education, setEducation] = useState([]);
@@ -144,8 +192,10 @@ export default function AdminPage() {
   const [excludedContributedRepos, setExcludedContributedRepos] = useState([]);
   const [customRepoInput, setCustomRepoInput] = useState('');
 
-  // Certification icon chooser state
+  // Icon chooser states for modals
   const [selectedCertIcon, setSelectedCertIcon] = useState('verified');
+  const [selectedSkillIcon, setSelectedSkillIcon] = useState('terminal');
+  const [selectedLeadershipIcon, setSelectedLeadershipIcon] = useState('admin_panel_settings');
 
   // Drag & drop scrolling refs (for wheel scrolling & edge auto-scroll)
   const isDraggingRef = useRef(false);
@@ -160,15 +210,25 @@ export default function AdminPage() {
   const fetchAllData = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [expRes, projRes, certRes, eduRes, cvRes, ghRes, blogRes, catRes] = await Promise.all([
-        fetch('/api/admin/experiences'),
-        fetch('/api/admin/projects'),
-        fetch('/api/admin/certifications'),
-        fetch('/api/admin/education'),
-        fetch('/api/admin/cv'),
-        fetch('/api/admin/github'),
-        fetch('/api/admin/blogs'),
-        fetch('/api/admin/blogs/categories'),
+      const fetchOpts = {
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache',
+        },
+      };
+
+      const [expRes, projRes, certRes, eduRes, cvRes, ghRes, blogRes, catRes, skillRes, leadRes] = await Promise.all([
+        fetch('/api/admin/experiences', fetchOpts),
+        fetch('/api/admin/projects', fetchOpts),
+        fetch('/api/admin/certifications', fetchOpts),
+        fetch('/api/admin/education', fetchOpts),
+        fetch('/api/admin/cv', fetchOpts),
+        fetch('/api/admin/github', fetchOpts),
+        fetch('/api/admin/blogs', fetchOpts),
+        fetch('/api/admin/blogs/categories', fetchOpts),
+        fetch('/api/admin/skills', fetchOpts),
+        fetch('/api/admin/leadership', fetchOpts),
       ]);
 
       if (expRes.status === 401) {
@@ -176,7 +236,7 @@ export default function AdminPage() {
         return;
       }
 
-      const [expData, projData, certData, eduData, cvResp, ghResp, blogData, catData] = await Promise.all([
+      const [expData, projData, certData, eduData, cvResp, ghResp, blogData, catData, skillData, leadData] = await Promise.all([
         expRes.json(),
         projRes.json(),
         certRes.json(),
@@ -185,9 +245,13 @@ export default function AdminPage() {
         ghRes.json(),
         blogRes.json(),
         catRes.json(),
+        skillRes.json(),
+        leadRes.json(),
       ]);
 
       setExperiences(applyVisibleColorCycle(expData.data || [], 'experience'));
+      setLeadership(applyVisibleColorCycle(leadData?.data || [], 'leadership'));
+      setSkills(applyVisibleColorCycle(skillData?.data || [], 'skill'));
       setProjects(applyVisibleColorCycle(projData.data || [], 'project'));
       setCertifications(applyVisibleColorCycle(certData.data || [], 'certification'));
       setEducation(applyVisibleColorCycle(eduData.data || [], 'education'));
@@ -397,6 +461,8 @@ export default function AdminPage() {
     setModalTechnologies(item?.technologies?.join(', ') || '');
     setModalGithubUrl(item?.githubUrl || '');
     setSelectedCertIcon(item?.icon || 'verified');
+    setSelectedSkillIcon(item?.icon || 'terminal');
+    setSelectedLeadershipIcon(item?.icon || 'admin_panel_settings');
     setModalBlogContent(item?.content || '');
     setMdFileName('');
     setBlogContentTab('write');
@@ -414,6 +480,8 @@ export default function AdminPage() {
     setModalTechnologies('');
     setModalGithubUrl('');
     setSelectedCertIcon('verified');
+    setSelectedSkillIcon('terminal');
+    setSelectedLeadershipIcon('admin_panel_settings');
     setModalBlogContent('');
     setMdFileName('');
     setBlogContentTab('write');
@@ -777,7 +845,7 @@ export default function AdminPage() {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
 
     try {
-      const endpoint = type === 'education' ? 'education' : `${type}s`;
+      const endpoint = type === 'education' ? 'education' : type === 'leadership' ? 'leadership' : `${type}s`;
       const res = await fetch(`/api/admin/${endpoint}?id=${id}`, {
         method: 'DELETE',
       });
@@ -814,6 +882,14 @@ export default function AdminPage() {
       list = [...experiences];
       setList = setExperiences;
       endpoint = '/api/admin/experiences';
+    } else if (type === 'leadership') {
+      list = [...leadership];
+      setList = setLeadership;
+      endpoint = '/api/admin/leadership';
+    } else if (type === 'skill') {
+      list = [...skills];
+      setList = setSkills;
+      endpoint = '/api/admin/skills';
     } else if (type === 'project') {
       list = [...projects];
       setList = setProjects;
@@ -878,6 +954,14 @@ export default function AdminPage() {
       list = [...experiences];
       setList = setExperiences;
       endpoint = '/api/admin/experiences';
+    } else if (type === 'leadership') {
+      list = [...leadership];
+      setList = setLeadership;
+      endpoint = '/api/admin/leadership';
+    } else if (type === 'skill') {
+      list = [...skills];
+      setList = setSkills;
+      endpoint = '/api/admin/skills';
     } else if (type === 'project') {
       list = [...projects];
       setList = setProjects;
@@ -1030,6 +1114,21 @@ export default function AdminPage() {
             (item.institution || '').toLowerCase().includes(q) ||
             (item.description || '').toLowerCase().includes(q) ||
             (item.tags || []).some((t) => t.toLowerCase().includes(q))
+          );
+        }
+        if (type === 'skill') {
+          return (
+            (item.title || '').toLowerCase().includes(q) ||
+            (item.description || '').toLowerCase().includes(q) ||
+            (item.skills || []).some((s) => s.toLowerCase().includes(q))
+          );
+        }
+        if (type === 'leadership') {
+          return (
+            (item.title || '').toLowerCase().includes(q) ||
+            (item.category || '').toLowerCase().includes(q) ||
+            (item.period || '').toLowerCase().includes(q) ||
+            (item.description || '').toLowerCase().includes(q)
           );
         }
         if (type === 'blog') {
@@ -1186,7 +1285,7 @@ export default function AdminPage() {
     const payload = {};
 
     formData.forEach((value, key) => {
-      if (key === 'tags' || key === 'technologies') {
+      if (key === 'tags' || key === 'technologies' || key === 'skills') {
         payload[key] = value
           .split(',')
           .map((t) => t.trim())
@@ -1212,7 +1311,8 @@ export default function AdminPage() {
     }
 
     const isEdit = !!(editingItem?._id || editingItem?.id);
-    const url = `/api/admin/${modalType === 'education' ? 'education' : modalType + 's'}`;
+    const endpoint = modalType === 'education' ? 'education' : modalType === 'leadership' ? 'leadership' : modalType + 's';
+    const url = `/api/admin/${endpoint}`;
     const method = isEdit ? 'PUT' : 'POST';
 
     if (isEdit) {
@@ -1437,6 +1537,18 @@ export default function AdminPage() {
 
           <div className="flex items-center gap-3 sm:gap-4">
             <button
+              onClick={() => fetchAllData()}
+              disabled={loadingData}
+              className="inline-flex items-center gap-1.5 text-xs font-headline uppercase tracking-wider text-on-surface-variant hover:text-primary transition-colors py-1.5 px-3 rounded border border-outline-variant/30 hover:border-primary/40"
+              title="Reload all portfolio data from database"
+            >
+              <span className={`material-symbols-outlined text-sm ${loadingData ? 'animate-spin' : ''}`}>
+                refresh
+              </span>
+              Refresh
+            </button>
+
+            <button
               onClick={() => handleSeedData(false)}
               disabled={isSubmitting}
               className="hidden md:inline-flex items-center gap-1.5 text-xs font-headline uppercase tracking-wider text-on-surface-variant hover:text-primary transition-colors py-1.5 px-3 rounded border border-outline-variant/30 hover:border-primary/40"
@@ -1472,7 +1584,8 @@ export default function AdminPage() {
         <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant/20 pb-4 mb-8">
           {[
             { id: 'overview', label: 'Overview', icon: 'dashboard' },
-            { id: 'experiences', label: `Experiences (${experiences.length})`, icon: 'work' },
+            { id: 'experiences', label: `Experiences (${experiences.length + leadership.length})`, icon: 'work' },
+            { id: 'skills', label: `Skills (${skills.length})`, icon: 'psychology' },
             { id: 'projects', label: `Projects (${projects.length})`, icon: 'terminal' },
             { id: 'blogs', label: `Blog Posts (${blogs.length})`, icon: 'article' },
             { id: 'certifications', label: `Certifications & Edu (${certifications.length + education.length})`, icon: 'verified' },
@@ -1505,16 +1618,16 @@ export default function AdminPage() {
             {activeTab === 'overview' && (
               <div className="space-y-8">
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 relative overflow-hidden group hover:border-primary/40 transition-colors">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
                       <span className="material-symbols-outlined">work</span>
                     </div>
                     <span className="text-3xl font-bold font-headline text-on-surface">
-                      {experiences.length}
+                      {experiences.length + leadership.length}
                     </span>
                     <p className="text-xs uppercase tracking-widest text-on-surface-variant mt-1">
-                      Experiences Listed
+                      Experiences &amp; Leadership
                     </p>
                     <button
                       onClick={() => setActiveTab('experiences')}
@@ -1526,6 +1639,24 @@ export default function AdminPage() {
 
                   <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 relative overflow-hidden group hover:border-secondary/40 transition-colors">
                     <div className="w-10 h-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center mb-4">
+                      <span className="material-symbols-outlined">psychology</span>
+                    </div>
+                    <span className="text-3xl font-bold font-headline text-on-surface">
+                      {skills.length}
+                    </span>
+                    <p className="text-xs uppercase tracking-widest text-on-surface-variant mt-1">
+                      Skill Domains
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('skills')}
+                      className="mt-4 text-xs text-secondary font-bold inline-flex items-center gap-1 hover:underline"
+                    >
+                      Manage Skills →
+                    </button>
+                  </div>
+
+                  <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 relative overflow-hidden group hover:border-tertiary/40 transition-colors">
+                    <div className="w-10 h-10 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center mb-4">
                       <span className="material-symbols-outlined">terminal</span>
                     </div>
                     <span className="text-3xl font-bold font-headline text-on-surface">
@@ -1536,14 +1667,14 @@ export default function AdminPage() {
                     </p>
                     <button
                       onClick={() => setActiveTab('projects')}
-                      className="mt-4 text-xs text-secondary font-bold inline-flex items-center gap-1 hover:underline"
+                      className="mt-4 text-xs text-tertiary font-bold inline-flex items-center gap-1 hover:underline"
                     >
                       Manage Projects →
                     </button>
                   </div>
 
-                  <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 relative overflow-hidden group hover:border-tertiary/40 transition-colors">
-                    <div className="w-10 h-10 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center mb-4">
+                  <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 relative overflow-hidden group hover:border-primary/40 transition-colors">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
                       <span className="material-symbols-outlined">verified</span>
                     </div>
                     <span className="text-3xl font-bold font-headline text-on-surface">
@@ -1554,14 +1685,14 @@ export default function AdminPage() {
                     </p>
                     <button
                       onClick={() => setActiveTab('certifications')}
-                      className="mt-4 text-xs text-tertiary font-bold inline-flex items-center gap-1 hover:underline"
+                      className="mt-4 text-xs text-primary font-bold inline-flex items-center gap-1 hover:underline"
                     >
                       Manage Credentials →
                     </button>
                   </div>
 
-                  <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 relative overflow-hidden group hover:border-primary/40 transition-colors">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
+                  <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 relative overflow-hidden group hover:border-secondary/40 transition-colors">
+                    <div className="w-10 h-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center mb-4">
                       <span className="material-symbols-outlined">article</span>
                     </div>
                     <span className="text-3xl font-bold font-headline text-on-surface">
@@ -1572,14 +1703,14 @@ export default function AdminPage() {
                     </p>
                     <button
                       onClick={() => setActiveTab('blogs')}
-                      className="mt-4 text-xs text-primary font-bold inline-flex items-center gap-1 hover:underline"
+                      className="mt-4 text-xs text-secondary font-bold inline-flex items-center gap-1 hover:underline"
                     >
                       Manage Articles →
                     </button>
                   </div>
 
-                  <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 relative overflow-hidden group hover:border-primary/40 transition-colors">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
+                  <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 relative overflow-hidden group hover:border-tertiary/40 transition-colors">
+                    <div className="w-10 h-10 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center mb-4">
                       <span className="material-symbols-outlined">download</span>
                     </div>
                     <span className="text-3xl font-bold font-headline text-on-surface">
@@ -1590,7 +1721,7 @@ export default function AdminPage() {
                     </p>
                     <button
                       onClick={() => setActiveTab('cv')}
-                      className="mt-4 text-xs text-primary font-bold inline-flex items-center gap-1 hover:underline"
+                      className="mt-4 text-xs text-tertiary font-bold inline-flex items-center gap-1 hover:underline"
                     >
                       Manage CV File →
                     </button>
@@ -1846,6 +1977,364 @@ export default function AdminPage() {
               })()}
             </>
           )}
+
+                  {/* LEADERSHIP & KNOWLEDGE SHARING SECTION */}
+                  <div className="pt-10 border-t border-outline-variant/20 space-y-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div>
+                        <h2 className="font-headline text-xl sm:text-2xl font-bold">Leadership &amp; Knowledge Sharing</h2>
+                        <p className="text-xs text-on-surface-variant">
+                          Manage initiatives, workshops, and community contributions on the /experience page
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-[11px] font-mono text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-lg border border-outline-variant/20 flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-sm text-primary">drag_indicator</span>
+                          Drag &amp; drop to reorder • Primary → Secondary → Tertiary
+                        </span>
+                        <button
+                          onClick={() => openModal('leadership')}
+                          className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
+                        >
+                          <span className="material-symbols-outlined text-sm">add</span>
+                          Add Leadership Card
+                        </button>
+                      </div>
+                    </div>
+
+                    {leadership.length === 0 ? (
+                      <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl">
+                        <p className="text-sm text-on-surface-variant">No leadership items found in database.</p>
+                      </div>
+                    ) : (
+                      <>
+                        {renderSearchAndFilterBar(leadership, 'leadership items')}
+
+                        {(() => {
+                          const displayedLeadership = getFilteredItems(leadership, 'leadership');
+                          if (displayedLeadership.length === 0) {
+                            return (
+                              <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl bg-surface-container-low/40">
+                                <span className="material-symbols-outlined text-3xl text-on-surface-variant/40 mb-2">search_off</span>
+                                <p className="text-sm font-headline font-bold text-on-surface">No matching leadership items found</p>
+                                <p className="text-xs text-on-surface-variant mt-1">Try adjusting your search query or changing the visibility filter.</p>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {displayedLeadership.map((lead) => {
+                                const origIdx = leadership.findIndex((x) => (x._id || x.id) === (lead._id || lead.id));
+                                const idx = origIdx >= 0 ? origIdx : 0;
+                                const isDragging = dragInfo.type === 'leadership' && dragInfo.index === idx;
+                                const isDragOver = dragOverInfo.type === 'leadership' && dragOverInfo.index === idx;
+                                const isVisible = lead.isVisible !== false;
+
+                                return (
+                                  <div
+                                    key={lead._id || lead.id || idx}
+                                    draggable
+                                    onDragStart={(e) => onDragStart(e, 'leadership', idx)}
+                                    onDragEnter={(e) => onDragEnter(e, 'leadership', idx)}
+                                    onDragOver={onDragOver}
+                                    onDragEnd={onDragEnd}
+                                    onDrop={(e) => onDrop(e, 'leadership', idx)}
+                                    className={`border rounded-xl p-5 flex flex-col justify-between transition-all duration-200 cursor-move ${
+                                      isDragging
+                                        ? 'opacity-30 border-dashed border-primary scale-[0.99] bg-surface-container-low'
+                                        : isDragOver
+                                          ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
+                                          : !isVisible
+                                            ? 'opacity-65 border-dashed border-outline-variant/40 bg-surface-container-low/60'
+                                            : 'bg-surface-container-low border-outline-variant/20 hover:border-outline-variant/50'
+                                    }`}
+                                  >
+                                    <div className="space-y-3">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-0.5">
+                                            <div
+                                              className="cursor-grab active:cursor-grabbing p-1 text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center rounded hover:bg-surface-container-high"
+                                              title="Drag to reorder"
+                                            >
+                                              <span className="material-symbols-outlined text-lg select-none">drag_indicator</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <button
+                                                type="button"
+                                                onClick={() => moveItem('leadership', idx, -1)}
+                                                disabled={idx === 0}
+                                                className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 transition-colors"
+                                                title="Move up"
+                                              >
+                                                <span className="material-symbols-outlined text-xs leading-none">arrow_drop_up</span>
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => moveItem('leadership', idx, 1)}
+                                                disabled={idx === leadership.length - 1}
+                                                className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 transition-colors"
+                                                title="Move down"
+                                              >
+                                                <span className="material-symbols-outlined text-xs leading-none">arrow_drop_down</span>
+                                              </button>
+                                            </div>
+                                          </div>
+
+                                          <div className="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-primary border border-outline-variant/30">
+                                            <span className="material-symbols-outlined text-xl">{lead.icon || 'star'}</span>
+                                          </div>
+
+                                          <div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 font-bold">
+                                                #{idx + 1}
+                                              </span>
+                                              {renderVisibilityBadge(lead.isVisible)}
+                                              {renderColorBadge(lead.color || COLOR_CYCLE[idx % 3], lead.isVisible)}
+                                            </div>
+                                            <p className="text-[11px] font-mono text-primary mt-1">{lead.period}</p>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <button
+                                            type="button"
+                                            onClick={() => handleToggleVisibility('leadership', lead)}
+                                            className={`p-2 rounded transition-colors ${
+                                              isVisible
+                                                ? 'text-primary hover:bg-primary/10'
+                                                : 'text-on-surface-variant/50 hover:text-on-surface hover:bg-surface-container-high'
+                                            }`}
+                                            title={isVisible ? 'Click to Hide' : 'Click to Make Visible'}
+                                          >
+                                            <span className="material-symbols-outlined text-lg">
+                                              {isVisible ? 'visibility' : 'visibility_off'}
+                                            </span>
+                                          </button>
+                                          <button
+                                            onClick={() => openModal('leadership', lead)}
+                                            className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
+                                            title="Edit Item"
+                                          >
+                                            <span className="material-symbols-outlined text-lg">edit</span>
+                                          </button>
+                                          <button
+                                            onClick={() => handleDelete('leadership', lead._id || lead.id)}
+                                            className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
+                                            title="Delete Item"
+                                          >
+                                            <span className="material-symbols-outlined text-lg">delete</span>
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      <div>
+                                        <h4 className="font-headline font-bold text-base text-on-surface">{lead.title}</h4>
+                                        <span className="inline-block text-[10px] font-mono uppercase tracking-wider text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded border border-outline-variant/20 mt-1">
+                                          {lead.category}
+                                        </span>
+                                      </div>
+
+                                      {lead.description && (
+                                        <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-3">
+                                          {lead.description}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </>
+                    )}
+                  </div>
+              </div>
+            )}
+
+            {/* SKILLS TAB */}
+            {activeTab === 'skills' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="font-headline text-xl sm:text-2xl font-bold">Technical Skills &amp; Domains</h2>
+                    <p className="text-xs text-on-surface-variant">
+                      Manage Bento skill domains, icons, and tech stacks displayed on the /skills page
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-[11px] font-mono text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-lg border border-outline-variant/20 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm text-primary">drag_indicator</span>
+                      Drag &amp; drop to reorder • Primary → Secondary → Tertiary
+                    </span>
+                    <button
+                      onClick={() => openModal('skill')}
+                      className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                      Add Skill Domain
+                    </button>
+                  </div>
+                </div>
+
+                {skills.length === 0 ? (
+                  <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl">
+                    <p className="text-sm text-on-surface-variant">No skill domains found in database.</p>
+                  </div>
+                ) : (
+                  <>
+                    {renderSearchAndFilterBar(skills, 'skill domains')}
+
+                    {(() => {
+                      const displayedSkills = getFilteredItems(skills, 'skill');
+                      if (displayedSkills.length === 0) {
+                        return (
+                          <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl bg-surface-container-low/40">
+                            <span className="material-symbols-outlined text-3xl text-on-surface-variant/40 mb-2">search_off</span>
+                            <p className="text-sm font-headline font-bold text-on-surface">No matching skill domains found</p>
+                            <p className="text-xs text-on-surface-variant mt-1">Try adjusting your search query or changing the visibility filter.</p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {displayedSkills.map((sk) => {
+                            const origIdx = skills.findIndex((x) => (x._id || x.id) === (sk._id || sk.id));
+                            const idx = origIdx >= 0 ? origIdx : 0;
+                            const isDragging = dragInfo.type === 'skill' && dragInfo.index === idx;
+                            const isDragOver = dragOverInfo.type === 'skill' && dragOverInfo.index === idx;
+                            const isVisible = sk.isVisible !== false;
+
+                            return (
+                              <div
+                                key={sk._id || sk.id || idx}
+                                draggable
+                                onDragStart={(e) => onDragStart(e, 'skill', idx)}
+                                onDragEnter={(e) => onDragEnter(e, 'skill', idx)}
+                                onDragOver={onDragOver}
+                                onDragEnd={onDragEnd}
+                                onDrop={(e) => onDrop(e, 'skill', idx)}
+                                className={`border rounded-xl p-5 flex flex-col justify-between transition-all duration-200 cursor-move ${
+                                  isDragging
+                                    ? 'opacity-30 border-dashed border-primary scale-[0.99] bg-surface-container-low'
+                                    : isDragOver
+                                      ? 'border-primary ring-2 ring-primary/40 bg-primary/10 shadow-lg'
+                                      : !isVisible
+                                        ? 'opacity-65 border-dashed border-outline-variant/40 bg-surface-container-low/60'
+                                        : 'bg-surface-container-low border-outline-variant/20 hover:border-outline-variant/50'
+                                }`}
+                              >
+                                <div className="space-y-4">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-0.5">
+                                        <div
+                                          className="cursor-grab active:cursor-grabbing p-1 text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center rounded hover:bg-surface-container-high"
+                                          title="Drag to reorder"
+                                        >
+                                          <span className="material-symbols-outlined text-lg select-none">drag_indicator</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <button
+                                            type="button"
+                                            onClick={() => moveItem('skill', idx, -1)}
+                                            disabled={idx === 0}
+                                            className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 transition-colors"
+                                            title="Move up"
+                                          >
+                                            <span className="material-symbols-outlined text-xs leading-none">arrow_drop_up</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => moveItem('skill', idx, 1)}
+                                            disabled={idx === skills.length - 1}
+                                            className="p-0.5 rounded text-on-surface-variant hover:text-primary disabled:opacity-20 transition-colors"
+                                            title="Move down"
+                                          >
+                                            <span className="material-symbols-outlined text-xs leading-none">arrow_drop_down</span>
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      <div className="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-primary border border-outline-variant/30">
+                                        <span className="material-symbols-outlined text-xl">{sk.icon || 'psychology'}</span>
+                                      </div>
+
+                                      <div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 font-bold">
+                                            #{idx + 1}
+                                          </span>
+                                          {renderVisibilityBadge(sk.isVisible)}
+                                          {renderColorBadge(sk.color || COLOR_CYCLE[idx % 3], sk.isVisible)}
+                                        </div>
+                                        <h4 className="font-headline font-bold text-base text-on-surface mt-1">{sk.title}</h4>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleVisibility('skill', sk)}
+                                        className={`p-2 rounded transition-colors ${
+                                          isVisible
+                                            ? 'text-primary hover:bg-primary/10'
+                                            : 'text-on-surface-variant/50 hover:text-on-surface hover:bg-surface-container-high'
+                                        }`}
+                                        title={isVisible ? 'Click to Hide' : 'Click to Make Visible'}
+                                      >
+                                        <span className="material-symbols-outlined text-lg">
+                                          {isVisible ? 'visibility' : 'visibility_off'}
+                                        </span>
+                                      </button>
+                                      <button
+                                        onClick={() => openModal('skill', sk)}
+                                        className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
+                                        title="Edit Skill Domain"
+                                      >
+                                        <span className="material-symbols-outlined text-lg">edit</span>
+                                      </button>
+                                      <button
+                                        onClick={() => handleDelete('skill', sk._id || sk.id)}
+                                        className="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
+                                        title="Delete Skill Domain"
+                                      >
+                                        <span className="material-symbols-outlined text-lg">delete</span>
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {sk.description && (
+                                    <p className="text-xs text-on-surface-variant leading-relaxed">
+                                      {sk.description}
+                                    </p>
+                                  )}
+
+                                  {Array.isArray(sk.skills) && sk.skills.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                      {sk.skills.map((s) => (
+                                        <span
+                                          key={s}
+                                          className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant/20"
+                                        >
+                                          {s}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
               </div>
             )}
 
@@ -3529,7 +4018,7 @@ export default function AdminPage() {
             {/* PINNED HEADER */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/20 shrink-0 bg-surface-container-low">
               <h3 className="font-headline text-lg sm:text-xl font-bold text-on-surface capitalize">
-                {editingItem ? 'Edit' : 'Add New'} {modalType}
+                {editingItem ? 'Edit' : 'Add New'} {modalType === 'skill' ? 'Skill Domain' : modalType === 'leadership' ? 'Leadership Initiative' : modalType}
               </h3>
               <button
                 type="button"
@@ -3725,6 +4214,238 @@ export default function AdminPage() {
                           type="number"
                           name="order"
                           defaultValue={editingItem?.order ?? experiences.length + 1}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* SKILL DOMAIN FORM */}
+                {modalType === 'skill' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Domain Title *
+                        </label>
+                        <input
+                          type="text"
+                          name="title"
+                          defaultValue={editingItem?.title || ''}
+                          required
+                          placeholder="e.g. Web & Frontend"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                            Domain Icon *
+                          </label>
+                          <span className="text-[11px] font-mono text-primary flex items-center gap-1.5 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                            <span className="material-symbols-outlined text-sm leading-none">{selectedSkillIcon}</span>
+                            <span className="font-bold">{selectedSkillIcon}</span>
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary flex items-center pointer-events-none">
+                            <span className="material-symbols-outlined text-lg">{selectedSkillIcon}</span>
+                          </div>
+                          <select
+                            name="icon"
+                            value={selectedSkillIcon}
+                            onChange={(e) => setSelectedSkillIcon(e.target.value)}
+                            required
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg pl-10 pr-4 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-medium"
+                          >
+                            {selectedSkillIcon && !SKILL_ICONS.some((i) => i.id === selectedSkillIcon) && (
+                              <option value={selectedSkillIcon}>{selectedSkillIcon} (Current)</option>
+                            )}
+                            {SKILL_ICONS.map((opt) => (
+                              <option key={opt.id} value={opt.id}>
+                                {opt.id} - {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                        Description (optional)
+                      </label>
+                      <textarea
+                        name="description"
+                        rows={2}
+                        defaultValue={editingItem?.description || ''}
+                        placeholder="Domain overview, architectural focus, and proficiencies..."
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                        Skills / Technologies (comma separated) *
+                      </label>
+                      <textarea
+                        name="skills"
+                        rows={3}
+                        defaultValue={editingItem?.skills?.join(', ') || ''}
+                        required
+                        placeholder="React.js, Next.js, TypeScript, Tailwind CSS, Redux"
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-mono"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Theme Color
+                        </label>
+                        <select
+                          name="color"
+                          defaultValue={editingItem?.color || 'primary'}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        >
+                          <option value="primary">Primary (Burnt Orange)</option>
+                          <option value="secondary">Secondary (Amber / Rust)</option>
+                          <option value="tertiary">Tertiary (Deep Rust)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Display Order
+                        </label>
+                        <input
+                          type="number"
+                          name="order"
+                          defaultValue={editingItem?.order ?? skills.length + 1}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* LEADERSHIP INITIATIVE FORM */}
+                {modalType === 'leadership' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Initiative Title *
+                        </label>
+                        <input
+                          type="text"
+                          name="title"
+                          defaultValue={editingItem?.title || ''}
+                          required
+                          placeholder="e.g. Project Co-Chairperson - SkillSprint"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Category Badge *
+                        </label>
+                        <input
+                          type="text"
+                          name="category"
+                          defaultValue={editingItem?.category || ''}
+                          required
+                          placeholder="e.g. Web3 Initiative, Data Competition"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Period / Date *
+                        </label>
+                        <input
+                          type="text"
+                          name="period"
+                          defaultValue={editingItem?.period || ''}
+                          required
+                          placeholder="e.g. August - September 2025"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                            Initiative Icon *
+                          </label>
+                          <span className="text-[11px] font-mono text-primary flex items-center gap-1.5 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                            <span className="material-symbols-outlined text-sm leading-none">{selectedLeadershipIcon}</span>
+                            <span className="font-bold">{selectedLeadershipIcon}</span>
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary flex items-center pointer-events-none">
+                            <span className="material-symbols-outlined text-lg">{selectedLeadershipIcon}</span>
+                          </div>
+                          <select
+                            name="icon"
+                            value={selectedLeadershipIcon}
+                            onChange={(e) => setSelectedLeadershipIcon(e.target.value)}
+                            required
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg pl-10 pr-4 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-medium"
+                          >
+                            {selectedLeadershipIcon && !LEADERSHIP_ICONS.some((i) => i.id === selectedLeadershipIcon) && (
+                              <option value={selectedLeadershipIcon}>{selectedLeadershipIcon} (Current)</option>
+                            )}
+                            {LEADERSHIP_ICONS.map((opt) => (
+                              <option key={opt.id} value={opt.id}>
+                                {opt.id} - {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                        Description *
+                      </label>
+                      <textarea
+                        name="description"
+                        rows={3}
+                        defaultValue={editingItem?.description || ''}
+                        required
+                        placeholder="Leadership role summary, responsibilities, impact..."
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Theme Color
+                        </label>
+                        <select
+                          name="color"
+                          defaultValue={editingItem?.color || 'primary'}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        >
+                          <option value="primary">Primary (Burnt Orange)</option>
+                          <option value="secondary">Secondary (Amber / Rust)</option>
+                          <option value="tertiary">Tertiary (Deep Rust)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Display Order
+                        </label>
+                        <input
+                          type="number"
+                          name="order"
+                          defaultValue={editingItem?.order ?? leadership.length + 1}
                           className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                         />
                       </div>
