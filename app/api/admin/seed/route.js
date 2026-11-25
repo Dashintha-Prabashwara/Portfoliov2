@@ -5,6 +5,8 @@ import Project from '@/models/Project';
 import Education from '@/models/Education';
 import Certification from '@/models/Certification';
 import BlogPost from '@/models/BlogPost';
+import Skill from '@/models/Skill';
+import Leadership from '@/models/Leadership';
 import Cv from '@/models/Cv';
 import { checkAdminAuth } from '@/lib/adminAuth';
 import seedData from '@/lib/seedData.json';
@@ -29,6 +31,8 @@ export async function POST(request) {
         Education.deleteMany({}),
         Certification.deleteMany({}),
         BlogPost.deleteMany({}),
+        Skill.deleteMany({}),
+        Leadership.deleteMany({}),
         Cv.deleteMany({}),
       ]);
     }
@@ -39,6 +43,8 @@ export async function POST(request) {
       education: 0,
       certifications: 0,
       blogs: 0,
+      skills: 0,
+      leadership: 0,
       cv: 0,
     };
 
@@ -123,6 +129,35 @@ export async function POST(request) {
       }));
       const res = await BlogPost.insertMany(blogDocs);
       seededCounts.blogs = res.length;
+    }
+
+    if (seedData.skills?.length) {
+      const skillDocs = seedData.skills.map((item, idx) => ({
+        title: item.title,
+        icon: item.icon || 'terminal',
+        description: item.description || '',
+        skills: item.skills || [],
+        color: item.color || ['primary', 'secondary', 'tertiary'][idx % 3],
+        order: idx + 1,
+        isVisible: item.isVisible !== false,
+      }));
+      const res = await Skill.insertMany(skillDocs);
+      seededCounts.skills = res.length;
+    }
+
+    if (seedData.leadership?.length) {
+      const leadDocs = seedData.leadership.map((item, idx) => ({
+        title: item.title,
+        category: item.category || 'Initiative',
+        period: item.period || '',
+        description: item.description || '',
+        icon: item.icon || 'admin_panel_settings',
+        color: item.color || ['primary', 'secondary', 'tertiary'][idx % 3],
+        order: idx + 1,
+        isVisible: item.isVisible !== false,
+      }));
+      const res = await Leadership.insertMany(leadDocs);
+      seededCounts.leadership = res.length;
     }
 
     let initialBuffer = null;

@@ -199,7 +199,12 @@
       "category": "DevOps & CI/CD",
       "excerpt": "A deep dive into setting up automated containerized deployment pipelines with branch protection, health checks, and rollbacks.",
       "content": "Continuous Deployment requires robust safeguards to ensure user experiences are never interrupted during releases. In this article, we explore how to configure GitHub Actions workflows alongside Docker and container registries to achieve zero-downtime rolling updates.\n\n### Key Pillars\n1. **Atomic Image Tagging**: Always tag images with immutable git commit SHA values rather than relying on mutable 'latest' tags.\n2. **Health Check Probes**: Define HTTP liveness and readiness probes before switching routing traffic to newly deployed containers.\n3. **Automated Rollbacks**: Integrate step-level failure triggers in GitHub Actions that automatically restore the last verified stable release when deployment health checks fail.",
-      "tags": ["DevOps", "GitHub Actions", "Docker", "CI/CD"],
+      "tags": [
+        "DevOps",
+        "GitHub Actions",
+        "Docker",
+        "CI/CD"
+      ],
       "readTime": "6 min read",
       "color": "primary",
       "publishedAt": "2026-11-18T00:00:00.000Z"
@@ -211,7 +216,12 @@
       "category": "Cloud & Database",
       "excerpt": "Strategies for connection caching, DNS SRV resolution, and query indexing to maintain sub-50ms API responses in serverless environments.",
       "content": "Serverless architectures spawn isolated, ephemeral functions on demand. Without careful connection management, this can lead to connection exhaustion and latency spikes.\n\n### Core Practices\n1. **Global Connection Caching**: Store the active Mongoose connection promise in Node's global object to reuse sockets across warm invocations.\n2. **Custom DNS Fallbacks**: On local network boundaries and specific cloud providers, setting fallback DNS servers like Google and Cloudflare DNS eliminates `querySrv ECONNREFUSED` resolution errors.\n3. **Compound Indexes**: Always index fields used in sorting and filtering (such as status and published dates) to achieve single-digit millisecond query latency.",
-      "tags": ["Next.js", "MongoDB", "Serverless", "Performance"],
+      "tags": [
+        "Next.js",
+        "MongoDB",
+        "Serverless",
+        "Performance"
+      ],
       "readTime": "7 min read",
       "color": "secondary",
       "publishedAt": "2026-11-10T00:00:00.000Z"
@@ -223,7 +233,12 @@
       "category": "Architecture",
       "excerpt": "Decoupling services with asynchronous message queues, ensuring idempotency, and designing resilient failure recovery mechanisms.",
       "content": "When breaking monolithic backends into smaller domains, synchronous HTTP calls between services create tight coupling and cascading outages. Transitioning to event-driven architectures solves this fundamentally.\n\n### Architectural Insights\n- **Idempotency Keys**: Guarantee that processing duplicate event payloads does not corrupt system state.\n- **Dead-Letter Queues (DLQ)**: Segregate unprocessable messages to prevent pipeline blockage while retaining data for debugging.\n- **Circuit Breakers**: Gracefully degrade service capabilities when upstream providers face downtime.",
-      "tags": ["Node.js", "Microservices", "System Design", "Cloud"],
+      "tags": [
+        "Node.js",
+        "Microservices",
+        "System Design",
+        "Cloud"
+      ],
       "readTime": "8 min read",
       "color": "tertiary",
       "publishedAt": "2026-10-28T00:00:00.000Z"
@@ -235,7 +250,12 @@
       "category": "DevSecOps",
       "excerpt": "Implementing least-privilege access, static code analysis in pull requests, and automated secret detection to safeguard applications.",
       "content": "Security must be integrated from the first commit rather than audited as an afterthought. Modern DevSecOps brings automated vulnerability testing directly into developer workflows.\n\n### Critical Checkpoints\n1. **Secret Scanning**: Run pre-commit hooks and CI checks to block hardcoded API keys and tokens before they reach source control.\n2. **Minimal Base Images**: Use Alpine or distroless container images to reduce attack surfaces and eliminate unnecessary binaries.\n3. **Role-Based Access Control**: Assign granular read-only scopes to automated deployment tokens to contain breach radius.",
-      "tags": ["Security", "Docker", "DevSecOps", "Cloud"],
+      "tags": [
+        "Security",
+        "Docker",
+        "DevSecOps",
+        "Cloud"
+      ],
       "readTime": "5 min read",
       "color": "primary",
       "publishedAt": "2026-10-15T00:00:00.000Z"
@@ -247,10 +267,127 @@
       "category": "IoT & Embedded",
       "excerpt": "Designing resilient data transmission protocols from microcontroller edge sensors to real-time analytics dashboards.",
       "content": "Connecting physical hardware research to cloud dashboards requires efficient serialization and handling of intermittent network connectivity.\n\n### Implementation Takeaways\n- **Lightweight Protocols**: Utilize MQTT with QoS levels matched to telemetry criticality to conserve bandwidth.\n- **Edge Buffering**: Cache sensor readings locally on microcontrollers during network dropouts and batch-upload upon reconnection.\n- **Stream Processing**: Aggregate raw time-series data at the cloud gateway before writing to persistent database storage.",
-      "tags": ["IoT", "Embedded", "Telemetry", "WebSockets"],
+      "tags": [
+        "IoT",
+        "Embedded",
+        "Telemetry",
+        "WebSockets"
+      ],
       "readTime": "9 min read",
       "color": "secondary",
       "publishedAt": "2026-09-30T00:00:00.000Z"
+    }
+  ],
+  "skills": [
+    {
+      "id": "skill-1",
+      "title": "Web & Frontend",
+      "icon": "terminal",
+      "description": "Learning to build responsive, interactive interfaces with modern frameworks. Comfortable with JavaScript/TypeScript and always improving my skills.",
+      "skills": [
+        "Angular",
+        "React",
+        "Next.js",
+        "TypeScript",
+        "JavaScript",
+        "CSS/HTML",
+        "Tailwind CSS"
+      ],
+      "color": "primary",
+      "order": 1,
+      "isVisible": true
+    },
+    {
+      "id": "skill-2",
+      "title": "AWS & Cloud",
+      "icon": "cloud_done",
+      "description": "Configuring cloud architectures, automated workflows, and serverless compute primitives for production.",
+      "skills": [
+        "DynamoDB",
+        "API Gateway",
+        "Lambda Functions",
+        "GitHub Actions"
+      ],
+      "color": "secondary",
+      "order": 2,
+      "isVisible": true
+    },
+    {
+      "id": "skill-3",
+      "title": "Backend & Databases",
+      "icon": "database",
+      "description": "Designing robust API services, relational models, and document databases with high concurrency.",
+      "skills": [
+        "Node.js",
+        "Java",
+        "Python",
+        "MongoDB",
+        "MySQL"
+      ],
+      "color": "primary",
+      "order": 3,
+      "isVisible": true
+    },
+    {
+      "id": "skill-4",
+      "title": "Development & Tools",
+      "icon": "storage",
+      "description": "Working with desktop development, real-time systems, and exploring different tools across the development lifecycle.",
+      "skills": [
+        "Java",
+        "Python",
+        "GitHub",
+        "ESP32 IoT"
+      ],
+      "color": "secondary",
+      "order": 4,
+      "isVisible": true
+    }
+  ],
+  "leadership": [
+    {
+      "id": "lead-1",
+      "title": "Project Co-Chairperson - SkillSprint",
+      "category": "Web3 Initiative",
+      "period": "August - September 2025",
+      "description": "Co-Chairperson for Web3Ceylon - Colombo Edition seminar series, featuring industry speakers on blockchain and Web3 technologies. Empowered students to explore real-world applications of decentralized solutions.",
+      "icon": "admin_panel_settings",
+      "color": "primary",
+      "order": 1,
+      "isVisible": true
+    },
+    {
+      "id": "lead-2",
+      "title": "Project Co-Chairperson - Data Storm 6.0",
+      "category": "Data Competition",
+      "period": "March - June 2025",
+      "description": "Co-Chairperson for inter-university data analytics competition with webinars and masterclasses. Delivered industry mentoring for real-world problem-solving using cutting-edge data technologies.",
+      "icon": "trending_up",
+      "color": "secondary",
+      "order": 2,
+      "isVisible": true
+    },
+    {
+      "id": "lead-3",
+      "title": "Project Co-Chairperson - Devthon 2.0",
+      "category": "Web Competition",
+      "period": "January - April 2025",
+      "description": "Spearheaded three-phase web competition (Ideathon, Designathon, Devthon). Guided students through ideation, UI/UX design, and full-stack development with hands-on skill building.",
+      "icon": "code",
+      "color": "tertiary",
+      "order": 3,
+      "isVisible": true
+    },
+    {
+      "id": "lead-4",
+      "title": "Project Co-Chairperson - Mora TechConnect",
+      "category": "Tech Education",
+      "period": "July 2024 - February 2025",
+      "description": "Led 12-month IT educational initiative with bi-weekly sessions on emerging technologies. Delivered webinars via YouTube and culminated in hands-on robotics workshop for practical learning.",
+      "icon": "school",
+      "color": "primary",
+      "order": 4,
+      "isVisible": true
     }
   ]
 }
