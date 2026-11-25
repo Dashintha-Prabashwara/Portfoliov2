@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Project from '@/models/Project';
 import { checkAdminAuth } from '@/lib/adminAuth';
+import seedData from '@/lib/seedData.json';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,36 @@ export async function GET(request) {
     }
 
     await connectToDatabase();
-    const projects = await Project.find({}).sort({ order: 1, createdAt: -1 });
+    let projects = await Project.find({}).sort({ order: 1, createdAt: -1 });
 
-    return NextResponse.json({ success: true, data: projects });
+    if (projects.length === 0 && seedData.projects?.length) {
+      await Project.insertMany(
+        seedData.projects.map((item, idx) => ({
+          title: item.title,
+          status: item.status || 'Active',
+          statusColor: item.statusColor || 'primary',
+          barColor: item.barColor || 'from-primary to-primary',
+          description: item.description,
+          technologies: item.technologies || [],
+          image: item.image,
+          githubUrl: item.githubUrl || '',
+          liveUrl: item.liveUrl || '',
+          order: idx + 1,
+        }))
+      );
+      projects = await Project.find({}).sort({ order: 1, createdAt: -1 });
+    }
+
+    return NextResponse.json(
+      { success: true, data: projects },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching admin projects:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

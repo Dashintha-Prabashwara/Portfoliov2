@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Leadership from '@/models/Leadership';
 import { checkAdminAuth } from '@/lib/adminAuth';
+import seedData from '@/lib/seedData.json';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,34 @@ export async function GET(request) {
     }
 
     await connectToDatabase();
-    const leadership = await Leadership.find({}).sort({ order: 1, createdAt: 1 }).lean();
+    let leadership = await Leadership.find({}).sort({ order: 1, createdAt: 1 }).lean();
 
-    return NextResponse.json({ success: true, data: leadership });
+    if (leadership.length === 0 && seedData.leadership?.length) {
+      await Leadership.insertMany(
+        seedData.leadership.map((item, idx) => ({
+          title: item.title,
+          category: item.category || 'Initiative',
+          period: item.period || '',
+          description: item.description || '',
+          icon: item.icon || 'admin_panel_settings',
+          color: item.color || ['primary', 'secondary', 'tertiary'][idx % 3],
+          order: idx + 1,
+          isVisible: item.isVisible !== false,
+        }))
+      );
+      leadership = await Leadership.find({}).sort({ order: 1, createdAt: 1 }).lean();
+    }
+
+    return NextResponse.json(
+      { success: true, data: leadership },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching admin leadership items:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

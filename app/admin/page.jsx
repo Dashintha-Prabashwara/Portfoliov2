@@ -164,17 +164,25 @@ export default function AdminPage() {
   const fetchAllData = useCallback(async () => {
     setLoadingData(true);
     try {
+      const fetchOpts = {
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache',
+        },
+      };
+
       const [expRes, projRes, certRes, eduRes, cvRes, ghRes, blogRes, catRes, skillRes, leadRes] = await Promise.all([
-        fetch('/api/admin/experiences'),
-        fetch('/api/admin/projects'),
-        fetch('/api/admin/certifications'),
-        fetch('/api/admin/education'),
-        fetch('/api/admin/cv'),
-        fetch('/api/admin/github'),
-        fetch('/api/admin/blogs'),
-        fetch('/api/admin/blogs/categories'),
-        fetch('/api/admin/skills'),
-        fetch('/api/admin/leadership'),
+        fetch('/api/admin/experiences', fetchOpts),
+        fetch('/api/admin/projects', fetchOpts),
+        fetch('/api/admin/certifications', fetchOpts),
+        fetch('/api/admin/education', fetchOpts),
+        fetch('/api/admin/cv', fetchOpts),
+        fetch('/api/admin/github', fetchOpts),
+        fetch('/api/admin/blogs', fetchOpts),
+        fetch('/api/admin/blogs/categories', fetchOpts),
+        fetch('/api/admin/skills', fetchOpts),
+        fetch('/api/admin/leadership', fetchOpts),
       ]);
 
       if (expRes.status === 401) {
@@ -1478,6 +1486,18 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
+            <button
+              onClick={() => fetchAllData()}
+              disabled={loadingData}
+              className="inline-flex items-center gap-1.5 text-xs font-headline uppercase tracking-wider text-on-surface-variant hover:text-primary transition-colors py-1.5 px-3 rounded border border-outline-variant/30 hover:border-primary/40"
+              title="Reload all portfolio data from database"
+            >
+              <span className={`material-symbols-outlined text-sm ${loadingData ? 'animate-spin' : ''}`}>
+                refresh
+              </span>
+              Refresh
+            </button>
+
             <button
               onClick={() => handleSeedData(false)}
               disabled={isSubmitting}

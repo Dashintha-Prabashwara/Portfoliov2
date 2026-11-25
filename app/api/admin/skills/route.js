@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Skill from '@/models/Skill';
 import { checkAdminAuth } from '@/lib/adminAuth';
+import seedData from '@/lib/seedData.json';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,33 @@ export async function GET(request) {
     }
 
     await connectToDatabase();
-    const skills = await Skill.find({}).sort({ order: 1, createdAt: 1 }).lean();
+    let skills = await Skill.find({}).sort({ order: 1, createdAt: 1 }).lean();
 
-    return NextResponse.json({ success: true, data: skills });
+    if (skills.length === 0 && seedData.skills?.length) {
+      await Skill.insertMany(
+        seedData.skills.map((item, idx) => ({
+          title: item.title,
+          icon: item.icon || 'terminal',
+          description: item.description || '',
+          skills: item.skills || [],
+          color: item.color || ['primary', 'secondary', 'tertiary'][idx % 3],
+          order: idx + 1,
+          isVisible: item.isVisible !== false,
+        }))
+      );
+      skills = await Skill.find({}).sort({ order: 1, createdAt: 1 }).lean();
+    }
+
+    return NextResponse.json(
+      { success: true, data: skills },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching admin skills:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

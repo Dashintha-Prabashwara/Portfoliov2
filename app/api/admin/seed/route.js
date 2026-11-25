@@ -37,6 +37,17 @@ export async function POST(request) {
       ]);
     }
 
+    const [expCount, projCount, eduCount, certCount, blogCount, skillCount, leadCount, cvCount] = await Promise.all([
+      Experience.countDocuments(),
+      Project.countDocuments(),
+      Education.countDocuments(),
+      Certification.countDocuments(),
+      BlogPost.countDocuments(),
+      Skill.countDocuments(),
+      Leadership.countDocuments(),
+      Cv.countDocuments(),
+    ]);
+
     let seededCounts = {
       experiences: 0,
       projects: 0,
@@ -48,7 +59,7 @@ export async function POST(request) {
       cv: 0,
     };
 
-    if (seedData.experiences?.length) {
+    if ((overwrite || expCount === 0) && seedData.experiences?.length) {
       const expDocs = seedData.experiences.map((item, idx) => ({
         company: item.company,
         role: item.role,
@@ -64,7 +75,7 @@ export async function POST(request) {
       seededCounts.experiences = res.length;
     }
 
-    if (seedData.projects?.length) {
+    if ((overwrite || projCount === 0) && seedData.projects?.length) {
       const projDocs = seedData.projects.map((item, idx) => ({
         title: item.title,
         status: item.status || 'Active',
@@ -81,7 +92,7 @@ export async function POST(request) {
       seededCounts.projects = res.length;
     }
 
-    if (seedData.education?.length) {
+    if ((overwrite || eduCount === 0) && seedData.education?.length) {
       const eduDocs = seedData.education.map((item, idx) => ({
         title: item.title,
         institution: item.institution,
@@ -95,7 +106,7 @@ export async function POST(request) {
       seededCounts.education = res.length;
     }
 
-    if (seedData.certifications?.length) {
+    if ((overwrite || certCount === 0) && seedData.certifications?.length) {
       const certDocs = seedData.certifications.map((item, idx) => ({
         title: item.title,
         organization: item.organization,
@@ -112,7 +123,7 @@ export async function POST(request) {
       seededCounts.certifications = res.length;
     }
 
-    if (seedData.blogs?.length) {
+    if ((overwrite || blogCount === 0) && seedData.blogs?.length) {
       const blogDocs = seedData.blogs.map((item, idx) => ({
         title: item.title,
         slug: item.slug || item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
@@ -131,7 +142,7 @@ export async function POST(request) {
       seededCounts.blogs = res.length;
     }
 
-    if (seedData.skills?.length) {
+    if ((overwrite || skillCount === 0) && seedData.skills?.length) {
       const skillDocs = seedData.skills.map((item, idx) => ({
         title: item.title,
         icon: item.icon || 'terminal',
@@ -145,7 +156,7 @@ export async function POST(request) {
       seededCounts.skills = res.length;
     }
 
-    if (seedData.leadership?.length) {
+    if ((overwrite || leadCount === 0) && seedData.leadership?.length) {
       const leadDocs = seedData.leadership.map((item, idx) => ({
         title: item.title,
         category: item.category || 'Initiative',
@@ -172,18 +183,20 @@ export async function POST(request) {
       // Local file not found
     }
 
-    const cv = await Cv.create({
-      title: 'Dashintha Jayawardana - CV',
-      fileUrl: '/api/cv/download',
-      description: 'Professional CV and Resume',
-      downloadsCount: 0,
-      isActive: true,
-      fileData: initialBuffer,
-      fileSize,
-      fileName: 'cv.pdf',
-      contentType: 'application/pdf',
-    });
-    if (cv) seededCounts.cv = 1;
+    if (overwrite || cvCount === 0) {
+      const cv = await Cv.create({
+        title: 'Dashintha Jayawardana - CV',
+        fileUrl: '/api/cv/download',
+        description: 'Professional CV and Resume',
+        downloadsCount: 0,
+        isActive: true,
+        fileData: initialBuffer,
+        fileSize,
+        fileName: 'cv.pdf',
+        contentType: 'application/pdf',
+      });
+      if (cv) seededCounts.cv = 1;
+    }
 
     return NextResponse.json({
       success: true,

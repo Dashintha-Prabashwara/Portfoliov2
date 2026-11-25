@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Certification from '@/models/Certification';
 import { checkAdminAuth } from '@/lib/adminAuth';
+import seedData from '@/lib/seedData.json';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,36 @@ export async function GET(request) {
     }
 
     await connectToDatabase();
-    const certifications = await Certification.find({}).sort({ order: 1, createdAt: -1 });
+    let certifications = await Certification.find({}).sort({ order: 1, createdAt: -1 });
 
-    return NextResponse.json({ success: true, data: certifications });
+    if (certifications.length === 0 && seedData.certifications?.length) {
+      await Certification.insertMany(
+        seedData.certifications.map((item, idx) => ({
+          title: item.title,
+          organization: item.organization,
+          credentialId: item.credentialId || '',
+          icon: item.icon || 'verified',
+          status: item.status || 'Verified',
+          statusColor: item.statusColor || 'tertiary',
+          issueDate: item.issueDate || '',
+          expiryDate: item.expiryDate || '',
+          verificationUrl: item.verificationUrl || '',
+          order: idx + 1,
+        }))
+      );
+      certifications = await Certification.find({}).sort({ order: 1, createdAt: -1 });
+    }
+
+    return NextResponse.json(
+      { success: true, data: certifications },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching admin certifications:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
