@@ -30,6 +30,50 @@ const CERTIFICATION_ICONS = [
   { id: 'hub', label: 'Architecture & Hub' },
 ];
 
+const SKILL_ICONS = [
+  { id: 'terminal', label: 'Terminal / CLI / DevOps' },
+  { id: 'code', label: 'Code / Software Engineering' },
+  { id: 'cloud_done', label: 'Cloud / AWS / Serverless' },
+  { id: 'cloud', label: 'Cloud Computing' },
+  { id: 'database', label: 'Database / Relational & NoSQL' },
+  { id: 'storage', label: 'Storage & Distributed Systems' },
+  { id: 'psychology', label: 'AI & Machine Learning' },
+  { id: 'developer_board', label: 'Hardware / IoT / Embedded' },
+  { id: 'memory', label: 'Systems & Microcontrollers' },
+  { id: 'devices', label: 'Web & Frontend / Responsive' },
+  { id: 'laptop_mac', label: 'Full-Stack Development' },
+  { id: 'api', label: 'APIs & Web Services' },
+  { id: 'hub', label: 'Architecture & Microservices' },
+  { id: 'security', label: 'Security & DevSecOps' },
+  { id: 'build', label: 'Tools & Engineering' },
+  { id: 'settings', label: 'Configuration & Infrastructure' },
+  { id: 'dns', label: 'Networking & DNS' },
+  { id: 'layers', label: 'Full Stack & Frameworks' },
+  { id: 'speed', label: 'Performance & Optimization' },
+  { id: 'widgets', label: 'UI Components & Design Systems' },
+];
+
+const LEADERSHIP_ICONS = [
+  { id: 'admin_panel_settings', label: 'Chairperson / Governance' },
+  { id: 'trending_up', label: 'Data Competition / Analytics' },
+  { id: 'code', label: 'Hackathon / Web Competition' },
+  { id: 'school', label: 'Education / Mentoring' },
+  { id: 'groups', label: 'Team Leadership / Community' },
+  { id: 'group', label: 'Student Body / Committee' },
+  { id: 'workspace_premium', label: 'Award / Excellence' },
+  { id: 'military_tech', label: 'Competition & Medal' },
+  { id: 'verified_user', label: 'Initiative & Trust' },
+  { id: 'campaign', label: 'Outreach & Awareness' },
+  { id: 'co_present', label: 'Speaker & Presenter' },
+  { id: 'handshake', label: 'Partnerships & Outreach' },
+  { id: 'event', label: 'Event Organizing / Summit' },
+  { id: 'lightbulb', label: 'Innovation & Ideation' },
+  { id: 'diversity_3', label: 'Collaboration & Networking' },
+  { id: 'volunteer_activism', label: 'Volunteering & Community Service' },
+  { id: 'forum', label: 'Panel Discussion & Forum' },
+  { id: 'star', label: 'Key Achievement / Milestone' },
+];
+
 // Helper: automatically cycles Primary -> Secondary -> Tertiary ONLY across visible items,
 // and automatically places visible items at the top and pushes hidden items down to the bottom.
 const applyVisibleColorCycle = (items = [], type = 'experience') => {
@@ -148,8 +192,10 @@ export default function AdminPage() {
   const [excludedContributedRepos, setExcludedContributedRepos] = useState([]);
   const [customRepoInput, setCustomRepoInput] = useState('');
 
-  // Certification icon chooser state
+  // Icon chooser states for modals
   const [selectedCertIcon, setSelectedCertIcon] = useState('verified');
+  const [selectedSkillIcon, setSelectedSkillIcon] = useState('terminal');
+  const [selectedLeadershipIcon, setSelectedLeadershipIcon] = useState('admin_panel_settings');
 
   // Drag & drop scrolling refs (for wheel scrolling & edge auto-scroll)
   const isDraggingRef = useRef(false);
@@ -415,6 +461,8 @@ export default function AdminPage() {
     setModalTechnologies(item?.technologies?.join(', ') || '');
     setModalGithubUrl(item?.githubUrl || '');
     setSelectedCertIcon(item?.icon || 'verified');
+    setSelectedSkillIcon(item?.icon || 'terminal');
+    setSelectedLeadershipIcon(item?.icon || 'admin_panel_settings');
     setModalBlogContent(item?.content || '');
     setMdFileName('');
     setBlogContentTab('write');
@@ -432,6 +480,8 @@ export default function AdminPage() {
     setModalTechnologies('');
     setModalGithubUrl('');
     setSelectedCertIcon('verified');
+    setSelectedSkillIcon('terminal');
+    setSelectedLeadershipIcon('admin_panel_settings');
     setModalBlogContent('');
     setMdFileName('');
     setBlogContentTab('write');
@@ -4189,17 +4239,36 @@ export default function AdminPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                          Icon (Material Symbol) *
-                        </label>
-                        <input
-                          type="text"
-                          name="icon"
-                          defaultValue={editingItem?.icon || 'psychology'}
-                          required
-                          placeholder="e.g. code, cloud, terminal, psychology"
-                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                        />
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                            Domain Icon *
+                          </label>
+                          <span className="text-[11px] font-mono text-primary flex items-center gap-1.5 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                            <span className="material-symbols-outlined text-sm leading-none">{selectedSkillIcon}</span>
+                            <span className="font-bold">{selectedSkillIcon}</span>
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary flex items-center pointer-events-none">
+                            <span className="material-symbols-outlined text-lg">{selectedSkillIcon}</span>
+                          </div>
+                          <select
+                            name="icon"
+                            value={selectedSkillIcon}
+                            onChange={(e) => setSelectedSkillIcon(e.target.value)}
+                            required
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg pl-10 pr-4 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-medium"
+                          >
+                            {selectedSkillIcon && !SKILL_ICONS.some((i) => i.id === selectedSkillIcon) && (
+                              <option value={selectedSkillIcon}>{selectedSkillIcon} (Current)</option>
+                            )}
+                            {SKILL_ICONS.map((opt) => (
+                              <option key={opt.id} value={opt.id}>
+                                {opt.id} - {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
 
@@ -4307,16 +4376,36 @@ export default function AdminPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
-                          Icon (Material Symbol)
-                        </label>
-                        <input
-                          type="text"
-                          name="icon"
-                          defaultValue={editingItem?.icon || 'verified_user'}
-                          placeholder="e.g. verified_user, trending_up, code, school"
-                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
-                        />
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                            Initiative Icon *
+                          </label>
+                          <span className="text-[11px] font-mono text-primary flex items-center gap-1.5 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                            <span className="material-symbols-outlined text-sm leading-none">{selectedLeadershipIcon}</span>
+                            <span className="font-bold">{selectedLeadershipIcon}</span>
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary flex items-center pointer-events-none">
+                            <span className="material-symbols-outlined text-lg">{selectedLeadershipIcon}</span>
+                          </div>
+                          <select
+                            name="icon"
+                            value={selectedLeadershipIcon}
+                            onChange={(e) => setSelectedLeadershipIcon(e.target.value)}
+                            required
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg pl-10 pr-4 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary font-medium"
+                          >
+                            {selectedLeadershipIcon && !LEADERSHIP_ICONS.some((i) => i.id === selectedLeadershipIcon) && (
+                              <option value={selectedLeadershipIcon}>{selectedLeadershipIcon} (Current)</option>
+                            )}
+                            {LEADERSHIP_ICONS.map((opt) => (
+                              <option key={opt.id} value={opt.id}>
+                                {opt.id} - {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
 
