@@ -255,10 +255,10 @@ export default function BlogView({ initialBlogs = [], initialCategories = [] }) 
                       href={`/blog/${blog.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-headline font-bold uppercase tracking-wider text-primary hover:text-primary/80 transition-colors group-hover:underline"
+                      className="group/btn inline-flex items-center gap-1.5 text-xs font-headline font-bold uppercase tracking-wider text-primary hover:text-primary/80 hover:underline transition-colors"
                     >
                       <span>Read Article</span>
-                      <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">
+                      <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">
                         arrow_forward
                       </span>
                     </Link>

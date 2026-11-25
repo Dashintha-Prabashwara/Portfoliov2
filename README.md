@@ -1,26 +1,53 @@
-# Dashintha Jayawardana - DevOps & Cloud Engineer Portfolio
+# Dashintha Jayawardana - DevOps & Cloud Architect Portfolio
 
-A modern, high-performance portfolio and technical hub built with **Next.js 15 (App Router)**, **React 18**, **MongoDB**, **Tailwind CSS**, and **Google Gemini AI**. Designed to showcase cloud infrastructure projects, real-time telemetry, certifications, experience, and an interactive AI assistant.
+A modern, high-performance portfolio, technical publication platform, and administrative CMS built with **Next.js 15 (App Router)**, **React 18**, **Hybrid Databases (MongoDB Atlas + TiDB Cloud Serverless MySQL)**, **Tailwind CSS**, and **Google Gemini AI**. Designed to showcase enterprise cloud architectures, CI/CD blueprints, technical articles, verified credentials, and real-time GitHub telemetry.
 
-- **👨‍💻 Author:** Dashintha Jayawardana
-- **🌐 Live Site:** [https://dashijayawardana.vercel.app/](https://dashijayawardana.vercel.app/)
+- **Author:** Dashintha Jayawardana
+- **Live Site:** [https://dashijayawardana.vercel.app/](https://dashijayawardana.vercel.app/)
 
 ---
 
 ## 🚀 Key Features
 
-### 💻 Modern Full-Stack Architecture
-- **Next.js 15 App Router**: Server-side rendering (SSR), dynamic routing, and React Server Components for optimal load speeds and SEO.
-- **MongoDB Data Layer**: Cloud-native database persistence for career timeline, projects, credentials, and resume data.
-- **Dynamic CV Streaming**: Direct streaming delivery of CV PDFs with real-time download tracking.
-- **Interactive AI Chatbot**: Built-in AI assistant powered by Google Gemini and Tavily Search to answer visitor inquiries about experience, technical skills, and projects.
+### 📰 Technical Blog & Publishing Engine
+- **Markdown Processing & Parsing:** Powered by `marked` with GitHub-Flavored Markdown (GFM), tables, code blocks, task lists, and soft breaks.
+- **Smart Markdown Normalization:**
+  - Auto-normalizes header spacing (e.g., `##Heading` → `## Heading`).
+  - Cleans loose bold formatting (e.g., `** bold **` → `**bold**`).
+  - Pre-formats code fences and headings for standard CommonMark compliance.
+  - Strips and extracts YAML frontmatter (`--- title: ... ---`) upon file upload.
+- **HTML Sanitization:** Built-in sanitization neutralizing `<script>`, `<iframe>`, `javascript:` URLs, and malicious event handlers.
+- **TiDB Cloud Storage:** Relational persistence for blog articles (`blogpost`) and dynamic categories (`blog_category`).
+- **Dynamic Category Filtering & Visibility:** Filter articles by category with real-time article counters. Categories set to *Hidden* in the CMS are automatically excluded from the public directory and protected with 404 guards.
+- **Metadata & Associations:** Automatic reading time calculation, publication timestamps, and bidirectional linking to specific projects and work experiences.
 
-### 🎨 Design & User Experience
-- **DevOps/Cyberpunk Aesthetic**: Tailored dark theme with subtle neon accents (Cyan, Purple, Emerald) and glassmorphism cards.
-- **Space Grotesk & Inter Typography**: Modern, readable, developer-focused typographic hierarchy.
-- **Fluid Micro-Animations**: Smooth interactions, hover effects, and transitions powered by Framer Motion.
-- **Fully Responsive**: Optimized layout for mobile, tablet, desktop, and ultra-wide displays.
-- **Contact Form**: Email delivery via Resend API with rate-limiting and honeypot spam protection.
+### ⚙️ Administrative CMS Dashboard (`/admin`)
+- **HMAC SHA-256 Authentication:** Secure session management with encrypted cookies and Bearer token fallback.
+- **Category Manager:** TiDB Cloud category management (Add, Rename, Toggle Visibility, and Delete).
+- **Markdown File Upload:** Direct drag-and-drop or file upload of `.md`, `.markdown`, and `.txt` files with automated frontmatter metadata extraction.
+- **Split-View Editor:** Side-by-side or tabbed "Write" and "Live Preview" editor mirroring the public reader interface.
+- **Image Upload:** Built-in cover image uploader storing optimized Base64 data URIs directly in TiDB Cloud.
+- **Drag-and-Drop Reordering:** Instant visual reordering with automated 3-tier accent color cycling (Primary, Secondary, Tertiary).
+- **Full Portfolio Management:** Unified control over Experiences, Projects, Certifications, Education, Blog Posts, Categories, CV, and GitHub Telemetry.
+
+### 🌐 Hybrid Database Architecture
+- **MongoDB Atlas (Mongoose):** Manages career timeline, project showcases, verified credentials, education history, contact inquiries, and CV documents.
+- **TiDB Cloud Serverless MySQL (mysql2):** Manages technical blog posts, categories, user profiles, and image assets with TLS/SSL encryption and connection pooling.
+- **Self-Healing Schema:** Automated table and column verification (`ensureTiDBSchema`) on startup.
+
+### 🤖 Intelligent AI Chatbot
+- **Google Gemini Streaming:** Real-time conversational streaming using `gemini-3.6-flash`.
+- **RAG & Context Injection:** Dynamic portfolio context aggregation allowing the AI to answer detailed queries about technical stack, career experience, and architecture projects.
+- **Tavily Web Search Integration:** Live web retrieval for current DevOps trends, tools, and technical references.
+
+### 📊 Real-Time GitHub Telemetry (`/github`)
+- **Contribution Graph:** Visual contribution calendar, commit activity tracking, and repository metrics.
+- **Telemetry Cards:** Displays total repositories, stars, language distributions, and recent commit digests.
+- **Automated Sync Engine:** Background synchronization via `/api/cron/github-sync` and on-demand sync from the CMS.
+
+### 📄 Dynamic CV Delivery
+- **Tracked PDF Streaming:** Direct streaming from MongoDB binary storage via `/api/cv/download` supporting inline viewing and download prompts.
+- **Download Telemetry:** Real-time incrementing download counters visible in the CMS dashboard.
 
 ---
 
@@ -29,43 +56,75 @@ A modern, high-performance portfolio and technical hub built with **Next.js 15 (
 ```
 Portfoliov2/
 ├── app/
+│   ├── admin/
+│   │   └── page.jsx                  # Full-featured Administrative CMS Dashboard
 │   ├── api/
+│   │   ├── admin/
+│   │   │   ├── auth/route.js         # Admin login & session verification
+│   │   │   ├── blogs/
+│   │   │   │   ├── route.js          # Blog CRUD & reordering
+│   │   │   │   ├── categories/       # Category CRUD & visibility toggles
+│   │   │   │   └── upload/route.js   # Blog cover image uploader
+│   │   │   ├── certifications/       # Certification management
+│   │   │   ├── cv/route.js           # CV metadata & file upload
+│   │   │   ├── education/route.js    # Academic records management
+│   │   │   ├── experiences/route.js  # Career timeline management
+│   │   │   ├── github/               # GitHub engine configuration
+│   │   │   └── projects/route.js     # Project portfolio management
+│   │   ├── blogs/
+│   │   │   ├── route.js              # Public blog listing
+│   │   │   ├── [id]/route.js         # Single blog retrieval
+│   │   │   └── categories/route.js   # Visible categories endpoint
+│   │   ├── chat/route.ts             # Gemini AI Chatbot streaming endpoint
+│   │   ├── contact/route.js          # Resend contact email handler
+│   │   ├── context/route.ts          # Portfolio context for AI
+│   │   ├── cron/github-sync/         # Automated GitHub telemetry sync
 │   │   ├── cv/
-│   │   │   ├── route.js            # CV metadata & download tracker
-│   │   │   └── download/route.js   # Dynamic PDF streaming endpoint
-│   │   ├── experience/route.js     # Career timeline endpoint
-│   │   ├── projects/route.js       # Projects showcase endpoint
-│   │   ├── certifications/route.js # Certifications endpoint
-│   │   ├── education/route.js      # Education records endpoint
-│   │   ├── contact/route.js        # Contact email endpoint (Resend)
-│   │   ├── chat/route.ts           # Gemini AI Chatbot streaming endpoint
-│   │   └── context/route.ts        # Dynamic portfolio context for AI
-│   ├── experience/page.jsx         # Career journey & leadership initiatives
-│   ├── projects/page.jsx           # Projects grid with tech tags & links
-│   ├── certifications/page.jsx     # Verified badges & academic foundation
-│   ├── skills/page.jsx             # Technical toolkit & cloud skills
-│   ├── contact/page.jsx            # Interactive contact form
-│   ├── layout.jsx                  # Root layout, Google fonts, JSON-LD SEO
-│   └── page.jsx                    # Hero landing page & tech stack
-├── models/
-│   ├── Experience.js               # Mongoose schema for career history
-│   ├── Project.js                  # Mongoose schema for projects
-│   ├── Certification.js            # Mongoose schema for certificates
-│   ├── Education.js                # Mongoose schema for academic degrees
-│   ├── Cv.js                       # Mongoose schema for CV document
-│   └── Contact.js                  # Mongoose schema for contact messages
+│   │   │   ├── route.js              # CV metadata & statistics
+│   │   │   └── download/route.js     # Binary PDF streaming endpoint
+│   │   ├── github/route.js           # Public GitHub telemetry data
+│   │   └── projects/route.js         # Public projects endpoint
+│   ├── blog/
+│   │   ├── page.jsx                  # Public blog directory with search & filters
+│   │   └── [id]/page.jsx             # Technical article reader with Markdown rendering
+│   ├── certifications/page.jsx       # Verified credentials & academic foundation
+│   ├── contact/page.jsx              # Interactive contact form
+│   ├── experience/page.jsx           # Career timeline & leadership roles
+│   ├── github/page.jsx               # GitHub telemetry & activity dashboard
+│   ├── projects/page.jsx             # Featured cloud & DevOps projects
+│   ├── skills/page.jsx               # Technical toolkit & cloud competencies
+│   ├── layout.jsx                    # Root layout, typography & metadata
+│   ├── globals.css                   # Tailwind CSS & .blog-content typography
+│   └── page.jsx                      # Hero landing page
+├── components/
+│   ├── BlogView.jsx                  # Client-side blog directory with search & category filters
+│   ├── Chatbot.tsx                   # Floating interactive Gemini AI assistant
+│   ├── ContactForm.jsx               # Validated contact form with honeypot protection
+│   ├── CVDownloadButton.jsx          # Tracked CV download button
+│   ├── Footer.jsx                    # Global footer with navigation links
+│   ├── GithubTelemetry.jsx           # GitHub telemetry visualizer
+│   ├── HeroProfileImage.jsx          # Optimized hero profile avatar
+│   └── Navigation.jsx                # Responsive header navigation
 ├── lib/
-│   ├── mongodb.js                  # Cached Mongoose connection handler
-│   ├── dbData.js                   # Unified data access layer with fallbacks
-│   ├── seedData.json               # Seed portfolio dataset
-│   ├── email.js                    # Resend email client configuration
-│   └── chatbot.ts                  # Chatbot context & web search utilities
-└── components/
-    ├── Navigation.jsx              # Responsive header navigation
-    ├── Footer.jsx                  # Footer with links & status
-    ├── Chatbot.tsx                 # Floating interactive AI assistant
-    ├── CVDownloadButton.jsx        # Tracked CV download button
-    └── ContactForm.jsx             # Validated contact form
+│   ├── adminAuth.js                  # HMAC SHA-256 session & authentication utilities
+│   ├── chatbot.ts                    # AI context compilation & Tavily search
+│   ├── dbData.js                     # Unified MongoDB data layer with fallback datasets
+│   ├── email.js                      # Resend email client configuration
+│   ├── github.js                     # GitHub REST & GraphQL API client
+│   ├── githubSync.js                 # Telemetry sync processor
+│   ├── markdown.js                   # Marked parser, normalizer & HTML sanitizer
+│   ├── mongodb.js                    # Cached Mongoose connection pool
+│   ├── rateLimiter.js                # In-memory IP rate limiter
+│   └── tidb.js                       # TiDB Cloud MySQL connection pool & queries
+└── models/
+    ├── BlogPost.js                   # Mongoose fallback schema for blog posts
+    ├── Certification.js              # Mongoose schema for certificates
+    ├── Contact.js                    # Mongoose schema for contact messages
+    ├── Cv.js                         # Mongoose schema for CV documents & binary data
+    ├── Education.js                  # Mongoose schema for academic degrees
+    ├── Experience.js                 # Mongoose schema for career history
+    ├── GithubConfig.js               # Mongoose schema for GitHub engine settings
+    └── Project.js                    # Mongoose schema for showcase projects
 ```
 
 ---
@@ -74,7 +133,8 @@ Portfoliov2/
 
 ### 1. Prerequisites
 - **Node.js** (v18.17+ or v20+)
-- **MongoDB** (A connection string from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) or a local instance)
+- **MongoDB Atlas** cluster or local MongoDB instance
+- **TiDB Cloud** Serverless MySQL cluster ([TiDB Cloud](https://tidbcloud.com))
 
 ### 2. Installation
 ```bash
@@ -86,16 +146,27 @@ cd Portfoliov2
 npm install
 ```
 
-### 3. Environment Variables
+### 3. Environment Configuration
 Create a `.env.local` file in the root directory based on `.env.local.example`:
 
 ```env
-# MongoDB Connection
+# MongoDB Connection (Profile & Portfolio Data)
 MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/portfolio?retryWrites=true&w=majority
+
+# TiDB Cloud Serverless MySQL (Technical Blog Engine)
+BLOG_DB_HOST=gateway01.ap-northeast-1.prod.aws.tidbcloud.com
+BLOG_DB_PORT=4000
+BLOG_DB_USER=your_tidb_user
+BLOG_DB_PASSWORD=your_tidb_password
+BLOG_DB_NAME=code_canvas
+
+# CMS Admin Security
+ADMIN_PASSWORD=your_secure_admin_password_here
+ADMIN_AUTH_SECRET=your_random_secret_token_key_here
 
 # Email Service (Resend)
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-RESEND_FROM_EMAIL=contact@yourdomain.dev
+RESEND_FROM_EMAIL=onboarding@resend.dev
 ADMIN_EMAIL=your-email@example.com
 
 # API Rate Limiting
@@ -109,6 +180,9 @@ GEMINI_MODEL=gemini-3.6-flash
 # Chatbot - Tavily Web Search (Optional)
 TAVILY_API_KEY=tvly_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+# GitHub API Integration (Optional - increases rate limits)
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 # Node Environment
 NODE_ENV=development
 ```
@@ -118,42 +192,55 @@ NODE_ENV=development
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
+Open [http://localhost:3000](http://localhost:3000) in your browser. Access the CMS Admin at [http://localhost:3000/admin](http://localhost:3000/admin).
 
 ---
 
-## 📡 API Endpoints
+## 📡 API Reference
+
+### Public Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
+| `GET` | `/api/blogs` | Retrieves all visible blog articles |
+| `GET` | `/api/blogs/[id]` | Retrieves a single blog article by ID |
+| `GET` | `/api/blogs/categories` | Retrieves all active, visible blog categories |
+| `GET` | `/api/projects` | Retrieves showcase projects |
 | `GET` | `/api/experience` | Retrieves career experience timeline |
-| `GET` | `/api/projects` | Retrieves featured and active projects |
-| `GET` | `/api/certifications`| Retrieves verified certificates & credentials |
-| `GET` | `/api/education` | Retrieves academic education history |
-| `GET` | `/api/cv` | Retrieves CV metadata and download statistics |
-| `GET` | `/api/cv/download` | Streams the CV PDF directly (supports `?download=true`) |
-| `POST`| `/api/contact` | Handles contact form submissions via Resend |
-| `POST`| `/api/chat` | AI conversational endpoint powered by Gemini |
+| `GET` | `/api/certifications` | Retrieves verified certifications |
+| `GET` | `/api/education` | Retrieves academic history |
+| `GET` | `/api/github` | Retrieves cached GitHub telemetry & activity metrics |
+| `GET` | `/api/cv` | Retrieves CV metadata and download count |
+| `GET` | `/api/cv/download` | Streams CV PDF binary (supports `?download=true`) |
+| `POST` | `/api/contact` | Handles contact form submissions with rate limiting |
+| `POST` | `/api/chat` | AI conversational endpoint with Gemini streaming |
 
----
+### Admin Endpoints (Requires Session Cookie or Bearer Token)
 
-## 🚀 Deployment
-
-The project is optimized for deployment on **Vercel**:
-
-1. Push your repository to GitHub.
-2. Import the repository into [Vercel](https://vercel.com).
-3. Under **Project Settings > Environment Variables**, add your environment variables (`MONGODB_URI`, `RESEND_API_KEY`, `ADMIN_EMAIL`, `GEMINI_API_KEY`, etc.).
-4. Click **Deploy**.
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/admin/auth` | Verifies admin password and sets auth cookie |
+| `DELETE` | `/api/admin/auth` | Clears admin authentication session |
+| `GET` / `POST` / `PUT` / `DELETE` | `/api/admin/blogs` | Full CRUD and reordering for blog posts |
+| `GET` / `POST` / `PUT` / `DELETE` | `/api/admin/blogs/categories` | Full CRUD and visibility toggle for categories |
+| `POST` | `/api/admin/blogs/upload` | Uploads and converts blog cover images |
+| `GET` / `POST` / `PUT` / `DELETE` | `/api/admin/projects` | Full CRUD and reordering for projects |
+| `GET` / `POST` / `PUT` / `DELETE` | `/api/admin/experiences` | Full CRUD and reordering for experiences |
+| `GET` / `POST` / `PUT` / `DELETE` | `/api/admin/certifications` | Full CRUD and reordering for certifications |
+| `GET` / `POST` / `PUT` / `DELETE` | `/api/admin/education` | Full CRUD and reordering for education |
+| `GET` / `POST` / `DELETE` | `/api/admin/cv` | Manages CV binary PDF upload and metadata |
+| `GET` / `PUT` | `/api/admin/github` | Manages GitHub Engine configuration & overrides |
+| `POST` | `/api/admin/github/sync` | Triggers immediate GitHub telemetry synchronization |
 
 ---
 
 ## 🛡️ Security & Performance
 
-- **Optimized Database Queries**: Selective projection on heavy fields to maintain sub-second response times.
-- **Connection Caching**: Global connection pooling prevents database connection exhaustion in serverless environments.
-- **Spam & Abuse Protection**: Client IP rate limiting and honeypot detection on contact endpoints.
-- **SEO & Structured Data**: Built-in JSON-LD Schema (`Person`, `WebSite`), meta tags, dynamic sitemap, and robots.txt.
+- **Dual-Layer Database Architecture:** Splits heavy document persistence (MongoDB) from relational blogging queries (TiDB Cloud), preventing contention.
+- **XSS & Content Sanitization:** Markdown HTML output is scrubbed of dangerous tags, script injections, and inline handlers before rendering.
+- **Connection Caching:** Global connection pooling for both Mongoose and MySQL prevents serverless connection exhaustion.
+- **Rate Limiting & Honeypot:** In-memory sliding-window IP rate limiting and hidden honeypot fields on public contact forms.
+- **SEO & Structured Data:** Automatic JSON-LD Schema (`Person`, `WebSite`), OpenGraph metadata, dynamic sitemap generation (`/sitemap.xml`), and robots configuration (`/robots.txt`).
 
 ---
 
