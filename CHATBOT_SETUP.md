@@ -1,4 +1,4 @@
-# Production-Grade Chatbot Backend – Setup Guide
+# Production-Grade Chatbot Backend - Setup Guide
 
 Your portfolio chatbot is now upgraded to production-grade with streaming responses, and intelligent context from your portfolio pages.
 

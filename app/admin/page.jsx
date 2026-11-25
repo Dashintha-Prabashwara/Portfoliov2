@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { getProjectCoverImage } from '@/lib/projectImage';
+import { renderMarkdownToHtml, parseMarkdownWithFrontmatter } from '@/lib/markdown';
 
 const COLOR_CYCLE = ['primary', 'secondary', 'tertiary'];
 const BAR_COLOR_CYCLE = [
@@ -63,6 +64,8 @@ const applyVisibleColorCycle = (items = [], type = 'experience') => {
       updated.statusColor = cycleColor;
     } else if (type === 'education') {
       updated.color = cycleColor;
+    } else if (type === 'blog') {
+      updated.color = cycleColor;
     }
 
     return updated;
@@ -85,6 +88,16 @@ export default function AdminPage() {
   const [projects, setProjects] = useState([]);
   const [certifications, setCertifications] = useState([]);
   const [education, setEducation] = useState([]);
+  const [blogs, setBlogs] = useState([]);
+  const [blogCategories, setBlogCategories] = useState([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [uploadingBlogCover, setUploadingBlogCover] = useState(false);
+  const blogCoverFileInputRef = useRef(null);
+  const [modalBlogContent, setModalBlogContent] = useState('');
+  const [mdFileName, setMdFileName] = useState('');
+  const [blogContentTab, setBlogContentTab] = useState('write'); // 'write' | 'preview'
+  const mdFileInputRef = useRef(null);
   const [cvData, setCvData] = useState(null);
   const [dbStatus, setDbStatus] = useState({ connected: false, checked: false, error: null });
 
@@ -125,6 +138,7 @@ export default function AdminPage() {
   const [hiddenAchievements, setHiddenAchievements] = useState([]);
   const [hiddenOrganizations, setHiddenOrganizations] = useState([]);
   const [hiddenHighlights, setHiddenHighlights] = useState([]);
+
   const [hiddenLanguages, setHiddenLanguages] = useState([]);
   const [customContributedRepos, setCustomContributedRepos] = useState([]);
   const [excludedContributedRepos, setExcludedContributedRepos] = useState([]);
@@ -146,13 +160,15 @@ export default function AdminPage() {
   const fetchAllData = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [expRes, projRes, certRes, eduRes, cvRes, ghRes] = await Promise.all([
+      const [expRes, projRes, certRes, eduRes, cvRes, ghRes, blogRes, catRes] = await Promise.all([
         fetch('/api/admin/experiences'),
         fetch('/api/admin/projects'),
         fetch('/api/admin/certifications'),
         fetch('/api/admin/education'),
         fetch('/api/admin/cv'),
         fetch('/api/admin/github'),
+        fetch('/api/admin/blogs'),
+        fetch('/api/admin/blogs/categories'),
       ]);
 
       if (expRes.status === 401) {
@@ -160,19 +176,23 @@ export default function AdminPage() {
         return;
       }
 
-      const [expData, projData, certData, eduData, cvResp, ghResp] = await Promise.all([
+      const [expData, projData, certData, eduData, cvResp, ghResp, blogData, catData] = await Promise.all([
         expRes.json(),
         projRes.json(),
         certRes.json(),
         eduRes.json(),
         cvRes.json(),
         ghRes.json(),
+        blogRes.json(),
+        catRes.json(),
       ]);
 
       setExperiences(applyVisibleColorCycle(expData.data || [], 'experience'));
       setProjects(applyVisibleColorCycle(projData.data || [], 'project'));
       setCertifications(applyVisibleColorCycle(certData.data || [], 'certification'));
       setEducation(applyVisibleColorCycle(eduData.data || [], 'education'));
+      setBlogs(applyVisibleColorCycle(blogData.data || [], 'blog'));
+      setBlogCategories(catData.data || []);
       setCvData(cvResp.data || null);
       if (ghResp?.data) {
         setGithubConfig(ghResp.data);
@@ -370,13 +390,16 @@ export default function AdminPage() {
     setModalType(type);
     setEditingItem(item);
     setModalIsVisible(item ? item.isVisible !== false : true); // Default is visible
-    setModalCoverImage(item?.image || '');
+    setModalCoverImage(item?.coverImage || item?.image_url || item?.image || '');
     setModalLiveUrl(item?.liveUrl || '');
     setModalTitle(item?.title || '');
     setModalDescription(item?.description || '');
     setModalTechnologies(item?.technologies?.join(', ') || '');
     setModalGithubUrl(item?.githubUrl || '');
     setSelectedCertIcon(item?.icon || 'verified');
+    setModalBlogContent(item?.content || '');
+    setMdFileName('');
+    setBlogContentTab('write');
     setModalOpen(true);
   };
 
@@ -391,6 +414,9 @@ export default function AdminPage() {
     setModalTechnologies('');
     setModalGithubUrl('');
     setSelectedCertIcon('verified');
+    setModalBlogContent('');
+    setMdFileName('');
+    setBlogContentTab('write');
   };
 
   const handleAutofillFromGithub = async () => {
@@ -569,6 +595,183 @@ export default function AdminPage() {
     }
   };
 
+  const handleBlogCoverUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WebP, etc.)', 'error');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size exceeds 5MB limit', 'error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploadingBlogCover(true);
+    try {
+      const res = await fetch('/api/admin/blogs/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success && data.fileUrl) {
+        setModalCoverImage(data.fileUrl);
+        showToast('Cover image uploaded and converted for TiDB Cloud!');
+      } else {
+        showToast(data.error || 'Failed to upload cover image', 'error');
+      }
+    } catch {
+      showToast('Network error uploading blog cover image', 'error');
+    } finally {
+      setUploadingBlogCover(false);
+      if (blogCoverFileInputRef.current) blogCoverFileInputRef.current.value = '';
+    }
+  };
+
+  const handleClearBlogCover = () => {
+    setModalCoverImage('');
+    showToast('Cover image cleared');
+  };
+
+  const handleMdFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileName = file.name;
+    const isMd =
+      fileName.endsWith('.md') ||
+      fileName.endsWith('.markdown') ||
+      fileName.endsWith('.txt');
+    if (!isMd) {
+      showToast('Please upload a .md, .markdown, or .txt file', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result;
+      if (typeof text === 'string') {
+        const { frontmatter, content } = parseMarkdownWithFrontmatter(text);
+        setModalBlogContent(content);
+        setMdFileName(fileName);
+
+        let details = [];
+        if (frontmatter.title) details.push(`Title: "${frontmatter.title}"`);
+        if (frontmatter.category) details.push(`Category: "${frontmatter.category}"`);
+
+        showToast(
+          details.length > 0
+            ? `Extracted ${fileName} (${content.length} chars, ${details.join(', ')})`
+            : `Extracted ${fileName} (${content.length} chars) successfully!`
+        );
+      }
+    };
+    reader.onerror = () => {
+      showToast('Failed to read markdown file', 'error');
+    };
+    reader.readAsText(file);
+
+    if (e.target) e.target.value = '';
+  };
+
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    try {
+      const res = await fetch('/api/admin/blogs/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCategoryName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Category created in TiDB Cloud!');
+        setNewCategoryName('');
+        const catRes = await fetch('/api/admin/blogs/categories');
+        const catData = await catRes.json();
+        setBlogCategories(catData.data || []);
+      } else {
+        showToast(data.error || 'Failed to create category', 'error');
+      }
+    } catch {
+      showToast('Error creating category', 'error');
+    }
+  };
+
+  const handleToggleCategoryVisibility = async (cat) => {
+    try {
+      const currentVis =
+        cat.isVisible !== undefined
+          ? Boolean(cat.isVisible)
+          : cat.is_visible !== 0 && cat.is_visible !== false;
+      const res = await fetch('/api/admin/blogs/categories', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: cat.id, isVisible: !currentVis }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`Category visibility set to ${!currentVis ? 'Visible' : 'Hidden'}!`);
+        const catRes = await fetch('/api/admin/blogs/categories');
+        const catData = await catRes.json();
+        setBlogCategories(catData.data || []);
+      } else {
+        showToast(data.error || 'Failed to update category', 'error');
+      }
+    } catch {
+      showToast('Error updating category', 'error');
+    }
+  };
+
+  const handleUpdateCategoryName = async (cat) => {
+    const updatedName = window.prompt('Enter new category name:', cat.name);
+    if (!updatedName || updatedName.trim() === '' || updatedName.trim() === cat.name) return;
+    try {
+      const res = await fetch('/api/admin/blogs/categories', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: cat.id, name: updatedName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Category renamed successfully!');
+        const catRes = await fetch('/api/admin/blogs/categories');
+        const catData = await catRes.json();
+        setBlogCategories(catData.data || []);
+      } else {
+        showToast(data.error || 'Failed to rename category', 'error');
+      }
+    } catch {
+      showToast('Error renaming category', 'error');
+    }
+  };
+
+  const handleDeleteCategory = async (catId) => {
+    if (!window.confirm('Are you sure you want to delete this category?')) return;
+    try {
+      const res = await fetch(`/api/admin/blogs/categories?id=${catId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Category deleted successfully!');
+        const catRes = await fetch('/api/admin/blogs/categories');
+        const catData = await catRes.json();
+        setBlogCategories(catData.data || []);
+      } else {
+        showToast(data.error || 'Failed to delete category', 'error');
+      }
+    } catch {
+      showToast('Error deleting category', 'error');
+    }
+  };
+
   // Delete handler
   const handleDelete = async (type, id) => {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
@@ -623,6 +826,10 @@ export default function AdminPage() {
       list = [...education];
       setList = setEducation;
       endpoint = '/api/admin/education';
+    } else if (type === 'blog') {
+      list = [...blogs];
+      setList = setBlogs;
+      endpoint = '/api/admin/blogs';
     } else {
       return;
     }
@@ -683,6 +890,10 @@ export default function AdminPage() {
       list = [...education];
       setList = setEducation;
       endpoint = '/api/admin/education';
+    } else if (type === 'blog') {
+      list = [...blogs];
+      setList = setBlogs;
+      endpoint = '/api/admin/blogs';
     } else {
       return;
     }
@@ -818,6 +1029,23 @@ export default function AdminPage() {
             (item.title || '').toLowerCase().includes(q) ||
             (item.institution || '').toLowerCase().includes(q) ||
             (item.description || '').toLowerCase().includes(q) ||
+            (item.tags || []).some((t) => t.toLowerCase().includes(q))
+          );
+        }
+        if (type === 'blog') {
+          const linkedExp = item.linkedExperienceId
+            ? experiences.find((e) => (e._id || e.id) === item.linkedExperienceId)?.company || ''
+            : '';
+          const linkedProj = item.linkedProjectId
+            ? projects.find((p) => (p._id || p.id) === item.linkedProjectId)?.title || ''
+            : '';
+          return (
+            (item.title || '').toLowerCase().includes(q) ||
+            (item.excerpt || '').toLowerCase().includes(q) ||
+            (item.category || '').toLowerCase().includes(q) ||
+            (item.author || '').toLowerCase().includes(q) ||
+            linkedExp.toLowerCase().includes(q) ||
+            linkedProj.toLowerCase().includes(q) ||
             (item.tags || []).some((t) => t.toLowerCase().includes(q))
           );
         }
@@ -976,12 +1204,19 @@ export default function AdminPage() {
       payload.isVisible = modalIsVisible;
     }
 
-    const isEdit = !!editingItem?._id;
+    if (modalType === 'project') {
+      payload.image = modalCoverImage;
+    } else if (modalType === 'blog') {
+      payload.coverImage = modalCoverImage;
+      payload.content = modalBlogContent;
+    }
+
+    const isEdit = !!(editingItem?._id || editingItem?.id);
     const url = `/api/admin/${modalType === 'education' ? 'education' : modalType + 's'}`;
     const method = isEdit ? 'PUT' : 'POST';
 
     if (isEdit) {
-      payload.id = editingItem._id;
+      payload.id = editingItem._id || editingItem.id;
     }
 
     try {
@@ -1239,6 +1474,7 @@ export default function AdminPage() {
             { id: 'overview', label: 'Overview', icon: 'dashboard' },
             { id: 'experiences', label: `Experiences (${experiences.length})`, icon: 'work' },
             { id: 'projects', label: `Projects (${projects.length})`, icon: 'terminal' },
+            { id: 'blogs', label: `Blog Posts (${blogs.length})`, icon: 'article' },
             { id: 'certifications', label: `Certifications & Edu (${certifications.length + education.length})`, icon: 'verified' },
             { id: 'cv', label: 'CV Manager', icon: 'description' },
             { id: 'github', label: 'GitHub Engine', icon: 'hub' },
@@ -1321,6 +1557,24 @@ export default function AdminPage() {
                       className="mt-4 text-xs text-tertiary font-bold inline-flex items-center gap-1 hover:underline"
                     >
                       Manage Credentials →
+                    </button>
+                  </div>
+
+                  <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-6 relative overflow-hidden group hover:border-primary/40 transition-colors">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
+                      <span className="material-symbols-outlined">article</span>
+                    </div>
+                    <span className="text-3xl font-bold font-headline text-on-surface">
+                      {blogs.length}
+                    </span>
+                    <p className="text-xs uppercase tracking-widest text-on-surface-variant mt-1">
+                      Articles Published
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('blogs')}
+                      className="mt-4 text-xs text-primary font-bold inline-flex items-center gap-1 hover:underline"
+                    >
+                      Manage Articles →
                     </button>
                   </div>
 
@@ -1539,6 +1793,19 @@ export default function AdminPage() {
                                   </span>
                                 ))}
                               </div>
+
+                              {exp.blogUrl && (
+                                <div className="pt-1">
+                                  <a
+                                    href={exp.blogUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold"
+                                  >
+                                    Blog Article <span className="material-symbols-outlined text-xs">article</span>
+                                  </a>
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -1819,6 +2086,16 @@ export default function AdminPage() {
                                   GitHub <span className="material-symbols-outlined text-xs">code</span>
                                 </a>
                               )}
+                              {proj.blogUrl && (
+                                <a
+                                  href={proj.blogUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-tertiary hover:underline inline-flex items-center gap-1 font-semibold"
+                                >
+                                  Blog Story <span className="material-symbols-outlined text-xs">article</span>
+                                </a>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1829,6 +2106,346 @@ export default function AdminPage() {
               })()}
             </>
           )}
+              </div>
+            )}
+
+            {/* BLOG POSTS TAB */}
+            {activeTab === 'blogs' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="font-headline text-xl sm:text-2xl font-bold">Blog Posts &amp; Articles</h2>
+                    <p className="text-xs text-on-surface-variant">
+                      Manage technical articles and stories displayed on the /blog page
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryManager(!showCategoryManager)}
+                      className={`py-2 px-3.5 rounded-lg border text-xs font-headline font-bold uppercase tracking-wider flex items-center gap-2 transition-all ${
+                        showCategoryManager
+                          ? 'bg-secondary text-on-secondary border-secondary shadow-sm'
+                          : 'bg-surface-container-high border-outline-variant/30 text-on-surface hover:border-secondary/50'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-sm">category</span>
+                      {showCategoryManager ? 'Close Categories' : 'Manage Categories'}
+                      <span className="text-[10px] px-1.5 py-0.5 bg-black/20 rounded-full font-mono font-bold">
+                        {blogCategories.length}
+                      </span>
+                    </button>
+                    <span className="text-[11px] font-mono text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-lg border border-outline-variant/20 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm text-primary">drag_indicator</span>
+                      Drag &amp; drop to reorder • Primary → Secondary → Tertiary
+                    </span>
+                    <button
+                      onClick={() => openModal('blog')}
+                      className="py-2.5 px-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline text-xs font-bold uppercase tracking-widest shadow-md flex items-center gap-2 hover:opacity-90 transition-opacity"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                      Add Blog Post
+                    </button>
+                  </div>
+                </div>
+
+                {/* CATEGORY MANAGER PANEL */}
+                {showCategoryManager && (
+                  <div className="p-5 rounded-2xl bg-surface-container border border-secondary/30 shadow-md space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/20 pb-3">
+                      <div>
+                        <h3 className="font-headline font-bold text-sm sm:text-base text-on-surface flex items-center gap-2">
+                          <span className="material-symbols-outlined text-secondary text-lg">category</span>
+                          Blog Categories (TiDB Cloud MySQL)
+                        </h3>
+                        <p className="text-[11px] text-on-surface-variant">
+                          Add, rename, toggle visibility or delete categories used to filter and organize portfolio blogs.
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 self-start sm:self-auto">
+                        Table: blog_category
+                      </span>
+                    </div>
+
+                    {/* Add Category Form */}
+                    <form onSubmit={handleAddCategory} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="New category name (e.g., Security, Artificial Intelligence)..."
+                        className="flex-1 bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-secondary"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newCategoryName.trim()}
+                        className="py-2 px-4 rounded-lg bg-secondary text-on-secondary text-xs font-bold font-headline uppercase tracking-wider disabled:opacity-50 flex items-center gap-1.5 shrink-0 hover:opacity-90 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined text-sm">add_circle</span>
+                        Add Category
+                      </button>
+                    </form>
+
+                    {/* Categories List */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+                      {blogCategories.map((cat) => {
+                        const isCatVisible =
+                          cat.isVisible !== undefined
+                            ? Boolean(cat.isVisible)
+                            : cat.is_visible !== 0 && cat.is_visible !== false;
+                        return (
+                          <div
+                            key={cat.id}
+                            className={`p-3 rounded-xl border flex items-center justify-between gap-2 transition-all ${
+                              isCatVisible
+                                ? 'bg-surface-container-high/80 border-outline-variant/30'
+                                : 'bg-surface-container-low/50 border-dashed border-outline-variant/20 opacity-60'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <span className="font-semibold text-xs text-on-surface block truncate" title={cat.name}>
+                                {cat.name}
+                              </span>
+                              <span className={`text-[10px] font-mono ${isCatVisible ? 'text-primary' : 'text-on-surface-variant'}`}>
+                                {isCatVisible ? '● Visible' : '○ Hidden'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleCategoryVisibility(cat)}
+                                className={`p-1.5 rounded-lg border transition-colors ${
+                                  isCatVisible
+                                    ? 'text-primary bg-primary/10 border-primary/25 hover:bg-primary/20'
+                                    : 'text-on-surface-variant/50 bg-surface-container-highest border-outline-variant/20 hover:text-on-surface'
+                                }`}
+                                title={isCatVisible ? 'Hide category' : 'Make category visible'}
+                              >
+                                <span className="material-symbols-outlined text-sm">
+                                  {isCatVisible ? 'visibility' : 'visibility_off'}
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateCategoryName(cat)}
+                                className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest border border-outline-variant/20 transition-colors"
+                                title="Rename category"
+                              >
+                                <span className="material-symbols-outlined text-sm">edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCategory(cat.id)}
+                                className="p-1.5 rounded-lg text-error hover:bg-error/10 border border-error/20 transition-colors"
+                                title="Delete category"
+                              >
+                                <span className="material-symbols-outlined text-sm">delete</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {blogs.length === 0 ? (
+                  <div className="p-12 text-center border border-dashed border-outline-variant/30 rounded-xl space-y-3">
+                    <p className="text-sm text-on-surface-variant">No blog posts found in database.</p>
+                    <div className="flex items-center justify-center gap-4">
+                      <button
+                        onClick={() => openModal('blog')}
+                        className="py-2 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold font-headline uppercase tracking-wider flex items-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-sm">add</span>
+                        Add First Blog Post
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {renderSearchAndFilterBar(blogs, 'blogs')}
+
+                    {(() => {
+                      const displayedBlogs = getFilteredItems(blogs, 'blog');
+                      if (displayedBlogs.length === 0) {
+                        return (
+                          <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl bg-surface-container-low/40">
+                            <span className="material-symbols-outlined text-3xl text-on-surface-variant/40 mb-2">search_off</span>
+                            <p className="text-sm font-headline font-bold text-on-surface">No matching blog posts found</p>
+                            <p className="text-xs text-on-surface-variant mt-1">
+                              Try adjusting your search query or changing the visibility filter.
+                            </p>
+                            {(searchQuery || visibilityFilter !== 'all') && (
+                              <button
+                                onClick={() => { setSearchQuery(''); setVisibilityFilter('all'); }}
+                                className="mt-3 text-xs font-headline font-bold uppercase tracking-wider text-primary hover:underline"
+                              >
+                                Clear search &amp; filter
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-4">
+                          {displayedBlogs.map((blog) => {
+                            const origIdx = blogs.findIndex((x) => (x._id || x.id) === (blog._id || blog.id));
+                            const idx = origIdx >= 0 ? origIdx : 0;
+                            const isDragging = dragInfo.type === 'blog' && dragInfo.index === idx;
+                            const isDragOver = dragOverInfo.type === 'blog' && dragOverInfo.index === idx;
+                            const isVisible = blog.isVisible !== false;
+
+                            return (
+                              <div
+                                key={blog._id || blog.id || idx}
+                                draggable
+                                onDragStart={(e) => {
+                                  e.dataTransfer.setData('text/plain', String(idx));
+                                  setDragInfo({ type: 'blog', index: idx });
+                                  isDraggingRef.current = true;
+                                }}
+                                onDragEnd={() => {
+                                  setDragInfo({ type: null, index: null });
+                                  setDragOverInfo({ type: null, index: null });
+                                  isDraggingRef.current = false;
+                                  autoScrollSpeedRef.current = 0;
+                                }}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  if (dragOverInfo.index !== idx) {
+                                    setDragOverInfo({ type: 'blog', index: idx });
+                                  }
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  if (dragInfo.type === 'blog' && dragInfo.index !== null) {
+                                    handleReorder('blog', dragInfo.index, idx);
+                                  }
+                                  setDragInfo({ type: null, index: null });
+                                  setDragOverInfo({ type: null, index: null });
+                                  isDraggingRef.current = false;
+                                  autoScrollSpeedRef.current = 0;
+                                }}
+                                className={`p-4 sm:p-5 rounded-xl border transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                                  !isVisible
+                                    ? 'bg-surface-container-low/40 border-dashed border-outline-variant/30 opacity-70'
+                                    : 'bg-surface-container-low border-outline-variant/20 hover:border-primary/40'
+                                } ${isDragging ? 'opacity-40 scale-[0.98]' : ''} ${
+                                  isDragOver ? 'border-primary ring-2 ring-primary/20 scale-[1.01]' : ''
+                                }`}
+                              >
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                  <div className="flex items-start gap-3">
+                                    <span
+                                      className="material-symbols-outlined text-on-surface-variant/40 hover:text-primary transition-colors cursor-grab active:cursor-grabbing shrink-0 select-none mt-1"
+                                      title="Drag to reorder"
+                                    >
+                                      drag_indicator
+                                    </span>
+                                    <div>
+                                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                        <h3 className="font-headline font-bold text-base sm:text-lg text-on-surface">
+                                          {blog.title}
+                                        </h3>
+                                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/25 font-bold">
+                                          {blog.category || 'Article'}
+                                        </span>
+                                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/20">
+                                          {blog.readTime || '5 min read'}
+                                        </span>
+                                        {blog.linkedExperienceId && (() => {
+                                          const exp = experiences.find((e) => (e._id || e.id) === blog.linkedExperienceId);
+                                          const label = exp ? `${exp.role} - ${exp.company}` : 'Linked';
+                                          return (
+                                            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 font-bold flex items-center gap-1">
+                                              <span className="material-symbols-outlined text-[12px]">work</span>
+                                              Exp: {label}
+                                            </span>
+                                          );
+                                        })()}
+                                        {blog.linkedProjectId && (
+                                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-tertiary/15 text-tertiary border border-tertiary/30 font-bold flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-[12px]">rocket_launch</span>
+                                            Project: {projects.find((p) => (p._id || p.id) === blog.linkedProjectId)?.title || 'Linked'}
+                                          </span>
+                                        )}
+                                        {!blog.linkedExperienceId && !blog.linkedProjectId && (
+                                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant/80 border border-outline-variant/20">
+                                            Normal Blog
+                                          </span>
+                                        )}
+                                        {blog.color && (
+                                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/20">
+                                            {blog.color}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-on-surface-variant line-clamp-2 max-w-3xl mb-2">
+                                        {blog.excerpt}
+                                      </p>
+                                      {Array.isArray(blog.tags) && blog.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {blog.tags.map((t) => (
+                                            <span
+                                              key={t}
+                                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-container-high/60 text-on-surface-variant border border-outline-variant/20"
+                                            >
+                                              #{t}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                                    {/* Toggle Visibility Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleVisibility('blog', blog)}
+                                      className={`p-2 rounded-lg transition-colors border ${
+                                        isVisible
+                                          ? 'text-primary bg-primary/10 border-primary/30 hover:bg-primary/20'
+                                          : 'text-on-surface-variant/50 bg-surface-container-high border-outline-variant/20 hover:text-on-surface'
+                                      }`}
+                                      title={isVisible ? 'Hide from /blog page' : 'Make visible on /blog page'}
+                                    >
+                                      <span className="material-symbols-outlined text-lg">
+                                        {isVisible ? 'visibility' : 'visibility_off'}
+                                      </span>
+                                    </button>
+
+                                    {/* Edit Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => openModal('blog', blog)}
+                                      className="p-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface border border-outline-variant/30 transition-colors"
+                                      title="Edit blog post"
+                                    >
+                                      <span className="material-symbols-outlined text-lg">edit</span>
+                                    </button>
+
+                                    {/* Delete Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDelete('blog', blog._id || blog.id)}
+                                      className="p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-colors"
+                                      title="Delete blog post"
+                                    >
+                                      <span className="material-symbols-outlined text-lg">delete</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
               </div>
             )}
 
@@ -3038,6 +3655,41 @@ export default function AdminPage() {
                       />
                     </div>
 
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                          Linked Blog Story (optional)
+                        </label>
+                        <span className="text-[10px] text-primary font-mono">Portfolio Blog Section</span>
+                      </div>
+                      {blogs.length > 0 && (
+                        <div className="mb-2">
+                          <select
+                            onChange={(e) => {
+                              const input = document.getElementById('exp-blog-url-input');
+                              if (input && e.target.value) input.value = e.target.value;
+                            }}
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary mb-1.5"
+                          >
+                            <option value="">-- Quick Link: Choose from Portfolio Blogs --</option>
+                            {blogs.map((b) => (
+                              <option key={b.id || b._id} value={`/blog/${b.id || b._id}`}>
+                                {b.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      <input
+                        id="exp-blog-url-input"
+                        type="text"
+                        name="blogUrl"
+                        defaultValue={editingItem?.blogUrl || ''}
+                        placeholder="e.g. /blog/30001"
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
@@ -3185,6 +3837,40 @@ export default function AdminPage() {
                           value={modalLiveUrl}
                           onChange={(e) => setModalLiveUrl(e.target.value)}
                           placeholder="https://your-site.com"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                            Project Case Study / Blog Story URL
+                          </label>
+                          <span className="text-[10px] text-tertiary font-mono font-bold">Portfolio Blog Section</span>
+                        </div>
+                        {blogs.length > 0 && (
+                          <div className="mb-2">
+                            <select
+                              onChange={(e) => {
+                                const input = document.getElementById('proj-blog-url-input');
+                                if (input && e.target.value) input.value = e.target.value;
+                              }}
+                              className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary mb-1.5"
+                            >
+                              <option value="">-- Quick Link: Choose from Portfolio Blogs --</option>
+                              {blogs.map((b) => (
+                                <option key={b.id || b._id} value={`/blog/${b.id || b._id}`}>
+                                  {b.title}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        <input
+                          id="proj-blog-url-input"
+                          type="text"
+                          name="blogUrl"
+                          defaultValue={editingItem?.blogUrl || ''}
+                          placeholder="e.g. /blog/30001"
                           className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                         />
                       </div>
@@ -3584,6 +4270,361 @@ export default function AdminPage() {
                           defaultValue={editingItem?.order ?? education.length + 1}
                           className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
                         />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* BLOG POST FORM */}
+                {modalType === 'blog' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Article Title *
+                        </label>
+                        <input
+                          type="text"
+                          name="title"
+                          defaultValue={editingItem?.title || ''}
+                          required
+                          placeholder="e.g., Scaling Next.js on Kubernetes"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                            Category *
+                          </label>
+                          <span className="text-[10px] text-secondary font-mono">CMS Managed</span>
+                        </div>
+                        <select
+                          name="category"
+                          defaultValue={editingItem?.category || (blogCategories[0]?.name || 'DevOps & CI/CD')}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        >
+                          {editingItem?.category && !blogCategories.some((c) => c.name === editingItem.category) && (
+                            <option value={editingItem.category}>{editingItem.category} (Current)</option>
+                          )}
+                          {blogCategories.map((c) => {
+                            const isCatVisible =
+                              c.isVisible !== undefined
+                                ? Boolean(c.isVisible)
+                                : c.is_visible !== 0 && c.is_visible !== false;
+                            return (
+                              <option key={c.id} value={c.name}>
+                                {c.name} {!isCatVisible ? '(Hidden)' : ''}
+                              </option>
+                            );
+                          })}
+                          {blogCategories.length === 0 && (
+                            <>
+                              <option value="DevOps & CI/CD">DevOps & CI/CD</option>
+                              <option value="Cloud & Database">Cloud & Database</option>
+                              <option value="Architecture">Architecture</option>
+                              <option value="DevSecOps">DevSecOps</option>
+                              <option value="IoT & Embedded">IoT & Embedded</option>
+                              <option value="Design">Design</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Read Time
+                        </label>
+                        <input
+                          type="text"
+                          name="readTime"
+                          defaultValue={editingItem?.readTime || '5 min read'}
+                          placeholder="e.g., 6 min read"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Author
+                        </label>
+                        <input
+                          type="text"
+                          name="author"
+                          defaultValue={editingItem?.author || 'Dashintha Jayawardana'}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                        Short Excerpt / Summary *
+                      </label>
+                      <textarea
+                        name="excerpt"
+                        rows={2}
+                        defaultValue={editingItem?.excerpt || ''}
+                        required
+                        placeholder="Concise overview displayed on the blog card..."
+                        className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant">
+                          Article Content (Markdown supported) *
+                        </label>
+
+                        {/* Upload .md File & Tab Controls */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            type="file"
+                            ref={mdFileInputRef}
+                            onChange={handleMdFileUpload}
+                            accept=".md,.markdown,.txt,text/markdown,text/plain"
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => mdFileInputRef.current?.click()}
+                            className="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 text-xs font-headline font-bold uppercase tracking-wider text-primary flex items-center gap-1.5 transition-colors shadow-sm"
+                            title="Upload and extract markdown file from computer"
+                          >
+                            <span className="material-symbols-outlined text-sm">upload_file</span>
+                            Upload .md File
+                          </button>
+
+                          {mdFileName && (
+                            <span className="text-[11px] font-mono text-secondary bg-secondary/10 border border-secondary/30 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[12px]">description</span>
+                              <span className="max-w-[120px] truncate">{mdFileName}</span>
+                              <button
+                                type="button"
+                                onClick={() => setMdFileName('')}
+                                className="text-secondary/70 hover:text-secondary ml-1"
+                                title="Dismiss filename"
+                              >
+                                <span className="material-symbols-outlined text-[11px]">close</span>
+                              </button>
+                            </span>
+                          )}
+
+                          {/* Write vs Preview Toggle */}
+                          <div className="inline-flex rounded-lg border border-outline-variant/30 p-0.5 bg-surface-container-highest">
+                            <button
+                              type="button"
+                              onClick={() => setBlogContentTab('write')}
+                              className={`px-2.5 py-0.5 rounded-md text-[11px] font-headline font-bold uppercase tracking-wider transition-colors ${
+                                blogContentTab === 'write'
+                                  ? 'bg-surface-container text-on-surface shadow-sm'
+                                  : 'text-on-surface-variant hover:text-on-surface'
+                              }`}
+                            >
+                              Write
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBlogContentTab('preview')}
+                              className={`px-2.5 py-0.5 rounded-md text-[11px] font-headline font-bold uppercase tracking-wider transition-colors ${
+                                blogContentTab === 'preview'
+                                  ? 'bg-surface-container text-on-surface shadow-sm'
+                                  : 'text-on-surface-variant hover:text-on-surface'
+                              }`}
+                            >
+                              Preview
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {blogContentTab === 'write' ? (
+                        <div>
+                          <textarea
+                            name="content"
+                            rows={9}
+                            value={modalBlogContent}
+                            onChange={(e) => setModalBlogContent(e.target.value)}
+                            placeholder="Write the full technical article here with # Headings, - Lists, code blocks, or upload a .md file above..."
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface font-mono focus:outline-none focus:border-primary leading-relaxed"
+                          />
+                          <div className="flex items-center justify-between text-[11px] font-mono text-on-surface-variant/70 mt-1">
+                            <span>Markdown supported (# headings, - lists, ``` code blocks)</span>
+                            <span>
+                              {modalBlogContent.length} chars •{' '}
+                              {modalBlogContent.trim() ? modalBlogContent.trim().split(/\s+/).length : 0} words
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full min-h-[220px] max-h-[380px] overflow-y-auto bg-surface-container-highest/60 border border-outline-variant/30 rounded-lg p-4 custom-scrollbar">
+                          {modalBlogContent.trim() ? (
+                            <div
+                              className="blog-content max-w-none text-on-surface font-light leading-relaxed space-y-3"
+                              dangerouslySetInnerHTML={{
+                                __html: renderMarkdownToHtml(modalBlogContent),
+                              }}
+                            />
+                          ) : (
+                            <div className="py-12 text-center text-xs text-on-surface-variant font-mono">
+                              No content yet. Type in the &apos;Write&apos; tab or click &apos;Upload .md File&apos; above.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Tags (comma separated)
+                        </label>
+                        <input
+                          type="text"
+                          name="tags"
+                          defaultValue={editingItem?.tags?.join(', ') || ''}
+                          placeholder="Docker, Kubernetes, AWS"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1">
+                          Display Order
+                        </label>
+                        <input
+                          type="number"
+                          name="order"
+                          defaultValue={editingItem?.order ?? blogs.length + 1}
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    {/* BLOG COVER IMAGE (LOCAL COMPUTER UPLOAD & TIDB CLOUD STORAGE) */}
+                    <div className="p-4 rounded-xl bg-surface-container-highest/60 border border-outline-variant/30 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                        <div>
+                          <label className="block text-xs font-headline font-bold uppercase tracking-wider text-on-surface">
+                            Cover Image (Stored in TiDB Cloud)
+                          </label>
+                          <p className="text-[11px] text-on-surface-variant">
+                            Upload directly from local computer (saved as TiDB MEDIUMTEXT, zero MongoDB storage used) or paste an image URL.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <input
+                            type="file"
+                            ref={blogCoverFileInputRef}
+                            onChange={handleBlogCoverUpload}
+                            accept="image/*"
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => blogCoverFileInputRef.current?.click()}
+                            disabled={uploadingBlogCover}
+                            className="px-3 py-1.5 rounded-lg bg-secondary/15 hover:bg-secondary/25 border border-secondary/30 text-xs font-headline font-bold uppercase tracking-wider text-secondary flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                          >
+                            <span className={`material-symbols-outlined text-sm ${uploadingBlogCover ? 'animate-spin' : ''}`}>
+                              {uploadingBlogCover ? 'progress_activity' : 'upload_file'}
+                            </span>
+                            {uploadingBlogCover ? 'Uploading...' : 'Upload from Computer'}
+                          </button>
+                          {modalCoverImage && (
+                            <button
+                              type="button"
+                              onClick={handleClearBlogCover}
+                              className="px-2.5 py-1.5 rounded-lg bg-surface-container-high border border-outline-variant/30 text-[11px] font-mono text-on-surface-variant hover:text-error hover:border-error/40 flex items-center gap-1 transition-colors"
+                              title="Clear cover image"
+                            >
+                              <span className="material-symbols-outlined text-xs">close</span>
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <input
+                          type="text"
+                          name="coverImage"
+                          value={modalCoverImage}
+                          onChange={(e) => setModalCoverImage(e.target.value)}
+                          placeholder="Auto-populated when uploading from computer, or paste image URL"
+                          className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                        />
+                      </div>
+
+                      {modalCoverImage && (
+                        <div className="relative aspect-[16/9] w-full max-h-48 rounded-lg overflow-hidden border border-outline-variant/40 bg-black/40">
+                          <img
+                            src={modalCoverImage}
+                            alt="Blog Cover Preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1000&q=80';
+                            }}
+                          />
+                          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-black/70 text-white backdrop-blur-sm border border-white/10 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
+                            {modalCoverImage.startsWith('data:') ? 'Local Image (Stored in TiDB Cloud)' : 'External Image URL'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* LINK TO EXPERIENCE OR PROJECT */}
+                    <div className="p-4 rounded-xl bg-surface-container-highest/60 border border-outline-variant/30 space-y-4">
+                      <div>
+                        <span className="text-xs font-headline font-bold uppercase tracking-wider text-on-surface block mb-1">
+                          Link Blog to Experience or Project
+                        </span>
+                        <p className="text-[11px] text-on-surface-variant">
+                          Link this blog to a work experience or project story, or select None to keep it as a normal blog.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1 flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-sm text-secondary">work</span>
+                            <span>Link to Experience</span>
+                          </label>
+                          <select
+                            name="linkedExperienceId"
+                            defaultValue={editingItem?.linkedExperienceId || 'none'}
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                          >
+                            <option value="none">None (Normal Blog / Unlinked)</option>
+                            {experiences.map((exp) => (
+                              <option key={exp._id || exp.id} value={exp._id || exp.id}>
+                                {exp.role} - {exp.company}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-1 flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-sm text-tertiary">rocket_launch</span>
+                            <span>Link to Project</span>
+                          </label>
+                          <select
+                            name="linkedProjectId"
+                            defaultValue={editingItem?.linkedProjectId || 'none'}
+                            className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3.5 py-2 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                          >
+                            <option value="none">None (Normal Blog / Unlinked)</option>
+                            {projects.map((proj) => (
+                              <option key={proj._id || proj.id} value={proj._id || proj.id}>
+                                {proj.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </>

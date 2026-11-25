@@ -2,6 +2,7 @@
 
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export default function Experience() {
@@ -31,37 +32,37 @@ export default function Experience() {
   const leadership = [
     {
       icon: 'admin_panel_settings',
-      title: 'Project Co-Chairperson – SkillSprint',
+      title: 'Project Co-Chairperson - SkillSprint',
       description:
-        'Co-Chairperson for Web3Ceylon – Colombo Edition seminar series, featuring industry speakers on blockchain and Web3 technologies. Empowered students to explore real-world applications of decentralized solutions.',
-      period: 'August – September 2025',
+        'Co-Chairperson for Web3Ceylon - Colombo Edition seminar series, featuring industry speakers on blockchain and Web3 technologies. Empowered students to explore real-world applications of decentralized solutions.',
+      period: 'August - September 2025',
       category: 'Web3 Initiative',
       color: 'primary',
     },
     {
       icon: 'trending_up',
-      title: 'Project Co-Chairperson – Data Storm 6.0',
+      title: 'Project Co-Chairperson - Data Storm 6.0',
       description:
         'Co-Chairperson for inter-university data analytics competition with webinars and masterclasses. Delivered industry mentoring for real-world problem-solving using cutting-edge data technologies.',
-      period: 'March – June 2025',
+      period: 'March - June 2025',
       category: 'Data Competition',
       color: 'secondary',
     },
     {
       icon: 'code',
-      title: 'Project Co-Chairperson – Devthon 2.0',
+      title: 'Project Co-Chairperson - Devthon 2.0',
       description:
         'Spearheaded three-phase web competition (Ideathon, Designathon, Devthon). Guided students through ideation, UI/UX design, and full-stack development with hands-on skill building.',
-      period: 'January – April 2025',
+      period: 'January - April 2025',
       category: 'Web Competition',
       color: 'tertiary',
     },
     {
       icon: 'school',
-      title: 'Project Co-Chairperson – Mora TechConnect',
+      title: 'Project Co-Chairperson - Mora TechConnect',
       description:
         'Led 12-month IT educational initiative with bi-weekly sessions on emerging technologies. Delivered webinars via YouTube and culminated in hands-on robotics workshop for practical learning.',
-      period: 'July 2024 – February 2025',
+      period: 'July 2024 - February 2025',
       category: 'Tech Education',
       color: 'primary',
     },
@@ -136,6 +137,31 @@ export default function Experience() {
                         <p className="text-on-surface-variant text-xs sm:text-sm font-medium mb-4">{exp.company}</p>
                         {exp.description && (
                           <p className="text-on-surface-variant text-xs sm:text-sm leading-relaxed mb-4">{exp.description}</p>
+                        )}
+                        {exp.blogUrl && (
+                          <div className={`mb-4 ${isLeft ? '' : 'flex justify-end'}`}>
+                            {exp.blogUrl.startsWith('/') ? (
+                              <Link
+                                href={exp.blogUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                              >
+                                <span className="material-symbols-outlined text-sm">article</span>
+                                <span>Read Experience Story</span>
+                              </Link>
+                            ) : (
+                              <a
+                                href={exp.blogUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                              >
+                                <span className="material-symbols-outlined text-sm">article</span>
+                                <span>Read Experience Story</span>
+                              </a>
+                            )}
+                          </div>
                         )}
                         <div className={`flex flex-wrap gap-2 ${isLeft ? '' : 'justify-end'}`}>
                           {exp.tags.map((tag) => (

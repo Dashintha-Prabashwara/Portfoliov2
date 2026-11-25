@@ -31,6 +31,11 @@ const ExperienceSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    blogUrl: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     color: {
       type: String,
       enum: ['primary', 'secondary', 'tertiary'],

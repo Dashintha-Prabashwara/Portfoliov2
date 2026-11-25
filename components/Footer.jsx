@@ -12,6 +12,9 @@ export default function Footer({ className = '' }) {
           <Link className="text-[#F3EEE3]/80 hover:text-[#D9541E] transition-colors font-body text-xs tracking-widest uppercase duration-200" href="/github">
             Telemetry
           </Link>
+          <Link className="text-[#F3EEE3]/80 hover:text-[#D9541E] transition-colors font-body text-xs tracking-widest uppercase duration-200" href="/blog">
+            Blog
+          </Link>
           <a className="text-[#F3EEE3]/80 hover:text-[#D9541E] transition-colors font-body text-xs tracking-widest uppercase duration-200" href={SOCIAL_LINKS.github} rel="noopener noreferrer" target="_blank">
             GitHub
           </a>

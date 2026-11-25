@@ -190,5 +190,67 @@
       "expiryDate": "",
       "verificationUrl": "https://badgr.com/public/assertions/Y0qpoRXaS9iNadOvt8bVdQ"
     }
+  ],
+  "blogs": [
+    {
+      "id": "blog-1",
+      "title": "Zero-Downtime Deployment Strategies with GitHub Actions & Docker",
+      "slug": "zero-downtime-deployments-github-actions-docker",
+      "category": "DevOps & CI/CD",
+      "excerpt": "A deep dive into setting up automated containerized deployment pipelines with branch protection, health checks, and rollbacks.",
+      "content": "Continuous Deployment requires robust safeguards to ensure user experiences are never interrupted during releases. In this article, we explore how to configure GitHub Actions workflows alongside Docker and container registries to achieve zero-downtime rolling updates.\n\n### Key Pillars\n1. **Atomic Image Tagging**: Always tag images with immutable git commit SHA values rather than relying on mutable 'latest' tags.\n2. **Health Check Probes**: Define HTTP liveness and readiness probes before switching routing traffic to newly deployed containers.\n3. **Automated Rollbacks**: Integrate step-level failure triggers in GitHub Actions that automatically restore the last verified stable release when deployment health checks fail.",
+      "tags": ["DevOps", "GitHub Actions", "Docker", "CI/CD"],
+      "readTime": "6 min read",
+      "color": "primary",
+      "publishedAt": "2026-11-18T00:00:00.000Z"
+    },
+    {
+      "id": "blog-2",
+      "title": "Optimizing MongoDB Atlas for Serverless Next.js Applications",
+      "slug": "optimizing-mongodb-atlas-nextjs-serverless",
+      "category": "Cloud & Database",
+      "excerpt": "Strategies for connection caching, DNS SRV resolution, and query indexing to maintain sub-50ms API responses in serverless environments.",
+      "content": "Serverless architectures spawn isolated, ephemeral functions on demand. Without careful connection management, this can lead to connection exhaustion and latency spikes.\n\n### Core Practices\n1. **Global Connection Caching**: Store the active Mongoose connection promise in Node's global object to reuse sockets across warm invocations.\n2. **Custom DNS Fallbacks**: On local network boundaries and specific cloud providers, setting fallback DNS servers like Google and Cloudflare DNS eliminates `querySrv ECONNREFUSED` resolution errors.\n3. **Compound Indexes**: Always index fields used in sorting and filtering (such as status and published dates) to achieve single-digit millisecond query latency.",
+      "tags": ["Next.js", "MongoDB", "Serverless", "Performance"],
+      "readTime": "7 min read",
+      "color": "secondary",
+      "publishedAt": "2026-11-10T00:00:00.000Z"
+    },
+    {
+      "id": "blog-3",
+      "title": "Building Resilient Microservices with Node.js and Event-Driven Architecture",
+      "slug": "resilient-microservices-nodejs-event-driven",
+      "category": "Architecture",
+      "excerpt": "Decoupling services with asynchronous message queues, ensuring idempotency, and designing resilient failure recovery mechanisms.",
+      "content": "When breaking monolithic backends into smaller domains, synchronous HTTP calls between services create tight coupling and cascading outages. Transitioning to event-driven architectures solves this fundamentally.\n\n### Architectural Insights\n- **Idempotency Keys**: Guarantee that processing duplicate event payloads does not corrupt system state.\n- **Dead-Letter Queues (DLQ)**: Segregate unprocessable messages to prevent pipeline blockage while retaining data for debugging.\n- **Circuit Breakers**: Gracefully degrade service capabilities when upstream providers face downtime.",
+      "tags": ["Node.js", "Microservices", "System Design", "Cloud"],
+      "readTime": "8 min read",
+      "color": "tertiary",
+      "publishedAt": "2026-10-28T00:00:00.000Z"
+    },
+    {
+      "id": "blog-4",
+      "title": "Securing Cloud Infrastructure: DevSecOps Fundamentals for Modern Teams",
+      "slug": "securing-cloud-infrastructure-devsecops",
+      "category": "DevSecOps",
+      "excerpt": "Implementing least-privilege access, static code analysis in pull requests, and automated secret detection to safeguard applications.",
+      "content": "Security must be integrated from the first commit rather than audited as an afterthought. Modern DevSecOps brings automated vulnerability testing directly into developer workflows.\n\n### Critical Checkpoints\n1. **Secret Scanning**: Run pre-commit hooks and CI checks to block hardcoded API keys and tokens before they reach source control.\n2. **Minimal Base Images**: Use Alpine or distroless container images to reduce attack surfaces and eliminate unnecessary binaries.\n3. **Role-Based Access Control**: Assign granular read-only scopes to automated deployment tokens to contain breach radius.",
+      "tags": ["Security", "Docker", "DevSecOps", "Cloud"],
+      "readTime": "5 min read",
+      "color": "primary",
+      "publishedAt": "2026-10-15T00:00:00.000Z"
+    },
+    {
+      "id": "blog-5",
+      "title": "Real-Time IoT Telemetry Ingestion: Edge to Cloud Pipelines",
+      "slug": "real-time-iot-telemetry-edge-to-cloud",
+      "category": "IoT & Embedded",
+      "excerpt": "Designing resilient data transmission protocols from microcontroller edge sensors to real-time analytics dashboards.",
+      "content": "Connecting physical hardware research to cloud dashboards requires efficient serialization and handling of intermittent network connectivity.\n\n### Implementation Takeaways\n- **Lightweight Protocols**: Utilize MQTT with QoS levels matched to telemetry criticality to conserve bandwidth.\n- **Edge Buffering**: Cache sensor readings locally on microcontrollers during network dropouts and batch-upload upon reconnection.\n- **Stream Processing**: Aggregate raw time-series data at the cloud gateway before writing to persistent database storage.",
+      "tags": ["IoT", "Embedded", "Telemetry", "WebSockets"],
+      "readTime": "9 min read",
+      "color": "secondary",
+      "publishedAt": "2026-09-30T00:00:00.000Z"
+    }
   ]
 }
